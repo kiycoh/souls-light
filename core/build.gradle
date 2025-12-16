@@ -1,3 +1,5 @@
+apply plugin: 'java-library'
+
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-core'
 
@@ -27,8 +29,16 @@ dependencies {
   api "com.github.tommyettinger:regexodus:$regExodusVersion"
   api "com.github.tommyettinger:textratypist:$textratypistVersion"
   api "com.github.ykrasik:jaci-libgdx-cli-java:$jaciVersion"
+  testImplementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
+  testImplementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+  testImplementation 'org.mockito:mockito-core:4.0.0'
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
+}
+
+test {
+  useJUnitPlatform()
 }
