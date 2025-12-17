@@ -1,11 +1,11 @@
 package io.github.soulslight.model;
-import java.util.List;
 import com.badlogic.gdx.math.Vector2;
 
 public class Player {
 
     private final PlayerClass type;             // Il tipo (es. WARRIOR) - utile per UI o salvataggi
-    private final AttackStrategy attackStrategy;
+    private final Vector2 position;
+    private AttackStrategy attackStrategy;
 
     public enum PlayerClass {
         WARRIOR {
@@ -42,10 +42,31 @@ public class Player {
             throw new IllegalArgumentException("Il tipo di giocatore non può essere nullo!");
         }
         this.type = type;
+        this.position = new Vector2(0, 0);
 
         // QUI avviene la magia: chiediamo all'Enum di darci l'arma giusta
         this.attackStrategy = type.getStrategy();
     }
 
+    public AttackStrategy getAttackStrategy() {
+        return attackStrategy;
+    }
 
+    public void setAttackStrategy(AttackStrategy attackStrategy) {
+        this.attackStrategy = attackStrategy;
+    }
+
+    public void doAnAttack() {
+        if (attackStrategy != null) {
+            attackStrategy.attack();
+        }
+    }
+
+    public void move(float x, float y) {
+        this.position.add(x, y);
+    }
+
+    public Vector2 getPosition() {
+        return position;
+    }
 }

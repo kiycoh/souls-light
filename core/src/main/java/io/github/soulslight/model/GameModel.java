@@ -37,7 +37,7 @@ public class GameModel implements Disposable {
 
         // Entity initialization
         // Pattern: Factory Method (Usage)
-        this.player = new Player(Player.PlayerClass.WARRIOR.getAttackStrategy());
+        this.player = new Player(Player.PlayerClass.WARRIOR);
 
         // Pattern: Builder & Abstract Factory (Usage)
         // Using LevelBuilder to construct the level with enemies from a factory

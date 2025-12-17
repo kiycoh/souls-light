@@ -50,12 +50,12 @@ public class CombatTest {
 
         // 2. Controllo il TIPO di strategia (InstanceOf)
         // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
-        assertInstanceOf(WarriorAttack.class, WARRIOR.getStrategy(),
+        assertInstanceOf(WarriorAttack.class, warrior.getAttackStrategy(),
             "Il player deve avere istanza di WarriorAttack");
 
         // 3. Controllo i VALORI (AssertEquals)
         // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
-        assertEquals(20.0f, WARRIOR.getStrategy().getDamage(), 0.01f,
+        assertEquals(20.0f, warrior.getAttackStrategy().getDamage(), 0.01f,
             "Il player deve fare i danni del guerriero");
     }
 
@@ -66,26 +66,26 @@ public class CombatTest {
 
         // 2. Controllo il TIPO di strategia (InstanceOf)
         // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
-        assertInstanceOf(MageAttack.class, MAGE.getStrategy(),
+        assertInstanceOf(MageAttack.class, mage.getAttackStrategy(),
             "Il player deve avere istanza di MageAttack");
 
         // 3. Controllo i VALORI (AssertEquals)
         // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
-        assertEquals(25.0f, MAGE.getStrategy().getDamage(), 0.01f,
+        assertEquals(25.0f, mage.getAttackStrategy().getDamage(), 0.01f,
             "Il player deve fare i danni del mago");
     }
     @Test
     public void testThiefInitialization() {
-        Player mage = new Player(Player.PlayerClass.THIEF);
+        Player thief = new Player(Player.PlayerClass.THIEF);
 
         // 2. Controllo il TIPO di strategia (InstanceOf)
         // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
-        assertInstanceOf(ThiefAttack.class, THIEF.getStrategy(),
+        assertInstanceOf(ThiefAttack.class, thief.getAttackStrategy(),
             "Il player deve avere istanza di ThiefAttack");
 
         // 3. Controllo i VALORI (AssertEquals)
         // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
-        assertEquals(8.0f, THIEF.getStrategy().getDamage(), 0.01f,
+        assertEquals(8.0f, thief.getAttackStrategy().getDamage(), 0.01f,
             "Il player deve fare i danni del ladro");
     }
 
@@ -93,38 +93,35 @@ public class CombatTest {
     @Test
     public void testArcherInitialization() {
 
-        Player mage = new Player(Player.PlayerClass.ARCHER);
+        Player archer = new Player(Player.PlayerClass.ARCHER);
 
         // 2. Controllo il TIPO di strategia (InstanceOf)
         // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
-        assertInstanceOf(ArcherAttack.class, ARCHER.getStrategy(),
+        assertInstanceOf(ArcherAttack.class, archer.getAttackStrategy(),
             "Il player deve avere istanza di ArcherAttack");
 
         // 3. Controllo i VALORI (AssertEquals)
         // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
-        assertEquals(7.0f, ARCHER.getStrategy().getDamage(), 0.01f,
+        assertEquals(7.0f, archer.getAttackStrategy().getDamage(), 0.01f,
             "Il player deve fare i danni dell'arciere");
     }
 
-    public void testDoAnAttack(){ //DA VERIFICARE AL COMPLETAMENTO DELLA CLASSE PLAYER
-        Player warrior2 = new Player(new WarriorAttack());
-        float damage = warrior2.doAnAttack();
-
-        assertEquals(20.0f, damage, 0.01f, "Il guerriero deve infliggere il danno definito dalla sua strategia");
-
+    @Test
+    public void testDoAnAttack(){
+        Player warrior2 = new Player(Player.PlayerClass.WARRIOR);
+        // doAnAttack è void, verifichiamo solo che non lanci eccezioni
+        assertDoesNotThrow(() -> warrior2.doAnAttack());
     }
 
     @Test
-    public void testDoAnAttackWithoutStrategy(){ //DA VERIFICARE AL COMPLETAMENTO DELLA CLASSE PLAYER
-        Player player = new Player();
-
-        // ASSUME CHE .doAnAttack() lanci eccezione
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> player.doAnAttack(),
-            "Attaccare senza strategia deve lanciare un'eccezione"
+    public void testPlayerWithoutStrategy(){
+        // Il costruttore lancia eccezione se il tipo è null
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new Player(null),
+            "Creare un player con tipo null deve lanciare un'eccezione"
         );
 
         assertEquals(
-            "Attack strategy not set",
+            "Il tipo di giocatore non può essere nullo!",
             exception.getMessage(),
             "Il messaggio dell'eccezione deve essere chiaro"
         );

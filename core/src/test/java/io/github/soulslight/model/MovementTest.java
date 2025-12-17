@@ -8,7 +8,7 @@ public class MovementTest {
 
     @Test
     public void testMovement() {
-        Player player = new Player(new WarriorAttack());
+        Player player = new Player(Player.PlayerClass.WARRIOR);
 
         // Test initial position
         assertEquals(new Vector2(0, 0), player.getPosition(), "Initial position should be (0,0)");
