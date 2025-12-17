@@ -1,5 +1,7 @@
 package io.github.soulslight.model;
 
+import java.util.List;
+
 public class MageAttack extends AbstarctAttack{
     @Override
     public  void attack(){
@@ -22,6 +24,18 @@ public class MageAttack extends AbstarctAttack{
     @Override
     public  String getSoundID(){
         return "stick_sound";
+    }
+
+
+    @Override
+    public void executeAttack(Entity attacker, List<Entity> targets) {
+        // Logica colpisci il primo che è a tiro
+        for (Entity target : targets) {
+            // Verifica distanza
+            if (attacker.getPosition().dst(target.getPosition()) <= getRange()) {
+                target.takeDamage(getDamage());
+            }
+        }
     }
 
 }
