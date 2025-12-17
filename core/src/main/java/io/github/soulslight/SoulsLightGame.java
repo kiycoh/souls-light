@@ -3,6 +3,7 @@ package io.github.soulslight;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.soulslight.controller.GameController;
+import io.github.soulslight.manager.ResourceManager;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.view.GameScreen;
 
@@ -14,16 +15,14 @@ public class SoulsLightGame extends Game {
 
     @Override
     public void create() {
-
         batch = new SpriteBatch();
-        model = new GameModel();
-        controller = new GameController(model);
-        this.setScreen(new GameScreen(batch, model, controller));
+        this.setScreen(new io.github.soulslight.view.MainMenuScreen(this, batch));
     }
 
     @Override
     public void dispose() {
         batch.dispose();
+        ResourceManager.getInstance().dispose();
         super.dispose();
     }
 }

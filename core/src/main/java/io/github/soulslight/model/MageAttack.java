@@ -1,6 +1,10 @@
 package io.github.soulslight.model;
 
-public class MageAttack extends AbstarctAttack{
+/**
+ * Pattern: Strategy (Concrete Strategy)
+ * Implements a specific attack behavior (Mage).
+ */
+public class MageAttack extends AbstractAttack{
     @Override
     public  void attack(){
         System.out.println("Attacco eseguito");

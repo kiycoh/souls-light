@@ -47,14 +47,11 @@ public class CombatTest {
     public void testPlayerInitialization(){
 
         Player warrior = new Player(new WarriorAttack());
-        assertTrue("Il player deve avere istanza di WarriorAttack",
-            warrior.getAttackStrategy() instanceof WarriorAttack);
-        assertEquals("Il player deve fare i danni del guerriero",
-            20.0f, warrior.getStrategyDamage(), 0.01);
+        assertTrue(warrior.getAttackStrategy() instanceof WarriorAttack, "Il player deve avere istanza di WarriorAttack");
+        assertEquals(20.0f, warrior.getStrategyDamage(), 0.01, "Il player deve fare i danni del guerriero");
 
         Player mage = new Player(new MageAttack());
-        assertTrue("Il player deve avere istanza di MageAttack",
-            mage.getAttackStrategy() instanceof MageAttack);
+        assertTrue(mage.getAttackStrategy() instanceof MageAttack, "Il player deve avere istanza di MageAttack");
     }
     @Test
     public void testDoAnAttack(){ //DA VERIFICARE AL COMPLETAMENTO DELLA CLASSE PLAYER

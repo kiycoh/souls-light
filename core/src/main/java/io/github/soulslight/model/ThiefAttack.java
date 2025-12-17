@@ -1,6 +1,10 @@
 package io.github.soulslight.model;
 
-public class ThiefAttack extends AbstarctAttack {
+/**
+ * Pattern: Strategy (Concrete Strategy)
+ * Implements a specific attack behavior (Thief).
+ */
+public class ThiefAttack extends AbstractAttack {
     @Override
     public void attack() {
         System.out.println("Attacco eseguito");
@@ -25,5 +29,4 @@ public class ThiefAttack extends AbstarctAttack {
     public String getSoundID() {
         return "dagger_sound";
     }
-
 }
