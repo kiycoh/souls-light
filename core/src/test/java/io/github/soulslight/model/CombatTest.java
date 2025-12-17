@@ -44,16 +44,68 @@ public class CombatTest {
     }
 
     @Test
-    public void testPlayerInitialization(){
+    public void testPlayerInitialization() {
+        // 1. Creo il player usando l'Enum (come abbiamo fatto prima)
+        Player warrior = new Player(Player.PlayerClass.WARRIOR);
 
-        Player warrior = new Player(new WarriorAttack());
-        assertTrue(warrior.getAttackStrategy() instanceof WarriorAttack, "Il player deve avere istanza di WarriorAttack");
-        assertEquals(20.0f, warrior.getStrategyDamage(), 0.01, "Il player deve fare i danni del guerriero");
+        // 2. Controllo il TIPO di strategia (InstanceOf)
+        // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
+        assertInstanceOf(WarriorAttack.class, WARRIOR.getStrategy(),
+            "Il player deve avere istanza di WarriorAttack");
 
-        Player mage = new Player(new MageAttack());
-        assertTrue(mage.getAttackStrategy() instanceof MageAttack, "Il player deve avere istanza di MageAttack");
+        // 3. Controllo i VALORI (AssertEquals)
+        // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
+        assertEquals(20.0f, WARRIOR.getStrategy().getDamage(), 0.01f,
+            "Il player deve fare i danni del guerriero");
+    }
+
+    @Test
+    public void testMageInitialization() {
+
+        Player mage = new Player(Player.PlayerClass.MAGE);
+
+        // 2. Controllo il TIPO di strategia (InstanceOf)
+        // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
+        assertInstanceOf(MageAttack.class, MAGE.getStrategy(),
+            "Il player deve avere istanza di MageAttack");
+
+        // 3. Controllo i VALORI (AssertEquals)
+        // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
+        assertEquals(25.0f, MAGE.getStrategy().getDamage(), 0.01f,
+            "Il player deve fare i danni del mago");
     }
     @Test
+    public void testThiefInitialization() {
+        Player mage = new Player(Player.PlayerClass.THIEF);
+
+        // 2. Controllo il TIPO di strategia (InstanceOf)
+        // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
+        assertInstanceOf(ThiefAttack.class, THIEF.getStrategy(),
+            "Il player deve avere istanza di ThiefAttack");
+
+        // 3. Controllo i VALORI (AssertEquals)
+        // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
+        assertEquals(8.0f, THIEF.getStrategy().getDamage(), 0.01f,
+            "Il player deve fare i danni del ladro");
+    }
+
+
+    @Test
+    public void testArcherInitialization() {
+
+        Player mage = new Player(Player.PlayerClass.ARCHER);
+
+        // 2. Controllo il TIPO di strategia (InstanceOf)
+        // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
+        assertInstanceOf(ArcherAttack.class, ARCHER.getStrategy(),
+            "Il player deve avere istanza di ArcherAttack");
+
+        // 3. Controllo i VALORI (AssertEquals)
+        // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
+        assertEquals(7.0f, ARCHER.getStrategy().getDamage(), 0.01f,
+            "Il player deve fare i danni dell'arciere");
+    }
+
     public void testDoAnAttack(){ //DA VERIFICARE AL COMPLETAMENTO DELLA CLASSE PLAYER
         Player warrior2 = new Player(new WarriorAttack());
         float damage = warrior2.doAnAttack();
