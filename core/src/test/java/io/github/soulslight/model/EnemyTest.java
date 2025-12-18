@@ -25,30 +25,30 @@ public class EnemyTest {
         AbstractEnemy chaser2 = EnemyRegistry.getEnemy("Chaser");
 
         // Assicuriamoci che esistano
-        assertNotNull(chaser1, "Il registro deve restituire uno zombie");
-        assertNotNull(chaser2, "Il registro deve restituire un secondo zombie");
+        assertNotNull(chaser1, "Il registro deve restituire un chaser");
+        assertNotNull(chaser2, "Il registro deve restituire un secondo chaser");
 
-        // 2. Verifico che siano due oggetti DIVERSI in memoria
-        assertNotSame(chaser1, chaser2, "I due zombie devono essere oggetti distinti in memoria");
+        //  Verifico che siano due oggetti diversi in memoria
+        assertNotSame(chaser1, chaser2, "I due chaser devono essere oggetti distinti in memoria");
 
-        // 3. Modifico il primo
+        //  Modifico il primo
         chaser1.setPosition(50, 50);
         chaser1.setHP(10); // Lo ferisco
 
-        // 4. Verifico che il secondo sia rimasto INTATTO (Valori di default)
-        assertEquals(0, chaser2.getX(), "Lo zombie 2 non doveva muoversi");
-        assertEquals(0, chaser2.getY(), "Lo zombie 2 non doveva muoversi");
-        assertEquals(100, chaser2.getHP(), "Lo zombie 2 deve avere ancora tutta la vita");
+        //  Verifico che il secondo non abbia subito modifiche
+        assertEquals(0, chaser2.getX(), "Il chaser2 non doveva muoversi");
+        assertEquals(0, chaser2.getY(), "Il chaser2non doveva muoversi");
+        assertEquals(100, chaser2.getHP(), "Il chaser2 deve avere ancora tutta la vita");
     }
 
 
     @Test
     public void testChaserBehaviour() {
-        // Setup: Un Chaser a (0,0) e un Player a (100, 0)
+
         AbstractEnemy chaser = EnemyRegistry.getEnemy("Chaser");
         chaser.setPosition(0, 0);
 
-        Player player = new Player(Player.PlayerClass.WARRIOR); // Assumiamo costruttore base
+        Player player = new Player(Player.PlayerClass.WARRIOR); 
         player.setPosition(100, 0); // Lontano sull'asse X
         List<Player> players = Collections.singletonList(player);
 

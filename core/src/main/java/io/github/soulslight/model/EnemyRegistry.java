@@ -10,12 +10,19 @@ public class EnemyRegistry {
     private static Texture spriteSheet;
 
     public static void loadCache(){
-        spriteSheet = new Texture("placeHolder.png");
-
+        // Creiamo il nemico
         Chaser chaser = new Chaser();
         chaser.setHP(100);
 
-        chaser.setTextureRegion(new TextureRegion(spriteSheet, 0, 0, 32, 32));
+        // Controlla se siamo dentro al gioco vero
+        if (com.badlogic.gdx.Gdx.files != null) {
+            spriteSheet = new Texture("placeHolder.png");
+            chaser.setTextureRegion(new TextureRegion(spriteSheet, 0, 0, 32, 32));
+        } else {
+
+        }
+
+        // Aggiungiamo alla cache
         cache.put("Chaser", chaser);
     }
 

@@ -7,13 +7,14 @@ public class Chaser extends AbstractEnemy{
 
     public Chaser(){
         super();
-        this.hp = 100;
+        this.health = 100;
         this.speed = 80.0f;
         this.attackStrategy = new WarriorAttack();
     }
 
     private Chaser(Chaser other){
         super(other);
+        this.attackStrategy = other.attackStrategy;
     }
     @Override
     public AbstractEnemy clone(){
@@ -22,7 +23,7 @@ public class Chaser extends AbstractEnemy{
 
     @Override
     public void updateBehavior(List<Player> players, float deltaTime){
-        if(players.isEmpty() || this.hp <= 0) return;
+        if(players.isEmpty() || this.health <= 0) return;
 
         Player target = players.get(0);
         float distance = this.position.dst(target.getPosition());
