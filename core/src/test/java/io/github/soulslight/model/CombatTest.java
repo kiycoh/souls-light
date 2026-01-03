@@ -1,129 +1,148 @@
 package io.github.soulslight.model;
-import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.Test;
+
 public class CombatTest {
-    // Strategy Pattern (GoF)
+  // Strategy Pattern (GoF)
 
-    @Test
-    public void testWarriorStats() {
-        AttackStrategy strategy = new WarriorAttack();
-        // SINTASSI JUNIT 5: assertEquals(atteso, attuale, delta, "Messaggio Opzionale")
-        assertEquals(1.0f, strategy.getRange(), 0.01f, "Il guerriero attacca a corto raggio");
-        assertEquals(20.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
-        assertEquals(1.0f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere media");
-        assertEquals("sword_swing", strategy.getSoundID(), "Il suono riprodotto deve essere quello della spada");
-    }
+  @Test
+  public void testWarriorStats() {
+    AttackStrategy strategy = new WarriorAttack();
+    // SINTASSI JUNIT 5: assertEquals(atteso, attuale, delta, "Messaggio Opzionale")
+    assertEquals(1.0f, strategy.getRange(), 0.01f, "Il guerriero attacca a corto raggio");
+    assertEquals(20.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
+    assertEquals(1.0f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere media");
+    assertEquals(
+        "sword_swing", strategy.getSoundID(), "Il suono riprodotto deve essere quello della spada");
+  }
 
-    @Test
-    public void testMageStats() {
-        AttackStrategy strategy = new MageAttack();
-        // Sintassi: (atteso, attuale, tolleranza, messaggio)
-        assertEquals(13.0f, strategy.getRange(), 0.01f, "Il mago attacca a lungo raggio");
-        assertEquals(25.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
-        assertEquals(0.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere lenta");
-        assertEquals("stick_sound", strategy.getSoundID(), "Il suono riprodotto deve essere quello del bastone");
-    }
+  @Test
+  public void testMageStats() {
+    AttackStrategy strategy = new MageAttack();
+    // Sintassi: (atteso, attuale, tolleranza, messaggio)
+    assertEquals(13.0f, strategy.getRange(), 0.01f, "Il mago attacca a lungo raggio");
+    assertEquals(25.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
+    assertEquals(0.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere lenta");
+    assertEquals(
+        "stick_sound", strategy.getSoundID(), "Il suono riprodotto deve essere quello del bastone");
+  }
 
-    @Test
-    public void testThiefStats() {
-        AttackStrategy strategy = new ThiefAttack();
-        assertEquals(0.8f, strategy.getRange(), 0.01f, "Il ladro attacca a corto raggio");
-        assertEquals(8.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
-        assertEquals(2.0f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere alta");
-        assertEquals("dagger_sound", strategy.getSoundID(), "Il suono riprodotto deve essere quello del pugnale");
-    }
+  @Test
+  public void testThiefStats() {
+    AttackStrategy strategy = new ThiefAttack();
+    assertEquals(0.8f, strategy.getRange(), 0.01f, "Il ladro attacca a corto raggio");
+    assertEquals(8.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
+    assertEquals(2.0f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere alta");
+    assertEquals(
+        "dagger_sound",
+        strategy.getSoundID(),
+        "Il suono riprodotto deve essere quello del pugnale");
+  }
 
-    @Test
-    public void testArcherStats() {
-        AttackStrategy strategy = new ArcherAttack();
-        assertEquals(10.0f, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
-        assertEquals(7.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
-        assertEquals(1.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere medio-alta");
-        assertEquals("bow_sound", strategy.getSoundID(), "Il suono riprodotto deve essere quello dell'arco");
-    }
+  @Test
+  public void testArcherStats() {
+    AttackStrategy strategy = new ArcherAttack();
+    assertEquals(10.0f, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
+    assertEquals(7.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
+    assertEquals(1.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere medio-alta");
+    assertEquals(
+        "bow_sound", strategy.getSoundID(), "Il suono riprodotto deve essere quello dell'arco");
+  }
 
-    @Test
-    public void testPlayerInitialization() {
-        // 1. Creo il player usando l'Enum (come abbiamo fatto prima)
-        Player warrior = new Player(Player.PlayerClass.WARRIOR);
+  @Test
+  public void testPlayerInitialization() {
+    // Creo il player usando l'Enum (come abbiamo fatto prima)
+    Player warrior = new Player(Player.PlayerClass.WARRIOR);
 
-        // 2. Controllo il TIPO di strategia (InstanceOf)
-        // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
-        assertInstanceOf(WarriorAttack.class, warrior.getAttackStrategy(),
-            "Il player deve avere istanza di WarriorAttack");
+    // Controllo il TIPO di strategia (InstanceOf)
+    // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
+    assertInstanceOf(
+        WarriorAttack.class,
+        warrior.getAttackStrategy(),
+        "Il player deve avere istanza di WarriorAttack");
 
-        // 3. Controllo i VALORI (AssertEquals)
-        // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
-        assertEquals(20.0f, warrior.getAttackStrategy().getDamage(), 0.01f,
-            "Il player deve fare i danni del guerriero");
-    }
+    // Controllo i VALORI (AssertEquals)
+    // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
+    assertEquals(
+        20.0f,
+        warrior.getAttackStrategy().getDamage(),
+        0.01f,
+        "Il player deve fare i danni del guerriero");
+  }
 
-    @Test
-    public void testMageInitialization() {
+  @Test
+  public void testMageInitialization() {
 
-        Player mage = new Player(Player.PlayerClass.MAGE);
+    Player mage = new Player(Player.PlayerClass.MAGE);
 
-        // 2. Controllo il TIPO di strategia (InstanceOf)
-        // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
-        assertInstanceOf(MageAttack.class, mage.getAttackStrategy(),
-            "Il player deve avere istanza di MageAttack");
+    // Controllo il TIPO di strategia (InstanceOf)
+    // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
+    assertInstanceOf(
+        MageAttack.class, mage.getAttackStrategy(), "Il player deve avere istanza di MageAttack");
 
-        // 3. Controllo i VALORI (AssertEquals)
-        // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
-        assertEquals(25.0f, mage.getAttackStrategy().getDamage(), 0.01f,
-            "Il player deve fare i danni del mago");
-    }
-    @Test
-    public void testThiefInitialization() {
-        Player thief = new Player(Player.PlayerClass.THIEF);
+    // Controllo i VALORI (AssertEquals)
+    assertEquals(
+        25.0f, mage.getAttackStrategy().getDamage(), 0.01f, "Il player deve fare i danni del mago");
+  }
 
-        // 2. Controllo il TIPO di strategia (InstanceOf)
-        // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
-        assertInstanceOf(ThiefAttack.class, thief.getAttackStrategy(),
-            "Il player deve avere istanza di ThiefAttack");
+  @Test
+  public void testThiefInitialization() {
+    Player thief = new Player(Player.PlayerClass.THIEF);
 
-        // 3. Controllo i VALORI (AssertEquals)
-        // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
-        assertEquals(8.0f, thief.getAttackStrategy().getDamage(), 0.01f,
-            "Il player deve fare i danni del ladro");
-    }
+    // Controllo il TIPO di strategia (InstanceOf)
+    assertInstanceOf(
+        ThiefAttack.class,
+        thief.getAttackStrategy(),
+        "Il player deve avere istanza di ThiefAttack");
 
+    // Controllo i VALORI (AssertEquals)
+    assertEquals(
+        8.0f,
+        thief.getAttackStrategy().getDamage(),
+        0.01f,
+        "Il player deve fare i danni del ladro");
+  }
 
-    @Test
-    public void testArcherInitialization() {
+  @Test
+  public void testArcherInitialization() {
 
-        Player archer = new Player(Player.PlayerClass.ARCHER);
+    Player archer = new Player(Player.PlayerClass.ARCHER);
 
-        // 2. Controllo il TIPO di strategia (InstanceOf)
-        // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
-        assertInstanceOf(ArcherAttack.class, archer.getAttackStrategy(),
-            "Il player deve avere istanza di ArcherAttack");
+    // Controllo il TIPO di strategia (InstanceOf)
+    assertInstanceOf(
+        ArcherAttack.class,
+        archer.getAttackStrategy(),
+        "Il player deve avere istanza di ArcherAttack");
 
-        // 3. Controllo i VALORI (AssertEquals)
-        // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
-        assertEquals(7.0f, archer.getAttackStrategy().getDamage(), 0.01f,
-            "Il player deve fare i danni dell'arciere");
-    }
+    // Controllo i VALORI (AssertEquals)
+    assertEquals(
+        7.0f,
+        archer.getAttackStrategy().getDamage(),
+        0.01f,
+        "Il player deve fare i danni dell'arciere");
+  }
 
-    @Test
-    public void testDoAnAttack(){
-        Player warrior2 = new Player(Player.PlayerClass.WARRIOR);
-        // doAnAttack è void, verifichiamo solo che non lanci eccezioni
-        assertDoesNotThrow(() -> warrior2.doAnAttack());
-    }
+  @Test
+  public void testDoAnAttack() {
+    Player warrior2 = new Player(Player.PlayerClass.WARRIOR);
+    // doAnAttack è void, verifichiamo solo che non lanci eccezioni
+    assertDoesNotThrow(() -> warrior2.doAnAttack());
+  }
 
-    @Test
-    public void testPlayerWithoutStrategy(){
-        // Il costruttore lancia eccezione se il tipo è null
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new Player(null),
-            "Creare un player con tipo null deve lanciare un'eccezione"
-        );
+  @Test
+  public void testPlayerWithoutStrategy() {
+    // Il costruttore lancia eccezione se il tipo è null
+    IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new Player(null),
+            "Creare un player con tipo null deve lanciare un'eccezione");
 
-        assertEquals(
-            "Il tipo di giocatore non può essere nullo!",
-            exception.getMessage(),
-            "Il messaggio dell'eccezione deve essere chiaro"
-        );
-    }
+    assertEquals(
+        "Il tipo di giocatore non può essere nullo!",
+        exception.getMessage(),
+        "Il messaggio dell'eccezione deve essere chiaro");
+  }
 }

@@ -4,18 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MovementInput {
-    private List<MovementListener> listeners = new ArrayList<>();
+  private List<MovementListener> listeners = new ArrayList<>();
 
-    public void addMovementListener(MovementListener listener) {
-        listeners.add(listener);
-    }
+  public void addMovementListener(MovementListener listener) {
+    listeners.add(listener);
+  }
 
-    public List<MovementListener> getListeners() {
-        return listeners;
-    }
+  public List<MovementListener> getListeners() {
+    return listeners;
+  }
 
-    public interface MovementListener {
-        void onMove(float x, float y);
-    }
+  public interface MovementListener {
+    void onMove(float x, float y);
+  }
 }
-
