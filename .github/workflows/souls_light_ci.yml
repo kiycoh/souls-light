@@ -1,8 +1,3 @@
-# ---------------------------------------------------------
-# FILE: .github/workflows/souls_light_ci.yml
-# OPTIMIZATION: Continuous Integration
-# ---------------------------------------------------------
-
 name: Souls Light Engine CI
 
 on:
