@@ -5,7 +5,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EventManager {
   private static EventManager instance;
-  private final List<GameListener> listeners = new CopyOnWriteArrayList<>(); // Thread-safe list for event listeners
+  private final List<GameListener> listeners =
+      new CopyOnWriteArrayList<>(); // Thread-safe list for event listeners
 
   private EventManager() {}
 

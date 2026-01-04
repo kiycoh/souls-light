@@ -5,12 +5,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.badlogic.gdx.backends.headless.HeadlessNativesLoader;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class CombatTest {
   // Strategy Pattern (GoF)
+
+  @BeforeAll
+  public static void setUp() {
+    HeadlessNativesLoader.load();
+  }
 
   @Test
   public void testWarriorStats() {
@@ -148,7 +155,7 @@ public class CombatTest {
             "Creare un player con tipo null deve lanciare un'eccezione");
 
     assertEquals(
-        "Il tipo di giocatore non può essere nullo!",
+        "Player Type cannot be null",
         exception.getMessage(),
         "Il messaggio dell'eccezione deve essere chiaro");
   }
