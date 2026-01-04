@@ -1,27 +1,27 @@
 package io.github.soulslight.model;
-
 import java.util.List;
 
-public class ThiefAttack extends AbstarctAttack {
-    @Override
-    public void attack() {
-        System.out.println("Attacco eseguito");
-    }
+/** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Thief). */
+public class ThiefAttack extends AbstractAttack {
+  @Override
+  public void attack() {
+    System.out.println("Attacco eseguito");
+  }
 
-    @Override
-    public float getRange() {
-        return 0.8f;
-    }
+  @Override
+  public float getRange() {
+    return 0.8f;
+  }
 
-    @Override
-    public float getDamage() {
-        return 8.0f;
-    }
+  @Override
+  public float getDamage() {
+    return 8.0f;
+  }
 
-    @Override
-    public float getAttackSpeed() {
-        return 2.0f;
-    }
+  @Override
+  public float getAttackSpeed() {
+    return 2.0f;
+  }
 
     @Override
     public String getSoundID() {

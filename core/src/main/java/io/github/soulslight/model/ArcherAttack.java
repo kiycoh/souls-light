@@ -1,12 +1,11 @@
 package io.github.soulslight.model;
-
 import java.util.List;
-
-public class ArcherAttack extends AbstarctAttack {
-    @Override
-    public  void attack(){
-        System.out.println("Attacco eseguito");
-    }
+/** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Archer). */
+public class ArcherAttack extends AbstractAttack {
+  @Override
+  public void attack() {
+    System.out.println("Attacco eseguito");
+  }
 
     @Override
     public float getRange(){
@@ -36,5 +35,4 @@ public class ArcherAttack extends AbstarctAttack {
             }
         }
     }
-
 }

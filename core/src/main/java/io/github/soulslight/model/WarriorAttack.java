@@ -1,7 +1,8 @@
 package io.github.soulslight.model;
 import java.util.*;
 
-public class WarriorAttack extends AbstarctAttack {
+/** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Warrior). */
+public class WarriorAttack extends AbstractAttack {
 
     @Override
     public void attack() {
