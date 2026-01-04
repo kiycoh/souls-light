@@ -38,14 +38,20 @@ public class GameModel implements Disposable {
     // Pattern: Factory Method (Usage)
     this.player = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, 0, 0);
 
+    // Register player with GameManager
+    io.github.soulslight.manager.GameManager.getInstance().setPlayer(this.player);
+
     // Pattern: Builder & Abstract Factory (Usage)
     // Using LevelBuilder to construct the level with enemies from a factory
     this.level =
         new LevelBuilder()
-            .buildMap(MapGenerator.generateMap())
+            .buildMap(MapGenerator.generateProceduralMap(12345L))
             .spawnEnemies(new DungeonEnemyFactory(), 2, 1) // 2 Melee, 1 Ranged
             .setEnvironment("dungeon_theme.mp3", 0.3f)
             .build();
+
+    // Register level with GameManager
+    io.github.soulslight.manager.GameManager.getInstance().setCurrentLevel(this.level);
   }
 
   /**
@@ -106,6 +112,8 @@ public class GameModel implements Disposable {
     if (level != null) {
       level.dispose();
     }
+    // Clean up GameManager references to avoid stale objects
+    io.github.soulslight.manager.GameManager.getInstance().cleanUp();
   }
 
   /** Pattern: Memento Stores the internal state of the GameModel. */

@@ -65,6 +65,12 @@ public class Player {
     this.body = createBody(world, startX, startY);
   }
 
+  public void setPosition(float x, float y) {
+    if (body != null) {
+      body.setTransform(x, y, body.getAngle());
+    }
+  }
+
   // ---------------------------------------------------------
   // PHYSICS INITIALIZATION (One-Time Allocation)
   // ---------------------------------------------------------

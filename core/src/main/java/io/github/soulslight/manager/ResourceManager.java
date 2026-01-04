@@ -11,12 +11,14 @@ public class ResourceManager implements Disposable {
   private static ResourceManager instance;
 
   private Texture playerTexture;
-  private Texture tileTexture;
-  private TextureRegion tileTextureRegion;
+  private Texture wallTexture;
+  private Texture floorTexture;
+  private TextureRegion wallTextureRegion;
+  private TextureRegion floorTextureRegion;
 
   private ResourceManager() {}
 
-  public static ResourceManager getInstance() {
+  public static synchronized ResourceManager getInstance() {
     if (instance == null) {
       instance = new ResourceManager();
     }
@@ -34,25 +36,42 @@ public class ResourceManager implements Disposable {
     return playerTexture;
   }
 
-  public TextureRegion getTileTextureRegion() {
-    if (tileTextureRegion == null) {
-      if (tileTexture == null) {
+  public TextureRegion getWallTextureRegion() {
+    if (wallTextureRegion == null) {
+      if (wallTexture == null) {
         Pixmap pixmap = new Pixmap(32, 32, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.DARK_GRAY);
+        pixmap.setColor(Color.DARK_GRAY); // Border
         pixmap.fill();
-        pixmap.setColor(Color.GRAY);
-        pixmap.drawRectangle(0, 0, 32, 32);
-        tileTexture = new Texture(pixmap);
+        pixmap.setColor(Color.BLACK); // Center
+        pixmap.fillRectangle(1, 1, 30, 30);
+        wallTexture = new Texture(pixmap);
         pixmap.dispose();
       }
-      tileTextureRegion = new TextureRegion(tileTexture);
+      wallTextureRegion = new TextureRegion(wallTexture);
     }
-    return tileTextureRegion;
+    return wallTextureRegion;
+  }
+
+  public TextureRegion getFloorTextureRegion() {
+    if (floorTextureRegion == null) {
+      if (floorTexture == null) {
+        Pixmap pixmap = new Pixmap(32, 32, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.GRAY); // Border
+        pixmap.fill();
+        pixmap.setColor(Color.LIGHT_GRAY); // Center
+        pixmap.fillRectangle(1, 1, 30, 30);
+        floorTexture = new Texture(pixmap);
+        pixmap.dispose();
+      }
+      floorTextureRegion = new TextureRegion(floorTexture);
+    }
+    return floorTextureRegion;
   }
 
   @Override
   public void dispose() {
     if (playerTexture != null) playerTexture.dispose();
-    if (tileTexture != null) tileTexture.dispose();
+    if (wallTexture != null) wallTexture.dispose();
+    if (floorTexture != null) floorTexture.dispose();
   }
 }
