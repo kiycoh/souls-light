@@ -1,6 +1,7 @@
 package io.github.soulslight;
 
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.ResourceManager;
@@ -11,6 +12,15 @@ public class SoulsLightGame extends Game {
   private SpriteBatch batch;
   private GameModel model;
   private GameController controller;
+
+  @Override
+  public void setScreen(Screen screen) {
+    // Dispose the previous screen if it exists to free resources
+    if (this.screen != null) {
+      this.screen.dispose();
+    }
+    super.setScreen(screen);
+  }
 
   @Override
   public void create() {

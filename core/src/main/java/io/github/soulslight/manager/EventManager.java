@@ -1,11 +1,11 @@
 package io.github.soulslight.manager;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EventManager {
   private static EventManager instance;
-  private List<GameListener> listeners = new ArrayList<>();
+  private final List<GameListener> listeners = new CopyOnWriteArrayList<>(); // Thread-safe list for event listeners
 
   private EventManager() {}
 
@@ -18,6 +18,10 @@ public class EventManager {
 
   public void addListener(GameListener listener) {
     listeners.add(listener);
+  }
+
+  public void removeListener(GameListener listener) {
+    listeners.remove(listener);
   }
 
   public void notifyNewGame() {

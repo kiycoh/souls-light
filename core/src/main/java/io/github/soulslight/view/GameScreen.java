@@ -22,8 +22,8 @@ public class GameScreen implements Screen {
   private final GameController controller;
 
   // --- PIXEL ART RENDERING ---
-  private static final float WORLD_WIDTH = 480;
-  private static final float WORLD_HEIGHT = 270;
+  private static final float WORLD_WIDTH = 720;
+  private static final float WORLD_HEIGHT = 480;
 
   private final OrthographicCamera camera;
   private final Viewport viewport;
@@ -57,8 +57,10 @@ public class GameScreen implements Screen {
   @Override
   public void render(float delta) {
     // MVC Update Loop
-    controller.update(delta);
-    model.update(delta);
+    if (!model.isPaused()) {
+      controller.update(delta);
+      model.update(delta);
+    }
 
     // Update camera position to follow player
     Player player = model.getPlayer();
@@ -88,7 +90,7 @@ public class GameScreen implements Screen {
 
   @Override
   public void resize(int width, int height) {
-    // 5. IMPORTANT: Window resizing handling true pixel
+    // Window resizing
     viewport.update(width, height, true); // true = centra la camera
   }
 
