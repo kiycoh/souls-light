@@ -55,24 +55,23 @@ public class GameController extends InputAdapter {
     Player player = model.getPlayer();
     if (player == null) return;
 
-    float moveX = 0;
-    float moveY = 0;
+    float velX = 0;
+    float velY = 0;
 
     if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-      moveY += SPEED * delta;
+      velY = SPEED;
     }
     if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-      moveY -= SPEED * delta;
+      velY = -SPEED;
     }
     if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-      moveX -= SPEED * delta;
+      velX = -SPEED;
     }
     if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-      moveX += SPEED * delta;
+      velX = SPEED;
     }
 
-    if (moveX != 0 || moveY != 0) {
-      player.move(moveX, moveY);
-    }
+    // Always call move to update velocity (even to 0)
+    player.move(velX, velY);
   }
 }

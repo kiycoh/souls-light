@@ -1,7 +1,12 @@
 package io.github.soulslight.model;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.World;
 import org.junit.jupiter.api.Test;
 
 public class CombatTest {
@@ -54,7 +59,8 @@ public class CombatTest {
   @Test
   public void testPlayerInitialization() {
     // Creo il player usando l'Enum (come abbiamo fatto prima)
-    Player warrior = new Player(Player.PlayerClass.WARRIOR);
+    Player warrior =
+        new Player(Player.PlayerClass.WARRIOR, new World(new Vector2(0, 0), true), 0, 0);
 
     // Controllo il TIPO di strategia (InstanceOf)
     // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
@@ -75,7 +81,7 @@ public class CombatTest {
   @Test
   public void testMageInitialization() {
 
-    Player mage = new Player(Player.PlayerClass.MAGE);
+    Player mage = new Player(Player.PlayerClass.MAGE, new World(new Vector2(0, 0), true), 0, 0);
 
     // Controllo il TIPO di strategia (InstanceOf)
     // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
@@ -89,7 +95,7 @@ public class CombatTest {
 
   @Test
   public void testThiefInitialization() {
-    Player thief = new Player(Player.PlayerClass.THIEF);
+    Player thief = new Player(Player.PlayerClass.THIEF, new World(new Vector2(0, 0), true), 0, 0);
 
     // Controllo il TIPO di strategia (InstanceOf)
     assertInstanceOf(
@@ -108,7 +114,7 @@ public class CombatTest {
   @Test
   public void testArcherInitialization() {
 
-    Player archer = new Player(Player.PlayerClass.ARCHER);
+    Player archer = new Player(Player.PlayerClass.ARCHER, new World(new Vector2(0, 0), true), 0, 0);
 
     // Controllo il TIPO di strategia (InstanceOf)
     assertInstanceOf(
@@ -126,7 +132,8 @@ public class CombatTest {
 
   @Test
   public void testDoAnAttack() {
-    Player warrior2 = new Player(Player.PlayerClass.WARRIOR);
+    Player warrior2 =
+        new Player(Player.PlayerClass.WARRIOR, new World(new Vector2(0, 0), true), 0, 0);
     // doAnAttack è void, verifichiamo solo che non lanci eccezioni
     assertDoesNotThrow(() -> warrior2.doAnAttack());
   }
@@ -137,7 +144,7 @@ public class CombatTest {
     IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class,
-            () -> new Player(null),
+            () -> new Player(null, new World(new Vector2(0, 0), true), 0, 0),
             "Creare un player con tipo null deve lanciare un'eccezione");
 
     assertEquals(
