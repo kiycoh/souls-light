@@ -11,127 +11,128 @@ import com.badlogic.gdx.utils.Disposable;
  */
 public class GameModel implements Disposable {
 
-  // --- CONSTANTS ---
-  // "Will" is a shared value
-  public static final float MAX_WILL = 100f;
+    // --- CONSTANTS ---
+    // "Will" is a shared value
+    public static final float MAX_WILL = 100f;
 
-  // --- Box2D PHYSICS ---
-  private final World physicsWorld;
+    // --- Box2D PHYSICS ---
+    private final World physicsWorld;
 
-  // --- GAME STATE ---
-  private float currentWill;
-  private boolean isPaused;
+    // --- GAME STATE ---
+    private float currentWill;
+    private boolean isPaused;
 
-  // --- ENTITIES ---
-  private Player player;
-  private Level level;
+    // --- ENTITIES ---
+    private Player player;
+    private Level level;
 
-  public GameModel() {
-    // Physics initialization
-    this.physicsWorld = new World(new Vector2(0, 0), true);
+    public GameModel() {
+        // Physics initialization
+        this.physicsWorld = new World(new Vector2(0, 0), true);
 
-    // Game state initialization
-    this.currentWill = MAX_WILL / 2;
-    this.isPaused = false;
+        // Game state initialization
+        this.currentWill = MAX_WILL / 2;
+        this.isPaused = false;
 
-    // Entity initialization
-    // Pattern: Factory Method (Usage)
-    this.player = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, 0, 0);
+        // Entity initialization
+        // Pattern: Factory Method (Usage)
+        this.player = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, 0, 0);
 
-    // Register player with GameManager
-    io.github.soulslight.manager.GameManager.getInstance().setPlayer(this.player);
+        // Register player with GameManager
+        io.github.soulslight.manager.GameManager.getInstance().setPlayer(this.player);
 
-    // Pattern: Builder & Abstract Factory (Usage)
-    // Using LevelBuilder to construct the level with enemies from a factory
-    this.level =
-        new LevelBuilder()
-            .buildMap(MapGenerator.generateProceduralMap(12345L))
-            .spawnEnemies(new DungeonEnemyFactory(), 2, 1) // 2 Melee, 1 Ranged
-            .setEnvironment("dungeon_theme.mp3", 0.3f)
-            .build();
+        // Pattern: Builder & Abstract Factory (Usage)
+        // Using LevelBuilder to construct the level with enemies from a factory
+        this.level =
+            new LevelBuilder()
+                .buildMap(MapGenerator.generateProceduralMap(12345L))
+                .spawnEnemies(new DungeonEnemyFactory(), 2, 1) // 2 Melee, 1 Ranged
+                .setEnvironment("dungeon_theme.mp3", 0.3f)
+                .build();
 
-    // Register level with GameManager
-    io.github.soulslight.manager.GameManager.getInstance().setCurrentLevel(this.level);
-  }
-
-  /**
-   * Update physics and game logic.
-   *
-   * @param deltaTime Time elapsed since the last update in seconds.
-   */
-  public void update(float deltaTime) {
-    if (isPaused) return;
-
-    // Box2D physics update
-    physicsWorld.step(1 / 60f, 6, 2);
-
-    // Player update logic if needed
-  }
-
-  // --- VIEW & CONTROLLER GETTERS ---
-  public World getPhysicsWorld() {
-    return physicsWorld;
-  }
-
-  public Player getPlayer() {
-    return player;
-  }
-
-  public TiledMap getMap() {
-    return level.getMap();
-  }
-
-  public float getCurrentWill() {
-    return currentWill;
-  }
-
-  public void setCurrentWill(float currentWill) {
-    this.currentWill = currentWill;
-  }
-
-  public boolean isPaused() {
-    return isPaused;
-  }
-
-  public void setPaused(boolean paused) {}
-
-  // --- MEMENTO PATTERN ---
-  public GameStateMemento createMemento() {
-    return new GameStateMemento(currentWill, player.getPosition());
-  }
-
-  public void restoreMemento(GameStateMemento memento) {
-    this.currentWill = memento.getWill();
-    this.player.getPosition().set(memento.getPosition());
-  }
-
-  // --- DISPOSABLE ---
-  @Override
-  public void dispose() {
-    physicsWorld.dispose();
-    if (level != null) {
-      level.dispose();
-    }
-    // Clean up GameManager references to avoid stale objects
-    io.github.soulslight.manager.GameManager.getInstance().cleanUp();
-  }
-
-  /** Pattern: Memento Stores the internal state of the GameModel. */
-  public static class GameStateMemento {
-    private final float will;
-    private final Vector2 position;
-
-    public GameStateMemento(float will, Vector2 position) {
-      this.will = will;
-      this.position = new Vector2(position); // Deep copy
+        // Register level with GameManager
+        io.github.soulslight.manager.GameManager.getInstance().setCurrentLevel(this.level);
     }
 
-    public float getWill() {
-      return will;
+    /**
+     * Update physics and game logic.
+     *
+     * @param deltaTime Time elapsed since the last update in seconds.
+     */
+    public void update(float deltaTime) {
+        if (isPaused) return;
+
+        // Box2D physics update
+        physicsWorld.step(1 / 60f, 6, 2);
+
+        // Aggiorna lo stato dell'animazione del player
+        player.update(deltaTime);
     }
 
-    public Vector2 getPosition() {
-      return position;
+    // --- VIEW & CONTROLLER GETTERS ---
+    public World getPhysicsWorld() {
+        return physicsWorld;
     }
-  }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public TiledMap getMap() {
+        return level.getMap();
+    }
+
+    public float getCurrentWill() {
+        return currentWill;
+    }
+
+    public void setCurrentWill(float currentWill) {
+        this.currentWill = currentWill;
+    }
+
+    public boolean isPaused() {
+        return isPaused;
+    }
+
+    public void setPaused(boolean paused) {}
+
+    // --- MEMENTO PATTERN ---
+    public GameStateMemento createMemento() {
+        return new GameStateMemento(currentWill, player.getPosition());
+    }
+
+    public void restoreMemento(GameStateMemento memento) {
+        this.currentWill = memento.getWill();
+        this.player.getPosition().set(memento.getPosition());
+    }
+
+    // --- DISPOSABLE ---
+    @Override
+    public void dispose() {
+        physicsWorld.dispose();
+        if (level != null) {
+            level.dispose();
+        }
+        // Clean up GameManager references to avoid stale objects
+        io.github.soulslight.manager.GameManager.getInstance().cleanUp();
+    }
+
+    /** Pattern: Memento Stores the internal state of the GameModel. */
+    public static class GameStateMemento {
+        private final float will;
+        private final Vector2 position;
+
+        public GameStateMemento(float will, Vector2 position) {
+            this.will = will;
+            this.position = new Vector2(position); // Deep copy
+        }
+
+        public float getWill() {
+            return will;
+        }
+
+        public Vector2 getPosition() {
+            return position;
+        }
+    }
 }
