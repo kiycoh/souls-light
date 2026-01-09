@@ -19,7 +19,6 @@ public class Player extends Entity{
 
   // Box2D Body (represents the player in the physics world)
   private final Body body;
-    private final PlayerClass type;
 
     public enum PlayerClass {
         WARRIOR {
@@ -147,4 +146,20 @@ public class Player extends Entity{
   public AttackStrategy getAttackStrategy() {
     return attackStrategy;
   }
+
+    public void applyKnockback(Vector2 direction, float force) {
+        if (this.body != null) {
+            // Normalizza la direzione per sicurezza
+            direction.nor();
+
+            // 'force' determina quanto forte vola via (es. 10.0f - 50.0f)
+            this.body.applyLinearImpulse(
+                direction.scl(force),
+                this.body.getWorldCenter(),
+                true
+            );
+        } else {
+            this.position.mulAdd(direction, force);
+        }
+    }
 }

@@ -1,5 +1,5 @@
 package io.github.soulslight.model;
-
+import java.util.*;
 /** Pattern: Decorator Abstract decorator for AttackStrategy to add dynamic behaviors. */
 public abstract class AttackDecorator implements AttackStrategy {
   protected AttackStrategy wrappedAttack;
@@ -12,6 +12,11 @@ public abstract class AttackDecorator implements AttackStrategy {
   public void attack() {
     wrappedAttack.attack();
   }
+
+  @Override
+  public void executeAttack(Entity attacker, List<Entity> targets) {
+        this.wrappedAttack.executeAttack(attacker, targets);
+    }
 
   @Override
   public float getRange() {

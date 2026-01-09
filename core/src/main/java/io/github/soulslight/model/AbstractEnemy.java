@@ -7,8 +7,6 @@ import java.util.*;
 
 public abstract class AbstractEnemy extends Entity implements Cloneable {
 
-    // 1. RIMOSSO position, hp, attackStrategy.
-    // Li ereditiamo da Entity! Non dobbiamo ridefinirli.
 
     protected float speed;
     protected transient TextureRegion textureRegion;
@@ -82,4 +80,16 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     public abstract void updateBehavior(List<Player> players, float deltaTime);
 
     public abstract AbstractEnemy clone();
+
+    public void moveTowards(Vector2 targetPos, float deltaTime) {
+        // Calcola la direzione: (Dove voglio andare) - (Dove sono ora)
+        Vector2 direction = targetPos.cpy().sub(this.getPosition());
+
+        // Normalizza: Rende il vettore lungo 1 (così la velocità è costante)
+        direction.nor();
+
+        // Applica il movimento
+        // Formula: NuovaPos = VecchiaPos + (Direzione * Velocità * Tempo)
+        this.getPosition().mulAdd(direction, this.speed * deltaTime);
+    }
 }
