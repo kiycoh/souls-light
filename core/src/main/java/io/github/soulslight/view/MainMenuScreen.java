@@ -18,11 +18,7 @@ import io.github.soulslight.model.GameModel;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.utils.Scaling;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.utils.Scaling;
-
-
+import com.badlogic.gdx.audio.Music; // --- MODIFICA / AGGIUNTA ---
 
 public class MainMenuScreen implements Screen {
 
@@ -36,7 +32,8 @@ public class MainMenuScreen implements Screen {
     private Texture backgroundTexture;
     private Image backgroundImage;
 
-
+    // --- MODIFICA / AGGIUNTA ---
+    private Music menuMusic;
 
     public MainMenuScreen(SoulsLightGame game, SpriteBatch batch) {
         this.game = game;
@@ -48,6 +45,12 @@ public class MainMenuScreen implements Screen {
     @Override
     public void show() {
         Gdx.input.setInputProcessor(stage);
+
+        //loads bg music
+        menuMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/no escape.mp3"));
+        menuMusic.setLooping(true);
+        menuMusic.setVolume(0.5f); // volume 50%
+        menuMusic.play();
 
         //loads bg image
         backgroundTexture = new Texture(Gdx.files.internal("ui/menubg.jpg"));
@@ -69,7 +72,6 @@ public class MainMenuScreen implements Screen {
 
         logoImage.setScaling(Scaling.fit);
         logoImage.setScale(1.4f);
-
 
         table.add(logoImage)
             .width(500f)  // locking the width
@@ -147,5 +149,11 @@ public class MainMenuScreen implements Screen {
 
         logoTexture.dispose();
         backgroundTexture.dispose();
+
+
+        if (menuMusic != null) {
+            menuMusic.stop();
+            menuMusic.dispose();
+        }
     }
 }
