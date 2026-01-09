@@ -2,7 +2,7 @@ package io.github.soulslight.model;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import java.util.*;
+import java.util.HashMap;
 
 public class EnemyRegistry {
   private static HashMap<String, AbstractEnemy> cache = new HashMap<>();
@@ -22,7 +22,8 @@ public class EnemyRegistry {
     shielder.setHP(500);
 
     // Controlla se siamo dentro al gioco vero
-    if (com.badlogic.gdx.Gdx.files != null) {
+    if (com.badlogic.gdx.Gdx.files != null
+        && com.badlogic.gdx.Gdx.files.internal("placeHolder.png").exists()) {
       Texture spriteSheet = new Texture("placeHolder.png");
       chaser.setTextureRegion(new TextureRegion(spriteSheet, 0, 0, 32, 32));
       ranger.setTextureRegion(new TextureRegion(spriteSheet, 0, 0, 32, 32));

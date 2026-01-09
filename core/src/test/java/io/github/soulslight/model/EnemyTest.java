@@ -10,23 +10,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.World;
-import com.badlogic.gdx.utils.GdxNativesLoader;
+import io.github.soulslight.utils.GdxTestExtension;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@ExtendWith(GdxTestExtension.class)
 public class EnemyTest {
 
-  // Variable for the test physics world
+  // Variable for the Test Physics World
   private World world;
 
   @BeforeEach
   public void setup() {
-    GdxNativesLoader.load();
+    // Natives loaded by Extension
     Box2D.init();
 
     // Create a world with zero gravity (Vector2(0,0)) and active sleep (true)

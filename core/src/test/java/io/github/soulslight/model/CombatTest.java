@@ -5,18 +5,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.badlogic.gdx.backends.headless.HeadlessNativesLoader;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
+import io.github.soulslight.utils.GdxTestExtension;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(GdxTestExtension.class)
 public class CombatTest {
   // Strategy Pattern (GoF)
 
   @BeforeAll
   public static void setUp() {
-    HeadlessNativesLoader.load();
+    // HeadlessNativesLoader.load(); // Handled by GdxTestExtension
   }
 
   @Test
