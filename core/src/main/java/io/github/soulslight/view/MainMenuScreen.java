@@ -68,19 +68,22 @@ public class MainMenuScreen implements Screen {
         Image logoImage = new Image(logoTexture);
 
         logoImage.setScaling(Scaling.fit);
+        logoImage.setScale(1.4f);
 
 
         table.add(logoImage)
             .width(500f)  // blocco la larghezza
             .padTop(40f)
             .padBottom(40f)
-            .padLeft(-50f)
+            .padLeft(-80f)
             .left()
             .row();
 
 
         TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();
         style.font = font;
+        font.getData().setScale(1.3f);
+
 
         TextButton newGameButton = new TextButton("New Game", style);
         TextButton continueButton = new TextButton("Continue", style);
@@ -107,10 +110,10 @@ public class MainMenuScreen implements Screen {
                 }
             });
 
-        table.add(newGameButton).pad(5f, 0f, 0f, 0f).left().row();
-        table.add(continueButton).pad(5f, 0f, 0f, 0f).left().row();
-        table.add(optionsButton).pad(5f, 0f, 0f, 0f).left().row();
-        table.add(exitButton).pad(5f, 0f, 0f, 0f).left().row();
+        table.add(newGameButton).width(300f).height(60f).pad(0f, 0f, 0f, 0f).left().row();
+        table.add(continueButton).width(300f).height(60f).pad(0f, 0f, 0f, 0f).left().row();
+        table.add(optionsButton).width(300f).height(60f).pad(0f, 0f, 0f, 0f).left().row();
+        table.add(exitButton).width(300f).height(60f).pad(0f, 0f, 100f, 0f).left().row();
 
     }
 
