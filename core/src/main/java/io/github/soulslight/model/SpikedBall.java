@@ -23,8 +23,8 @@ public class SpikedBall extends AbstractEnemy {
 
   public SpikedBall() {
     super();
-    this.health = 500.0f; // Invincible (or very tough)
-    this.speed = 300.0f; // Very fast! (Chaser was 80, this is a missile)
+    this.health = 500.0f; // tough
+    this.speed = 300.0f; // fast (Chaser is 80)
 
     this.currentState = State.COOLDOWN;
     this.stateTimer = COOLDOWN_TIME;

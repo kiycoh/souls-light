@@ -8,13 +8,13 @@ public abstract class Entity {
   protected float health;
   protected AttackStrategy attackStrategy;
 
-  // 1. COSTRUTTORE VUOTO (Utile per i Nemici/Prototype)
+  // COSTRUTTORE VUOTO (Utile per i Nemici/Prototype)
   public Entity() {
     this.position = new Vector2(0, 0);
     this.health = 100;
   }
 
-  // 2. COSTRUTTORE COMPLETO (Utile per il Player)
+  // COSTRUTTORE COMPLETO (Player)
   public Entity(Vector2 position, float health) {
     this.position = position;
     this.health = health;

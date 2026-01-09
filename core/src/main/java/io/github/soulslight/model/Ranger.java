@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Ranger extends AbstractEnemy {
 
-  private static final float INDICE_DI_FUGA = 0.5f;
+  private static final float FLEE_DISTANCE_RATIO = 0.5f;
 
   public Ranger() {
     super();
@@ -31,7 +31,7 @@ public class Ranger extends AbstractEnemy {
     Player target = players.get(0);
     float distance = this.position.dst(target.getPosition());
     float maxRange = this.attackStrategy.getRange();
-    float minSafeDistance = maxRange * INDICE_DI_FUGA;
+    float minSafeDistance = maxRange * FLEE_DISTANCE_RATIO;
 
     if (distance < minSafeDistance) {
       // Escapes if too close
@@ -49,6 +49,7 @@ public class Ranger extends AbstractEnemy {
   }
 
   // Goes towards the target if too far
+  @Override
   public void moveTowards(Vector2 targetPos, float deltaTime) {
     Vector2 direction = targetPos.cpy().sub(this.position);
     direction.nor();

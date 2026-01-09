@@ -3,7 +3,8 @@ package io.github.soulslight.model;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class AbstractEnemy extends Entity implements Cloneable {
 
@@ -76,6 +77,7 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
 
   public abstract void updateBehavior(List<Player> players, float deltaTime);
 
+  @Override
   public abstract AbstractEnemy clone();
 
   public void moveTowards(Vector2 targetPos, float deltaTime) {

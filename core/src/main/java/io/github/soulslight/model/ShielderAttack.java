@@ -6,7 +6,7 @@ import java.util.List;
 
 public class ShielderAttack extends AbstractAttack {
 
-  private final float KNOCKBACK_FORCE = 500.0f; // Push force
+  private static final float KNOCKBACK_FORCE = 500.0f; // Push force
 
   @Override
   public float getRange() {

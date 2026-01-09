@@ -28,14 +28,14 @@ public class Shielder extends AbstractEnemy {
     return new Shielder(this);
   }
 
-  /** Call in GameScreen: shielder.setAllies(activeEnemies); */
+  // Call in GameScreen: shielder.setAllies(activeEnemies);
   public void setAllies(List<AbstractEnemy> allies) {
     this.knownAllies = allies;
   }
 
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
-    // --- DEATH LOGIC (Suicide Pact) ---
+    // --- DEATH LOGIC (Suicide) ---
     // If it has no list or if it's the only one in the list -> Dies
     if (knownAllies == null || knownAllies.size() <= 1) {
       this.takeDamage(this.health); // Kills itself
@@ -50,7 +50,7 @@ public class Shielder extends AbstractEnemy {
     float distToPlayer = this.getPosition().dst(player.getPosition());
     if (distToPlayer <= this.attackStrategy.getRange()) {
       this.attack(players);
-      // Optional: return here if you want it to stand still while attacking
+      return; // to stand still while attacking, else comment out pls
     }
 
     // --- MOVEMENT LOGIC (Protection) ---
@@ -67,7 +67,7 @@ public class Shielder extends AbstractEnemy {
     }
   }
 
-  /** Looks for the ally closest to the Player that is not myself. */
+  // Looks for the ally closest to the Player that is not myself.
   private AbstractEnemy findProtectee(Vector2 playerPos) {
     AbstractEnemy bestCandidate = null;
     float minDistance = Float.MAX_VALUE;
@@ -85,7 +85,7 @@ public class Shielder extends AbstractEnemy {
     return bestCandidate;
   }
 
-  /** Calculates guard position: 40 pixels in front of the ally, towards the enemy. */
+  // Calculates guard position: 40 pixels in front of the ally, towards the enemy.
   private Vector2 calculateInterceptionPoint(Vector2 playerPos, Vector2 allyPos) {
     // Direction vector: From Ally -> To Player
     Vector2 direction = playerPos.cpy().sub(allyPos);

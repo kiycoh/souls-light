@@ -37,6 +37,7 @@ public class Chaser extends AbstractEnemy {
     }
   }
 
+  @Override
   public void moveTowards(Vector2 targetPos, float deltaTime) {
     Vector2 direction = targetPos.cpy().sub(this.position);
 

@@ -66,6 +66,7 @@ public class Player extends Entity {
     this.body = createBody(world, startX, startY);
   }
 
+  @Override
   public void setPosition(float x, float y) {
     if (body != null) {
       body.setTransform(x, y, body.getAngle());
@@ -135,6 +136,7 @@ public class Player extends Entity {
     body.setLinearVelocity(0, 0);
   }
 
+  @Override
   public Vector2 getPosition() {
     return body.getPosition(); // Returns reference to internal Vector2 (Do not modify externally!)
   }
@@ -143,6 +145,7 @@ public class Player extends Entity {
     return body;
   }
 
+  @Override
   public AttackStrategy getAttackStrategy() {
     return attackStrategy;
   }
