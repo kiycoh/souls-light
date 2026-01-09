@@ -49,7 +49,7 @@ public class MainMenuScreen implements Screen {
     public void show() {
         Gdx.input.setInputProcessor(stage);
 
-        //carico lo sfondo
+        //loads bg image
         backgroundTexture = new Texture(Gdx.files.internal("ui/menubg.jpg"));
         backgroundImage = new Image(backgroundTexture);
         backgroundImage.setScaling(Scaling.stretch);
@@ -63,7 +63,7 @@ public class MainMenuScreen implements Screen {
         table.left();
         stage.addActor(table);
 
-        //Carico il logo
+        //loads game logo
         logoTexture = new Texture(Gdx.files.internal("ui/logo.png"));
         Image logoImage = new Image(logoTexture);
 
@@ -72,7 +72,7 @@ public class MainMenuScreen implements Screen {
 
 
         table.add(logoImage)
-            .width(500f)  // blocco la larghezza
+            .width(500f)  // locking the width
             .padTop(40f)
             .padBottom(40f)
             .padLeft(-80f)

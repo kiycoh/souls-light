@@ -32,7 +32,6 @@ public class SoulsLightGame extends Game {
     @Override
     public void create() {
         batch = new SpriteBatch();
-        // ✅ Mostra prima la SplashScreen, poi il MainMenuScreen
         this.setScreen(new SplashScreen(this));
     }
 
