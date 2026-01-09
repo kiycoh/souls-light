@@ -56,7 +56,7 @@ public class CombatTest {
   @Test
   public void testArcherStats() {
     AttackStrategy strategy = new ArcherAttack();
-    assertEquals(10.0f, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
+    assertEquals(100.0f, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
     assertEquals(7.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
     assertEquals(1.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere medio-alta");
     assertEquals(

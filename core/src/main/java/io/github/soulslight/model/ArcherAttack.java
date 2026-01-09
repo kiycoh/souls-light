@@ -9,7 +9,7 @@ public class ArcherAttack extends AbstractAttack {
 
     @Override
     public float getRange(){
-        return 10.0f;
+        return 100.0f;
     }
     @Override
     public  float getDamage(){
