@@ -1,51 +1,52 @@
 package io.github.soulslight.model;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import java.util.List;
 
 public class ShielderAttack extends AbstractAttack {
 
-    private final float KNOCKBACK_FORCE = 500.0f; // Forza della spinta
+  private final float KNOCKBACK_FORCE = 500.0f; // Push force
 
-    @Override
-    public float getRange() {
-        return 40.0f; // Range corto
-    }
+  @Override
+  public float getRange() {
+    return 40.0f; // Short range
+  }
 
-    @Override
-    public float getDamage() {
-        return 0.0f; // Nessun danno, solo spinta
-    }
+  @Override
+  public float getDamage() {
+    return 0.0f; // No damage, push only
+  }
 
-    @Override
-    public float getAttackSpeed() {
-        return 1.0f; // Può spingere ogni secondo
-    }
+  @Override
+  public float getAttackSpeed() {
+    return 1.0f; // Can push every second
+  }
 
-    @Override
-    public String getSoundID() {
-        return "shield_bash";
-    }
+  @Override
+  public String getSoundID() {
+    return "shield_bash";
+  }
 
-    @Override
-    public void executeAttack(Entity attacker, List<Entity> targets) {
-        for (Entity target : targets) {
-            // Controlla distanza
-            if (attacker.getPosition().dst(target.getPosition()) <= getRange()) {
+  @Override
+  public void executeAttack(Entity attacker, List<Entity> targets) {
+    for (Entity target : targets) {
+      // Checks distance
+      if (attacker.getPosition().dst(target.getPosition()) <= getRange()) {
 
-                // 1. Calcola direzione spinta: (Target - Attacker)
-                // Il vettore deve puntare VERSO il target (via dall'attacker)
-                Vector2 knockbackDir = target.getPosition().cpy().sub(attacker.getPosition());
+        // Calculate push direction: (Target - Attacker)
+        // The vector must point TOWARDS the target (away from the attacker)
+        Vector2 knockbackDir = target.getPosition().cpy().sub(attacker.getPosition());
 
-                // 2. Applica Knockback (se il target è un Player)
-                if (target instanceof Player) {
-                    ((Player) target).applyKnockback(knockbackDir, KNOCKBACK_FORCE);
-                    System.out.println("SHIELD BASH! Il player è stato respinto.");
-                }
-            }
+        // Apply Knockback (if target is a Player)
+        if (target instanceof Player) {
+          ((Player) target).applyKnockback(knockbackDir, KNOCKBACK_FORCE);
+          Gdx.app.log("ShielderAttack", "SHIELD BASH! Il player è stato respinto.");
         }
+      }
     }
+  }
 
-    @Override
-    public void attack() { }
+  @Override
+  public void attack() {}
 }

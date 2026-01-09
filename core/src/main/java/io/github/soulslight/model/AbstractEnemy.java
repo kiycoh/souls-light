@@ -7,89 +7,86 @@ import java.util.*;
 
 public abstract class AbstractEnemy extends Entity implements Cloneable {
 
+  protected float speed;
+  protected transient TextureRegion textureRegion;
 
-    protected float speed;
-    protected transient TextureRegion textureRegion;
+  // Costruttore vuoto
+  public AbstractEnemy() {
+    super(); // Chiama Entity
+  }
 
-    // Costruttore vuoto
-    public AbstractEnemy(){
-        super(); // Chiama Entity
+  // Costruttore di Copia
+  public AbstractEnemy(AbstractEnemy target) {
+    if (target != null) {
+      // --- CAMPI EREDITATI DA ENTITY ---
+      // Copiamo i dati dal target alle variabili del PADRE (Entity)
+
+      // Copia  della posizione
+      if (target.getPosition() != null) {
+        this.position = new Vector2(target.getPosition());
+      }
+
+      // Copia vita
+      this.health = target.getHealth();
+
+      // Copia l'arma
+      this.attackStrategy = target.attackStrategy;
+
+      this.speed = target.speed;
+      this.textureRegion = target.textureRegion;
     }
+  }
 
-    // Costruttore di Copia
-    public AbstractEnemy(AbstractEnemy target){
-        if(target != null){
-            // --- CAMPI EREDITATI DA ENTITY ---
-            // Copiamo i dati dal target alle variabili del PADRE (Entity)
+  public void draw(SpriteBatch batch) {
 
-            // Copia  della posizione
-            if (target.getPosition() != null) {
-                this.position = new Vector2(target.getPosition());
-            }
-
-            // Copia vita
-            this.health = target.getHealth();
-
-            // Copia l'arma
-            this.attackStrategy = target.attackStrategy;
-
-            this.speed = target.speed;
-            this.textureRegion = target.textureRegion;
-        }
+    if (textureRegion != null) {
+      batch.draw(textureRegion, getX(), getY());
     }
+  }
 
-    public void draw(SpriteBatch batch){
+  public void setTextureRegion(TextureRegion region) {
+    this.textureRegion = region;
+  }
 
-        if(textureRegion != null){
-            batch.draw(textureRegion, getX(), getY());
-        }
+  public float getDamage() {
+    if (attackStrategy != null) {
+      return attackStrategy.getDamage();
     }
+    return 0;
+  }
 
-    public void setTextureRegion(TextureRegion region) {
-        this.textureRegion = region;
-    }
+  public void setHP(float hp) {
+    this.health = hp; // Scrive sulla variabile del padre
+  }
 
-    public float getDamage(){
-        if(attackStrategy != null){
-            return attackStrategy.getDamage();
-        }
-        return 0;
-    }
+  public float getHP() {
+    return this.health; // Legge dalla variabile del padre
+  }
 
+  public float getSpeed() {
+    return this.speed;
+  }
 
-    public void setHP(float hp){
-        this.health = hp; // Scrive sulla variabile del padre
-    }
+  public void attack(List<Player> players) {
+    if (this.attackStrategy == null) return;
 
-    public float getHP(){
-        return this.health; // Legge dalla variabile del padre
-    }
+    List<Entity> targets = new ArrayList<>(players);
+    this.attackStrategy.executeAttack(this, targets);
+  }
 
-    public float getSpeed() {
-        return this.speed;
-    }
+  public abstract void updateBehavior(List<Player> players, float deltaTime);
 
+  public abstract AbstractEnemy clone();
 
-    public void attack(List<Player> players){
-        if(this.attackStrategy == null) return;
+  public void moveTowards(Vector2 targetPos, float deltaTime) {
+    // Calcola la direzione: (Dove voglio andare) - (Dove sono ora)
+    Vector2 direction = targetPos.cpy().sub(this.getPosition());
 
-        List<Entity> targets = new ArrayList<>(players);
-        this.attackStrategy.executeAttack(this, targets);
-    }
+    // Normalizza: Rende il vettore lungo 1 (così la velocità è costante)
+    direction.nor();
 
-    public abstract void updateBehavior(List<Player> players, float deltaTime);
-
-    public abstract AbstractEnemy clone();
-
-    public void moveTowards(Vector2 targetPos, float deltaTime) {
-        // Calcola la direzione: (Dove voglio andare) - (Dove sono ora)
-        Vector2 direction = targetPos.cpy().sub(this.getPosition());
-
-        // Normalizza: Rende il vettore lungo 1 (così la velocità è costante)
-        direction.nor();
-
-        // Applica il movimento
-        // Formula: NuovaPos = VecchiaPos + (Direzione * Velocità * Tempo)
-        this.getPosition().mulAdd(direction, this.speed * deltaTime);
-    }
+    // Applica il movimento
+    // Formula: NuovaPos = VecchiaPos + (Direzione * Velocità * Tempo)
+    this.getPosition().mulAdd(direction, this.speed * deltaTime);
+  }
 }

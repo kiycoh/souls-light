@@ -1,5 +1,5 @@
 package io.github.soulslight.model;
-import java.util.List;
+
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
@@ -7,7 +7,7 @@ import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
 
-public class Player extends Entity{
+public class Player extends Entity {
 
   // --- PHYSICS CONSTANTS ---
   // Define minimal body radius
@@ -20,35 +20,35 @@ public class Player extends Entity{
   // Box2D Body (represents the player in the physics world)
   private final Body body;
 
-    public enum PlayerClass {
-        WARRIOR {
-            @Override
-            public AttackStrategy getStrategy() {
-                return new WarriorAttack();
-            }
-        },
-        MAGE {
-            @Override
-            public AttackStrategy getStrategy() {
-                return new MageAttack();
-            }
-        },
-        THIEF {
-            @Override
-            public AttackStrategy getStrategy() {
-                return new ThiefAttack();
-            }
-        },
-        ARCHER {
-            @Override
-            public AttackStrategy getStrategy() {
-                return new ArcherAttack();
-            }
-        };
+  public enum PlayerClass {
+    WARRIOR {
+      @Override
+      public AttackStrategy getStrategy() {
+        return new WarriorAttack();
+      }
+    },
+    MAGE {
+      @Override
+      public AttackStrategy getStrategy() {
+        return new MageAttack();
+      }
+    },
+    THIEF {
+      @Override
+      public AttackStrategy getStrategy() {
+        return new ThiefAttack();
+      }
+    },
+    ARCHER {
+      @Override
+      public AttackStrategy getStrategy() {
+        return new ArcherAttack();
+      }
+    };
 
-        // Metodo astratto che ogni costante qui sopra DEVE implementare
-        public abstract AttackStrategy getStrategy();
-    }
+    // Abstract method that every constant defined above MUST implement
+    public abstract AttackStrategy getStrategy();
+  }
 
   // Inject World via Constructor
   public Player(PlayerClass type, World world, float startX, float startY) {
@@ -76,7 +76,7 @@ public class Player extends Entity{
   // PHYSICS INITIALIZATION (One-Time Allocation)
   // ---------------------------------------------------------
   private Body createBody(World world, float x, float y) {
-    // 1. Define Body
+    // Define Body
     BodyDef bdef = new BodyDef();
     bdef.position.set(x, y);
     bdef.type = BodyDef.BodyType.DynamicBody; // Player moves
@@ -85,18 +85,18 @@ public class Player extends Entity{
 
     Body pBody = world.createBody(bdef);
 
-    // 2. Define Shape (Circle for smooth sliding)
+    // Define Shape (Circle for smooth sliding)
     CircleShape shape = new CircleShape();
     shape.setRadius(BODY_RADIUS);
 
-    // 3. Define Fixture
+    // Define Fixture
     FixtureDef fdef = new FixtureDef();
     fdef.shape = shape;
     fdef.density = 1.0f;
     fdef.friction = 0.0f; // No friction with walls to prevent sticking
     fdef.restitution = 0.0f; // No bouncing
 
-    // 4. Create Fixture & Dispose Shape (Crucial for memory!)
+    // Create Fixture & Dispose Shape (Crucial for memory!)
     pBody.createFixture(fdef);
     shape.dispose();
 
@@ -147,19 +147,15 @@ public class Player extends Entity{
     return attackStrategy;
   }
 
-    public void applyKnockback(Vector2 direction, float force) {
-        if (this.body != null) {
-            // Normalizza la direzione per sicurezza
-            direction.nor();
+  public void applyKnockback(Vector2 direction, float force) {
+    if (this.body != null) {
+      // Normalize the direction for safety
+      direction.nor();
 
-            // 'force' determina quanto forte vola via (es. 10.0f - 50.0f)
-            this.body.applyLinearImpulse(
-                direction.scl(force),
-                this.body.getWorldCenter(),
-                true
-            );
-        } else {
-            this.position.mulAdd(direction, force);
-        }
+      // 'force' determines how strong the push is (e.g. 10.0f - 50.0f)
+      this.body.applyLinearImpulse(direction.scl(force), this.body.getWorldCenter(), true);
+    } else {
+      this.position.mulAdd(direction, force);
     }
+  }
 }

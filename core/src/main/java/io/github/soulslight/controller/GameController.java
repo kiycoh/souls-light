@@ -27,20 +27,20 @@ public class GameController extends InputAdapter {
         // Pattern: Decorator (Usage)
         // Apply Fire Damage to current attack
         player.setAttackStrategy(new FireDamageDecorator(player.getAttackStrategy()));
-        System.out.println("Fire Damage Power-up Activated!");
+        Gdx.app.log("GameController", "Fire Damage Power-up Activated!");
         return true;
       case Input.Keys.F5:
         // Pattern: Memento (Usage - Save)
         quickSave = model.createMemento();
-        System.out.println("Game Quick Saved!");
+        Gdx.app.log("GameController", "Game Quick Saved!");
         return true;
       case Input.Keys.F9:
         // Pattern: Memento (Usage - Load)
         if (quickSave != null) {
           model.restoreMemento(quickSave);
-          System.out.println("Game Quick Loaded!");
+          Gdx.app.log("GameController", "Game Quick Loaded!");
         } else {
-          System.out.println("No Quick Save found!");
+          Gdx.app.log("GameController", "No Quick Save found!");
         }
         return true;
       case Input.Keys.P:

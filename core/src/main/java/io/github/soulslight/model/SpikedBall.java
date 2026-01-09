@@ -1,112 +1,117 @@
 package io.github.soulslight.model;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import java.util.List;
 
 public class SpikedBall extends AbstractEnemy {
 
-    // Stati
-    private enum State { COOLDOWN, CHARGING }
-    private State currentState;
+  // States
+  private enum State {
+    COOLDOWN,
+    CHARGING
+  }
 
-    // Timer e Parametri
-    private float stateTimer;//duarata di uno stato (carica o attacco)
-    private final float COOLDOWN_TIME = 2.0f;
-    private final float MAX_CHARGE_TIME = 3.0f; // Rotola per 1 secondo
+  private State currentState;
 
-    private Vector2 chargeDirection; // Non cambia direzione durante la carica
+  // Timer and Parameters
+  private float stateTimer; // duration of a state (charge or attack)
+  private final float COOLDOWN_TIME = 2.0f;
+  private final float MAX_CHARGE_TIME = 3.0f; // Rolls for 1 second
 
-    public SpikedBall() {
-        super();
-        this.health = 500.0f; // Invincibile (o molto dura)
-        this.speed = 300.0f; // Molto veloce! (Il Chaser era 80, questa è un missile)
+  private Vector2 chargeDirection; // Does not change direction during charge
 
-        this.currentState = State.COOLDOWN;
-        this.stateTimer = COOLDOWN_TIME;
-        this.chargeDirection = new Vector2(0,0);
+  public SpikedBall() {
+    super();
+    this.health = 500.0f; // Invincible (or very tough)
+    this.speed = 300.0f; // Very fast! (Chaser was 80, this is a missile)
 
-        this.attackStrategy = new ContactDamageAttack();
+    this.currentState = State.COOLDOWN;
+    this.stateTimer = COOLDOWN_TIME;
+    this.chargeDirection = new Vector2(0, 0);
+
+    this.attackStrategy = new ContactDamageAttack();
+  }
+
+  public SpikedBall(SpikedBall other) {
+    super(other);
+    this.currentState = State.COOLDOWN;
+    this.stateTimer = COOLDOWN_TIME;
+    this.chargeDirection = new Vector2(0, 0);
+  }
+
+  @Override
+  public AbstractEnemy clone() {
+    return new SpikedBall(this);
+  }
+
+  @Override
+  public void updateBehavior(List<Player> players, float deltaTime) {
+    if (players.isEmpty()) return;
+    Player target = players.get(0);
+
+    // Single timer management for both states
+    stateTimer -= deltaTime;
+
+    if (currentState == State.COOLDOWN) {
+      // --- AIM AND WAIT
+
+      if (stateTimer <= 0) {
+        // Looks for player position
+        prepareCharge(target.getPosition());
+      }
+
+    } else if (currentState == State.CHARGING) {
+      // --- CHARGE THE PLAYER
+
+      Vector2 currentPos = this.getPosition();
+      currentPos.mulAdd(chargeDirection, speed * deltaTime);
+
+      // Hits anyone in its path
+      checkCollisions(players);
+
+      // If timer ends, stop and recharge
+      if (stateTimer <= 0) {
+        stopCharge();
+      }
     }
+  }
 
-    public SpikedBall(SpikedBall other) {
-        super(other);
-        this.currentState = State.COOLDOWN;
-        this.stateTimer = COOLDOWN_TIME;
-        this.chargeDirection = new Vector2(0,0);
+  public void onWallHit() {
+    if (currentState == State.CHARGING) {
+      Gdx.app.log("SpikedBall", "SBAM! Toccato il muro. Stop carica.");
+      stopCharge();
     }
+  }
 
-    @Override
-    public AbstractEnemy clone() {
-        return new SpikedBall(this);
+  private void prepareCharge(Vector2 targetPos) {
+    /*System.out.println("--- CHARGE PREPARATION ---");
+    System.out.println("My Position: " + this.getPosition());
+    System.out.println("Target Position: " + targetPos);*/
+
+    this.chargeDirection = targetPos.cpy().sub(this.getPosition());
+
+    Gdx.app.log("SpikedBall", "Vettore Direzione (Pre-Normalize): " + this.chargeDirection);
+
+    this.chargeDirection.nor();
+
+    // System.out.println("Direction Vector (Final): " + this.chargeDirection);
+
+    this.currentState = State.CHARGING;
+    this.stateTimer = MAX_CHARGE_TIME;
+  }
+
+  private void stopCharge() {
+    this.currentState = State.COOLDOWN;
+    this.stateTimer = COOLDOWN_TIME; // Resets timer for pause
+  }
+
+  private void checkCollisions(List<Player> players) {
+    for (Player p : players) {
+      // If it touches the player (distance < sum of radii, e.g. 20 pixels)
+      if (this.getPosition().dst(p.getPosition()) < 20f) {
+        this.attack(players);
+      }
     }
-
-    @Override
-    public void updateBehavior(List<Player> players, float deltaTime) {
-        if (players.isEmpty()) return;
-        Player target = players.get(0);
-
-        // Gestione timer unico per entrambi gli stati
-        stateTimer -= deltaTime;
-
-        if (currentState == State.COOLDOWN) {
-            // --- FASE 1: MIRA E ASPETTA
-
-            if (stateTimer <= 0) {
-                //Cerca la posizione del player
-                prepareCharge(target.getPosition());
-            }
-
-        } else if (currentState == State.CHARGING) {
-            // --- FASE 2: CARICA IL giocatore
-
-            Vector2 currentPos = this.getPosition();
-            currentPos.mulAdd(chargeDirection, speed * deltaTime);
-
-            // Colpisce chiunque sia lungo il suo cammino
-            checkCollisions(players);
-
-            // Se il timer finisce, fermati e ricarica
-            if (stateTimer <= 0) {
-                stopCharge();
-            }
-        }
-    }
-
-    public void onWallHit() {
-        if (currentState == State.CHARGING) {
-            System.out.println("SBAM! Toccato il muro. Stop carica.");
-            stopCharge();
-        }
-    }
-
-    private void prepareCharge(Vector2 targetPos) {
-        /*System.out.println("--- PREPARAZIONE CARICA ---");
-        System.out.println("Mia Posizione: " + this.getPosition());
-        System.out.println("Target Posizione: " + targetPos);*/
-
-        this.chargeDirection = targetPos.cpy().sub(this.getPosition());
-
-        System.out.println("Vettore Direzione (Pre-Normalize): " + this.chargeDirection);
-
-        this.chargeDirection.nor();
-
-       // System.out.println("Vettore Direzione (Finale): " + this.chargeDirection);
-
-        this.currentState = State.CHARGING;
-        this.stateTimer = MAX_CHARGE_TIME;
-    }
-
-    private void stopCharge() {
-        this.currentState = State.COOLDOWN;
-        this.stateTimer = COOLDOWN_TIME; // Resetta timer per la pausa
-    }
-
-    private void checkCollisions(List<Player> players) {
-        for (Player p : players) {
-            // Se tocca il player (distanza < somma raggi, es. 20 pixel)
-            if (this.getPosition().dst(p.getPosition()) < 20f) {
-                this.attack(players);
-            }
-        }
-    }
+  }
 }
