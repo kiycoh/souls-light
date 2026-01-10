@@ -257,4 +257,24 @@ public class EnemyTest {
                 "Il player è nel range, lo Shielder dovrebbe aver tentato l'attacco");
     }
 
+    @Test
+    void testEnemyRegistryCache() {
+        // SETUP: loading cache
+        EnemyRegistry.loadCache();
+
+        assertNotNull(EnemyRegistry.getEnemy("Chaser"), "La cache deve contenere Chaser");
+        assertNotNull(EnemyRegistry.getEnemy("Ranger"), "La cache deve contenere Ranger");
+        assertNotNull(EnemyRegistry.getEnemy("SpikedBall"), "La cache deve contenere SpikedBall");
+        assertNotNull(EnemyRegistry.getEnemy("Shielder"), "La cache deve contenere Shielder");
+
+        // Negative Test
+        // asking for a non-existing enemy. It will return null, not crashing
+        AbstractEnemy unknown = EnemyRegistry.getEnemy("NemicoInesistente");
+        assertNull(unknown, "Richiedere una chiave inesistente deve restituire null");
+
+
+        AbstractEnemy chaser = EnemyRegistry.getEnemy("Chaser");
+        assertEquals(100, chaser.getHealth(), "Il Chaser recuperato dalla cache deve avere 100 HP");
+    }
+
 }
