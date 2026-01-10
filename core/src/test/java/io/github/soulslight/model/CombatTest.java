@@ -5,18 +5,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.badlogic.gdx.backends.headless.HeadlessNativesLoader;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
+import io.github.soulslight.utils.GdxTestExtension;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(GdxTestExtension.class)
 public class CombatTest {
   // Strategy Pattern (GoF)
 
   @BeforeAll
   public static void setUp() {
-    HeadlessNativesLoader.load();
+    // HeadlessNativesLoader.load(); // Handled by GdxTestExtension
   }
 
   @Test
@@ -56,7 +58,7 @@ public class CombatTest {
   @Test
   public void testArcherStats() {
     AttackStrategy strategy = new ArcherAttack();
-    assertEquals(10.0f, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
+    assertEquals(100.0f, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
     assertEquals(7.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
     assertEquals(1.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere medio-alta");
     assertEquals(

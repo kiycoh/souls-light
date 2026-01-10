@@ -14,7 +14,11 @@ import org.mockito.Mockito;
  * come Vector2, MathUtils, e file system Gdx.
  */
 public class GdxTestExtension implements BeforeAllCallback {
-
+  /**
+   * This is the JUnit 5 replacement for JUnit 4's Rules and Runners. It is more flexible and allows
+   * you to easily plug in the LibGDX Headless backend for any test class just by
+   * adding @ExtendWith(GdxTestExtension.class).
+   */
   @Override
   public void beforeAll(ExtensionContext context) {
     if (Gdx.app == null) {
@@ -43,7 +47,7 @@ public class GdxTestExtension implements BeforeAllCallback {
           },
           config);
 
-      // Mock di OpenGL (necessario se si toccano classi grafiche per sbaglio)
+      // Mock OpenGL (classi grafiche)
       Gdx.gl = Mockito.mock(GL20.class);
       Gdx.gl20 = Gdx.gl;
     }

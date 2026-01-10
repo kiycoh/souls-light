@@ -1,11 +1,14 @@
 package io.github.soulslight.model;
 
+import com.badlogic.gdx.Gdx;
+import java.util.List;
+
 /** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Warrior). */
 public class WarriorAttack extends AbstractAttack {
 
   @Override
   public void attack() {
-    System.out.println("Attacco eseguito");
+    Gdx.app.log("WarriorAttack", "Attack executed");
   }
 
   @Override
@@ -26,5 +29,16 @@ public class WarriorAttack extends AbstractAttack {
   @Override
   public String getSoundID() {
     return "sword_swing";
+  }
+
+  @Override
+  public void executeAttack(Entity attacker, List<Entity> targets) {
+    // Logica : colpisci il primo che è a tiro
+    for (Entity target : targets) {
+      // Verifica distanza
+      if (attacker.getPosition().dst(target.getPosition()) <= getRange()) {
+        target.takeDamage(getDamage());
+      }
+    }
   }
 }

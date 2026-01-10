@@ -1,43 +1,40 @@
 package io.github.soulslight.model;
 
-import com.badlogic.gdx.Gdx;
 import java.util.List;
 
-/** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Mage). */
-public class MageAttack extends AbstractAttack {
-  @Override
-  public void attack() {
-    Gdx.app.log("MageAttack", "Attack executed");
-  }
+public class ContactDamageAttack extends AbstractAttack {
 
   @Override
   public float getRange() {
-    return 13.0f;
+    return 30.0f;
   }
 
   @Override
   public float getDamage() {
-    return 25.0f;
+    return 20.0f;
   }
 
   @Override
   public float getAttackSpeed() {
-    return 0.5f;
+    return 0.0f;
   }
 
   @Override
   public String getSoundID() {
-    return "stick_sound";
+    return "impact_sound"; // Impact sound
   }
 
   @Override
   public void executeAttack(Entity attacker, List<Entity> targets) {
-    // Logica colpisci il primo che è a tiro
     for (Entity target : targets) {
-      // Verifica distanza
       if (attacker.getPosition().dst(target.getPosition()) <= getRange()) {
         target.takeDamage(getDamage());
       }
     }
+  }
+
+  @Override
+  public void attack() {
+    // Empty method
   }
 }

@@ -7,7 +7,7 @@ import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
 
-public class Player {
+public class Player extends Entity {
 
   // --- PHYSICS CONSTANTS ---
   // Define minimal body radius
@@ -46,6 +46,7 @@ public class Player {
       }
     };
 
+    // Abstract method that every constant defined above MUST implement
     public abstract AttackStrategy getStrategy();
   }
 
@@ -65,6 +66,7 @@ public class Player {
     this.body = createBody(world, startX, startY);
   }
 
+  @Override
   public void setPosition(float x, float y) {
     if (body != null) {
       body.setTransform(x, y, body.getAngle());
@@ -75,7 +77,7 @@ public class Player {
   // PHYSICS INITIALIZATION (One-Time Allocation)
   // ---------------------------------------------------------
   private Body createBody(World world, float x, float y) {
-    // 1. Define Body
+    // Define Body
     BodyDef bdef = new BodyDef();
     bdef.position.set(x, y);
     bdef.type = BodyDef.BodyType.DynamicBody; // Player moves
@@ -84,18 +86,18 @@ public class Player {
 
     Body pBody = world.createBody(bdef);
 
-    // 2. Define Shape (Circle for smooth sliding)
+    // Define Shape (Circle for smooth sliding)
     CircleShape shape = new CircleShape();
     shape.setRadius(BODY_RADIUS);
 
-    // 3. Define Fixture
+    // Define Fixture
     FixtureDef fdef = new FixtureDef();
     fdef.shape = shape;
     fdef.density = 1.0f;
     fdef.friction = 0.0f; // No friction with walls to prevent sticking
     fdef.restitution = 0.0f; // No bouncing
 
-    // 4. Create Fixture & Dispose Shape (Crucial for memory!)
+    // Create Fixture & Dispose Shape (Crucial for memory!)
     pBody.createFixture(fdef);
     shape.dispose();
 
@@ -134,6 +136,7 @@ public class Player {
     body.setLinearVelocity(0, 0);
   }
 
+  @Override
   public Vector2 getPosition() {
     return body.getPosition(); // Returns reference to internal Vector2 (Do not modify externally!)
   }
@@ -142,7 +145,20 @@ public class Player {
     return body;
   }
 
+  @Override
   public AttackStrategy getAttackStrategy() {
     return attackStrategy;
+  }
+
+  public void applyKnockback(Vector2 direction, float force) {
+    if (this.body != null) {
+      // Normalize the direction for safety
+      direction.nor();
+
+      // 'force' determines how strong the push is (e.g. 10.0f - 50.0f)
+      this.body.applyLinearImpulse(direction.scl(force), this.body.getWorldCenter(), true);
+    } else {
+      this.position.mulAdd(direction, force);
+    }
   }
 }
