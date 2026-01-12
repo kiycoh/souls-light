@@ -2,23 +2,26 @@ package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.github.tommyettinger.textra.Font;
+import com.github.tommyettinger.textra.Styles;
+import com.github.tommyettinger.textra.TextraButton;
+
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.EventManager;
 import io.github.soulslight.model.GameModel;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.utils.Scaling;
-import com.badlogic.gdx.audio.Music; // --- MODIFICA / AGGIUNTA ---
 
 public class MainMenuScreen implements Screen {
 
@@ -82,15 +85,15 @@ public class MainMenuScreen implements Screen {
             .row();
 
 
-        TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();
-        style.font = font;
         font.getData().setScale(1.3f);
+        Styles.TextButtonStyle style = new Styles.TextButtonStyle();
+        style.font = new Font(font);
 
 
-        TextButton newGameButton = new TextButton("New Game", style);
-        TextButton continueButton = new TextButton("Continue", style);
-        TextButton optionsButton = new TextButton("Options", style);
-        TextButton exitButton = new TextButton("Exit", style);
+        TextraButton newGameButton = new TextraButton("New Game", style);
+        TextraButton continueButton = new TextraButton("Continue", style);
+        TextraButton optionsButton = new TextraButton("Options", style);
+        TextraButton exitButton = new TextraButton("Exit", style);
 
         newGameButton.addListener(
             new ClickListener() {
@@ -100,6 +103,14 @@ public class MainMenuScreen implements Screen {
                     GameModel model = new GameModel();
                     GameController controller = new GameController(model);
                     game.setScreen(new GameScreen(batch, model, controller));
+                }
+            });
+
+        optionsButton.addListener(
+            new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    game.setScreen(new SettingsScreen(game, batch));
                 }
             });
 
