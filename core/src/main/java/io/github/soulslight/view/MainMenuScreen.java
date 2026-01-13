@@ -34,8 +34,7 @@ public class MainMenuScreen implements Screen {
     private Texture logoTexture;
     private Texture backgroundTexture;
     private Image backgroundImage;
-
-    // --- MODIFICA / AGGIUNTA ---
+    // music
     private Music menuMusic;
 
     public MainMenuScreen(SoulsLightGame game, SpriteBatch batch) {
