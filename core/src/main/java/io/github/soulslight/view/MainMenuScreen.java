@@ -17,7 +17,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.EventManager;
@@ -31,11 +30,11 @@ public class MainMenuScreen implements Screen {
   private final Stage stage;
   private final BitmapFont font;
 
-    private Texture logoTexture;
-    private Texture backgroundTexture;
-    private Image backgroundImage;
-    // music
-    private Music menuMusic;
+  private Texture logoTexture;
+  private Texture backgroundTexture;
+  private Image backgroundImage;
+  // music
+  private Music menuMusic;
 
   public MainMenuScreen(SoulsLightGame game, SpriteBatch batch) {
     this.game = game;
