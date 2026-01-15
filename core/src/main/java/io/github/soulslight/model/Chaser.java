@@ -29,7 +29,7 @@ public class Chaser extends Enemy {
   @Override
   public void update(Player target, float deltaTime) {
     if (target == null || this.health <= 0) return;
-    
+
     syncBody();
 
     float distance = this.position.dst(target.getPosition());
@@ -38,7 +38,7 @@ public class Chaser extends Enemy {
     if (distance <= range) {
       LogHelper.logThrottled("AI", "Chaser is attacking the target.", 2.0f);
       this.attack(target);
-      if(body != null) body.setLinearVelocity(0,0); // Stop when attacking
+      if (body != null) body.setLinearVelocity(0, 0); // Stop when attacking
     } else {
       moveTowards(target.getPosition(), deltaTime);
     }
@@ -46,6 +46,6 @@ public class Chaser extends Enemy {
 
   @Override
   public void moveTowards(Vector2 targetPos, float deltaTime) {
-      super.moveTowards(targetPos, deltaTime);
+    super.moveTowards(targetPos, deltaTime);
   }
 }

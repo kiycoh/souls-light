@@ -37,7 +37,12 @@ public class GameModel implements Disposable {
     // Entity initialization
     // Pattern: Factory Method (Usage)
     // Initialize player at a safer default position (e.g. 100, 100 pixels converted to meters)
-    this.player = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, 100 / Constants.PPM, 100 / Constants.PPM);
+    this.player =
+        new Player(
+            Player.PlayerClass.WARRIOR,
+            this.physicsWorld,
+            100 / Constants.PPM,
+            100 / Constants.PPM);
 
     // Pattern: Builder & Abstract Factory (Usage)
     // Using LevelBuilder to construct the level with enemies from a factory
@@ -50,15 +55,15 @@ public class GameModel implements Disposable {
             .spawnEnemies(new ForestEnemyFactory(), 2, 1)
             .setEnvironment("shine7.mp3", 0.3f)
             .build();
-    
+
     // Create Map Collision Bodies
     CollisionHandler.createMapBodies(physicsWorld, level.getMap());
-    
+
     // Create Enemy Bodies
     for (Enemy enemy : level.getEnemies()) {
-        enemy.createBody(physicsWorld);
+      enemy.createBody(physicsWorld);
     }
-    
+
     // Set Contact Listener
     physicsWorld.setContactListener(new GameContactListener());
   }
