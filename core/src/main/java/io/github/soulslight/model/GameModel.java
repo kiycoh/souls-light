@@ -42,9 +42,12 @@ public class GameModel implements Disposable {
     // Using LevelBuilder to construct the level with enemies from a factory
     this.level =
         new LevelBuilder()
-            .buildMap(MapGenerator.generateProceduralMap(12345L))
-            .spawnEnemies(new DungeonEnemyFactory(), 2, 1) // 2 Melee, 1 Ranged
-            .setEnvironment("dungeon_theme.mp3", 0.3f)
+            .buildMap(
+                MapGenerator.generate(
+                    new NoiseMapStrategy(
+                        12345L, MapGenerator.MAP_WIDTH, MapGenerator.MAP_HEIGHT, 0.15f, 3, -0.1f)))
+            .spawnEnemies(new ForestEnemyFactory(), 2, 1)
+            .setEnvironment("shine7.mp3", 0.3f)
             .build();
   }
 
