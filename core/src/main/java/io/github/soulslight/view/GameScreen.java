@@ -1,7 +1,6 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -11,10 +10,11 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.ResourceManager;
+import io.github.soulslight.model.Enemy;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.Player;
 
-public class GameScreen implements Screen {
+public final class GameScreen implements GameState {
 
   // --- MVC DEPENDENCIES ---
   private final SpriteBatch batch;
@@ -80,6 +80,14 @@ public class GameScreen implements Screen {
     batch.setProjectionMatrix(camera.combined);
 
     batch.begin();
+
+    // Draw Enemies
+    if (model.getLevel() != null) {
+      for (Enemy enemy : model.getLevel().getEnemies()) {
+        enemy.draw(batch);
+      }
+    }
+
     if (player != null) {
       batch.draw(playerTexture, player.getPosition().x, player.getPosition().y);
     }

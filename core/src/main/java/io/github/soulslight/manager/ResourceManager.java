@@ -11,6 +11,7 @@ public class ResourceManager implements Disposable {
   private static ResourceManager instance;
 
   private Texture playerTexture;
+  private Texture enemyTexture;
   private Texture wallTexture;
   private Texture floorTexture;
   private TextureRegion wallTextureRegion;
@@ -34,6 +35,17 @@ public class ResourceManager implements Disposable {
       pixmap.dispose();
     }
     return playerTexture;
+  }
+
+  public Texture getEnemyTexture() {
+    if (enemyTexture == null) {
+      Pixmap pixmap = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+      pixmap.setColor(Color.GREEN);
+      pixmap.fill();
+      enemyTexture = new Texture(pixmap);
+      pixmap.dispose();
+    }
+    return enemyTexture;
   }
 
   public TextureRegion getWallTextureRegion() {
@@ -71,6 +83,7 @@ public class ResourceManager implements Disposable {
   @Override
   public void dispose() {
     if (playerTexture != null) playerTexture.dispose();
+    if (enemyTexture != null) enemyTexture.dispose();
     if (wallTexture != null) wallTexture.dispose();
     if (floorTexture != null) floorTexture.dispose();
   }
