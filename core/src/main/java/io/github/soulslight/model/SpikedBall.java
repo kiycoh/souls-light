@@ -2,9 +2,8 @@ package io.github.soulslight.model;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
-import java.util.List;
 
-public class SpikedBall extends AbstractEnemy {
+public class SpikedBall extends Enemy {
 
   // States
   private enum State {
@@ -41,14 +40,13 @@ public class SpikedBall extends AbstractEnemy {
   }
 
   @Override
-  public AbstractEnemy clone() {
+  public Enemy clone() {
     return new SpikedBall(this);
   }
 
   @Override
-  public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players.isEmpty()) return;
-    Player target = players.get(0);
+  public void update(Player target, float deltaTime) {
+    if (target == null) return;
 
     // Single timer management for both states
     stateTimer -= deltaTime;
@@ -68,7 +66,7 @@ public class SpikedBall extends AbstractEnemy {
       currentPos.mulAdd(chargeDirection, speed * deltaTime);
 
       // Hits anyone in its path
-      checkCollisions(players);
+      checkCollisions(target);
 
       // If timer ends, stop and recharge
       if (stateTimer <= 0) {
@@ -106,12 +104,10 @@ public class SpikedBall extends AbstractEnemy {
     this.stateTimer = COOLDOWN_TIME; // Resets timer for pause
   }
 
-  private void checkCollisions(List<Player> players) {
-    for (Player p : players) {
-      // If it touches the player (distance < sum of radii, e.g. 20 pixels)
-      if (this.getPosition().dst(p.getPosition()) < 20f) {
-        this.attack(players);
-      }
+  private void checkCollisions(Player player) {
+    // If it touches the player (distance < sum of radii, e.g. 20 pixels)
+    if (this.getPosition().dst(player.getPosition()) < 20f) {
+      this.attack(player);
     }
   }
 }

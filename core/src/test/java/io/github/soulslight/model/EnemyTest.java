@@ -12,13 +12,10 @@ import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.World;
 import io.github.soulslight.utils.GdxTestExtension;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 @ExtendWith(GdxTestExtension.class)
 public class EnemyTest {
@@ -33,22 +30,16 @@ public class EnemyTest {
 
     // Create a world with zero gravity (Vector2(0,0)) and active sleep (true)
     world = new World(new Vector2(0, 0), true);
-
-    // Load enemies
-    EnemyRegistry.loadCache();
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"Chaser", "Ranger", "SpikedBall", "Shielder"})
-  public void testCloneIndependenceForAll(String enemyType) {
-
-    // This way, by writing only once, we verify independence for each enemy type
-    AbstractEnemy original = EnemyRegistry.getEnemy(enemyType);
-    AbstractEnemy clone = EnemyRegistry.getEnemy(enemyType);
+  @Test
+  public void testCloneIndependence() {
+    Enemy original = new Chaser();
+    Enemy clone = original.clone();
 
     // Verifies that registry works
-    assertNotNull(original, "Il registro deve restituire " + enemyType);
-    assertNotNull(clone, "Il clone deve esistere");
+    assertNotNull(original);
+    assertNotNull(clone);
 
     // Checks if original and clone are of the same class
     assertEquals(
@@ -61,26 +52,21 @@ public class EnemyTest {
 
     // I modify the original
     original.setPosition(500, 500);
-    original.setHP(1);
+    original.setHealth(1);
 
     // Verify that the clone has not been modified
-    assertEquals(0, clone.getX(), "Il clone di " + enemyType + " non doveva muoversi");
-    assertNotEquals(1, clone.getHP(), "Il clone di " + enemyType + " non doveva perdere vita");
+    assertEquals(0, clone.getX(), "Il clone non doveva muoversi");
+    assertNotEquals(1, clone.getHealth(), "Il clone non doveva perdere vita");
   }
 
   @Test
   public void testChaserBehaviour() {
-    AbstractEnemy chaser = EnemyRegistry.getEnemy("Chaser");
-    if (chaser != null) {
-      chaser.setPosition(0, 0);
-    }
+    Enemy chaser = new Chaser();
+    chaser.setPosition(0, 0);
 
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 0);
 
-    List<Player> players = Collections.singletonList(player);
-
-    float deltaTime = 1.0f;
-    chaser.updateBehavior(players, deltaTime);
+    chaser.update(player, 1.0f);
 
     assertTrue(chaser.getX() > 0, "Il Chaser dovrebbe essersi avvicinato al player sull'asse X");
 
@@ -91,20 +77,15 @@ public class EnemyTest {
   @Test
   public void testRangerBehaviour() {
     // 1. SETUP
-    AbstractEnemy ranger = EnemyRegistry.getEnemy("Ranger");
-
-    // Fails immediately if Registry doesn't work
-    assertNotNull(ranger, "Il Registry ha restituito null per 'Ranger'. Hai fatto cache.put()?");
-
+    Enemy ranger = new Ranger();
     ranger.setPosition(10, 10);
 
     Player player = new Player(Player.PlayerClass.ARCHER, world, 10, 5);
-    List<Player> players = Collections.singletonList(player);
 
     float initialDistance = ranger.getPosition().dst(player.getPosition());
 
     // ACTION (Simulates 1 second)
-    ranger.updateBehavior(players, 1.0f);
+    ranger.update(player, 1.0f);
 
     // ASSERT
     float newDistance = ranger.getPosition().dst(player.getPosition());
@@ -124,26 +105,25 @@ public class EnemyTest {
   @Test
   public void testSpikedBallChargeBehavior() {
     // SETUP
-    SpikedBall ball = (SpikedBall) EnemyRegistry.getEnemy("SpikedBall");
+    SpikedBall ball = new SpikedBall();
     ball.setPosition(0, 0);
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 0);
-    List<Player> players = Collections.singletonList(player);
 
     // START PHASE (Cooldown -> Charge)
-    ball.updateBehavior(players, 2.0f); // Exactly finishes cooldown
-    ball.updateBehavior(players, 0.1f); // First frame of movement
+    ball.update(player, 2.0f); // Exactly finishes cooldown
+    ball.update(player, 0.1f); // First frame of movement
 
     assertTrue(ball.getX() > 0, "La palla deve essere partita");
 
     // RUN PHASE -> STOP (Wait for MAX_CHARGE_TIME to finish)
     // Max duration is 3.0s. We already did 0.1s.
     // Give abundant time (4.0s) to be sure it finishes.
-    ball.updateBehavior(players, 4.0f);
+    ball.update(player, 4.0f);
 
     float stopPosition = ball.getX();
 
     // VERIFICATION PHASE (Must be stopped)
-    ball.updateBehavior(players, 0.5f);
+    ball.update(player, 0.5f);
 
     assertEquals(
         stopPosition, ball.getX(), 0.01f, "La palla deve essersi fermata da sola per timeout");
@@ -152,15 +132,14 @@ public class EnemyTest {
   @Test
   public void testSpikedBallWallCollision() {
     // SETUP
-    SpikedBall ball = (SpikedBall) EnemyRegistry.getEnemy("SpikedBall");
+    SpikedBall ball = new SpikedBall();
     ball.setPosition(0, 0);
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 0);
-    List<Player> players = Collections.singletonList(player);
 
     // START PHASE
     // We use two steps to avoid the "skipped frame" problem
-    ball.updateBehavior(players, 2.0f); // Cooldown expires
-    ball.updateBehavior(players, 0.1f); // Moves
+    ball.update(player, 2.0f); // Cooldown expires
+    ball.update(player, 0.1f); // Moves
 
     assertTrue(ball.getX() > 0, "La palla deve essere partita");
 
@@ -172,7 +151,7 @@ public class EnemyTest {
     // IMMEDIATE STOP VERIFICATION
     // Let time pass (0.5s). If it hadn't stopped,
     // at 300px/s it would have moved 150px!
-    ball.updateBehavior(players, 0.5f);
+    ball.update(player, 0.5f);
 
     assertEquals(
         positionBeforeHit,
@@ -185,10 +164,10 @@ public class EnemyTest {
   public void testShielderDieIfAlone() {
     // 1. SETUP
     Shielder shielder = new Shielder();
-    shielder.setHP(300); // A lot of health
+    shielder.setHealth(300); // A lot of health
 
     // Empty allies list (or containing only himself)
-    List<AbstractEnemy> allies = new ArrayList<>();
+    List<Enemy> allies = new ArrayList<>();
     allies.add(shielder);
     shielder.setAllies(allies);
 
@@ -196,10 +175,11 @@ public class EnemyTest {
 
     // ACTION
     // We run update. He checks the list, sees he is alone.
-    shielder.updateBehavior(Collections.singletonList(player), 1.0f);
+    shielder.update(player, 1.0f);
 
     // ASSERT
-    assertTrue(shielder.getHP() <= 0, "Lo Shielder deve morire se non ha nessuno da proteggere!");
+    assertTrue(
+        shielder.getHealth() <= 0, "Lo Shielder deve morire se non ha nessuno da proteggere!");
   }
 
   @Test
@@ -217,18 +197,13 @@ public class EnemyTest {
     shielder.setPosition(50, 50);
 
     // Allie list setup
-    List<AbstractEnemy> allies = new ArrayList<>();
+    List<Enemy> allies = new ArrayList<>();
     allies.add(ally);
     allies.add(shielder);
     shielder.setAllies(allies);
 
-    // THEORETICAL CALCULATION
-    // The ideal protection point is 40px in front of the ally, towards the player.
-    // Ally->Player direction is (0, 1). Offset 40.
-    // Ideal target = (0, 40).
-
     // ACTION
-    shielder.updateBehavior(Collections.singletonList(player), 1.0f);
+    shielder.update(player, 1.0f);
 
     // ASSERT
     // Shielder was at X=50. Must go towards X=0.
@@ -251,7 +226,7 @@ public class EnemyTest {
 
     // Need a valid allies list to not make him suicide
     Chaser ally = new Chaser();
-    List<AbstractEnemy> allies = new ArrayList<>();
+    List<Enemy> allies = new ArrayList<>();
     allies.add(shielder);
     allies.add(ally);
     shielder.setAllies(allies);
@@ -260,16 +235,8 @@ public class EnemyTest {
     // To verify if it attacks, we can use a trick:
     // The default attack() method does nothing visible in the unit test without mock.
     // BUT we can verify that he DID NOT move.
-    // If it attacks, updateBehavior usually exits or doesn't call moveTowards towards the ally in
-    // that
-    // frame
-    // OR we can verify if the weapon cooldown triggered (if implemented).
 
-    // Best alternative for this simple test:
-    // We extend the strategy on the fly or verify internal logic.
-    // But for now, we verify that it DOES NOT CRASH calling attackStrategy.
-
-    assertDoesNotThrow(() -> shielder.updateBehavior(Collections.singletonList(player), 0.1f));
+    assertDoesNotThrow(() -> shielder.update(player, 0.1f));
 
     // Distance Logic Verification:
     float dist = shielder.getPosition().dst(player.getPosition());

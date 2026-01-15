@@ -1,15 +1,18 @@
 package io.github.soulslight.model;
 
 import com.badlogic.gdx.math.Vector2;
-import java.util.List;
 
-public class Chaser extends AbstractEnemy {
+public class Chaser extends Enemy {
 
   public Chaser() {
+    this(100, 80.0f, new WarriorAttack());
+  }
+
+  public Chaser(float health, float speed, AttackStrategy strategy) {
     super();
-    this.health = 100;
-    this.speed = 80.0f;
-    this.attackStrategy = new WarriorAttack();
+    this.health = health;
+    this.speed = speed;
+    this.attackStrategy = strategy;
   }
 
   private Chaser(Chaser other) {
@@ -18,20 +21,19 @@ public class Chaser extends AbstractEnemy {
   }
 
   @Override
-  public AbstractEnemy clone() {
+  public Enemy clone() {
     return new Chaser(this);
   }
 
   @Override
-  public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players.isEmpty() || this.health <= 0) return;
+  public void update(Player target, float deltaTime) {
+    if (target == null || this.health <= 0) return;
 
-    Player target = players.get(0);
     float distance = this.position.dst(target.getPosition());
     float range = this.attackStrategy.getRange();
 
     if (distance <= range) {
-      this.attack(players);
+      this.attack(target);
     } else {
       moveTowards(target.getPosition(), deltaTime);
     }

@@ -1,42 +1,72 @@
 package io.github.soulslight.model;
 
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
+import java.util.ArrayList;
+import java.util.List;
 
-/** Pattern: Prototype (Concrete Prototype) Represents a generic enemy entity. */
-public class Enemy implements Prototype<Enemy> {
-  private Vector2 position;
-  private float health;
-  private AttackStrategy attackStrategy;
-  private String type; // e.g., "Goblin", "Skeleton"
+/**
+ * Pattern: Prototype (via Cloneable) & Strategy (via AttackStrategy). Base class for all enemies.
+ */
+public abstract class Enemy extends Entity implements Cloneable {
 
-  public Enemy(String type, float health, AttackStrategy attackStrategy) {
-    this.type = type;
-    this.health = health;
-    this.attackStrategy = attackStrategy;
-    this.position = new Vector2(0, 0);
+  protected float speed;
+  protected transient TextureRegion textureRegion;
+
+  public Enemy() {
+    super();
   }
 
-  public void setPosition(float x, float y) {
-    this.position.set(x, y);
+  public Enemy(Enemy target) {
+    if (target != null) {
+      if (target.getPosition() != null) {
+        this.position = new Vector2(target.getPosition());
+      }
+      this.health = target.getHealth();
+      this.attackStrategy = target.attackStrategy;
+      this.speed = target.speed;
+      this.textureRegion = target.textureRegion;
+    }
   }
 
-  public Vector2 getPosition() {
-    return position;
+  /** Updates the enemy behavior. Pattern: Template Method (Hook for specific behaviors). */
+  public abstract void update(Player player, float deltaTime);
+
+  public void draw(SpriteBatch batch) {
+    if (textureRegion != null) {
+      batch.draw(textureRegion, getX(), getY());
+    }
   }
 
-  public void update(float delta) {
-    // Basic AI logic
+  public void setTextureRegion(TextureRegion region) {
+    this.textureRegion = region;
+  }
+
+  public float getDamage() {
+    return (attackStrategy != null) ? attackStrategy.getDamage() : 0;
+  }
+
+  public void attack(Player player) {
+    if (this.attackStrategy == null) return;
+    List<Entity> targets = new ArrayList<>();
+    targets.add(player);
+    this.attackStrategy.executeAttack(this, targets);
+  }
+
+  /** Helper for subclasses to attack a list (legacy support or multi-player). */
+  protected void attack(List<Player> players) {
+    if (this.attackStrategy == null) return;
+    List<Entity> targets = new ArrayList<>(players);
+    this.attackStrategy.executeAttack(this, targets);
   }
 
   @Override
-  public Enemy clone() {
-    try {
-      Enemy cloned = (Enemy) super.clone();
-      cloned.position = new Vector2(this.position); // Deep copy of position
-      // AttackStrategy is shared (Flyweight-ish) or could be cloned if mutable
-      return cloned;
-    } catch (CloneNotSupportedException e) {
-      throw new AssertionError(); // Should not happen
-    }
+  public abstract Enemy clone();
+
+  public void moveTowards(Vector2 targetPos, float deltaTime) {
+    Vector2 direction = targetPos.cpy().sub(this.getPosition());
+    direction.nor();
+    this.position.mulAdd(direction, this.speed * deltaTime);
   }
 }

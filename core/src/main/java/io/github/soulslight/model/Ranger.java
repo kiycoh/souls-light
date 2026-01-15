@@ -1,17 +1,20 @@
 package io.github.soulslight.model;
 
 import com.badlogic.gdx.math.Vector2;
-import java.util.List;
 
-public class Ranger extends AbstractEnemy {
+public class Ranger extends Enemy {
 
   private static final float FLEE_DISTANCE_RATIO = 0.5f;
 
   public Ranger() {
+    this(70, 50.0f, new ArcherAttack());
+  }
+
+  public Ranger(float health, float speed, AttackStrategy strategy) {
     super();
-    this.health = 70;
-    this.speed = 50.0f;
-    this.attackStrategy = new ArcherAttack();
+    this.health = health;
+    this.speed = speed;
+    this.attackStrategy = strategy;
   }
 
   private Ranger(Ranger other) {
@@ -20,15 +23,14 @@ public class Ranger extends AbstractEnemy {
   }
 
   @Override
-  public AbstractEnemy clone() {
+  public Enemy clone() {
     return new Ranger(this);
   }
 
   @Override
-  public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players.isEmpty() || this.health <= 0) return;
+  public void update(Player target, float deltaTime) {
+    if (target == null || this.health <= 0) return;
 
-    Player target = players.get(0);
     float distance = this.position.dst(target.getPosition());
     float maxRange = this.attackStrategy.getRange();
     float minSafeDistance = maxRange * FLEE_DISTANCE_RATIO;
@@ -36,12 +38,9 @@ public class Ranger extends AbstractEnemy {
     if (distance < minSafeDistance) {
       // Escapes if too close
       moveAway(target.getPosition(), deltaTime);
-      // Optional: If you want it to shoot WHILE escaping, leave this.attack(players) here too.
-
     } else if (distance <= maxRange) {
       // PERFECT DISTANCE -> Stands still and shoots
-      this.attack(players);
-
+      this.attack(target);
     } else {
       // TOO FAR -> Get closer
       moveTowards(target.getPosition(), deltaTime);
