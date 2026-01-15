@@ -10,7 +10,7 @@ import io.github.soulslight.model.Player;
 /** Pattern: Observer The GameController acts as an observer of input events (via InputAdapter). */
 public class GameController extends InputAdapter {
   private final GameModel model;
-  private static final float SPEED = 100f; // Pixels per second
+  private static final float SPEED = 4.0f; // Meters per second
   private GameModel.GameStateMemento quickSave;
 
   public GameController(GameModel model) {

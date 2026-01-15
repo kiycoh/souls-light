@@ -96,6 +96,8 @@ public class Player extends Entity {
     fdef.density = 1.0f;
     fdef.friction = 0.0f; // No friction with walls to prevent sticking
     fdef.restitution = 0.0f; // No bouncing
+    fdef.filter.categoryBits = Constants.BIT_PLAYER;
+    fdef.filter.maskBits = Constants.BIT_WALL | Constants.BIT_ENEMY;
 
     // Create Fixture & Dispose Shape (Crucial for memory!)
     pBody.createFixture(fdef);

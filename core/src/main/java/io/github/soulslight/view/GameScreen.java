@@ -65,7 +65,8 @@ public final class GameScreen implements GameState {
     // Update camera position to follow player
     Player player = model.getPlayer();
     if (player != null) {
-      camera.position.set(player.getPosition().x, player.getPosition().y, 0);
+      // Convert Physics (Meters) to Screen (Pixels) for Camera
+      camera.position.set(player.getPosition().x * io.github.soulslight.model.Constants.PPM, player.getPosition().y * io.github.soulslight.model.Constants.PPM, 0);
     }
     camera.update();
 
@@ -89,7 +90,11 @@ public final class GameScreen implements GameState {
     }
 
     if (player != null) {
-      batch.draw(playerTexture, player.getPosition().x, player.getPosition().y);
+      // Convert Physics (Meters) to Screen (Pixels) for Drawing
+      // Center texture on body
+      float x = (player.getPosition().x * io.github.soulslight.model.Constants.PPM) - (playerTexture.getWidth() / 2f);
+      float y = (player.getPosition().y * io.github.soulslight.model.Constants.PPM) - (playerTexture.getHeight() / 2f);
+      batch.draw(playerTexture, x, y);
     }
     batch.end();
 

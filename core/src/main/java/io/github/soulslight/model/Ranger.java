@@ -1,6 +1,7 @@
 package io.github.soulslight.model;
 
 import com.badlogic.gdx.math.Vector2;
+import io.github.soulslight.utils.LogHelper;
 
 public class Ranger extends Enemy {
 
@@ -30,6 +31,8 @@ public class Ranger extends Enemy {
   @Override
   public void update(Player target, float deltaTime) {
     if (target == null || this.health <= 0) return;
+    
+    syncBody();
 
     float distance = this.position.dst(target.getPosition());
     float maxRange = this.attackStrategy.getRange();
@@ -40,6 +43,8 @@ public class Ranger extends Enemy {
       moveAway(target.getPosition(), deltaTime);
     } else if (distance <= maxRange) {
       // PERFECT DISTANCE -> Stands still and shoots
+      if (body != null) body.setLinearVelocity(0,0);
+      LogHelper.logThrottled("AI", "Ranger is shooting at the target.", 2.0f);
       this.attack(target);
     } else {
       // TOO FAR -> Get closer
@@ -50,19 +55,20 @@ public class Ranger extends Enemy {
   // Goes towards the target if too far
   @Override
   public void moveTowards(Vector2 targetPos, float deltaTime) {
-    Vector2 direction = targetPos.cpy().sub(this.position);
-    direction.nor();
-    this.position.mulAdd(direction, this.speed * deltaTime);
+    super.moveTowards(targetPos, deltaTime);
   }
 
   // Escapes from the target
   public void moveAway(Vector2 targetPos, float deltaTime) {
-    // Calculation: (MyPosition - TargetPosition) creates a vector pointing AWAY from the target
-    Vector2 direction = this.position.cpy().sub(targetPos);
-
-    direction.nor(); // Normalize to 1
-
-    // Moves in the escape direction
-    this.position.mulAdd(direction, this.speed * deltaTime);
+     if (body != null) {
+        Vector2 direction = this.position.cpy().sub(targetPos);
+        direction.nor();
+        float speedMeters = this.speed / Constants.PPM;
+        body.setLinearVelocity(direction.scl(speedMeters));
+    } else {
+        Vector2 direction = this.position.cpy().sub(targetPos);
+        direction.nor();
+        this.position.mulAdd(direction, this.speed * deltaTime);
+    }
   }
 }
