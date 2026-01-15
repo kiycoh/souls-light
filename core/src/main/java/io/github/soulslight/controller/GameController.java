@@ -22,19 +22,21 @@ public class GameController extends InputAdapter {
     Player player = model.getPlayer();
     if (player == null) return false;
 
-    switch (keycode) {
-      case Input.Keys.O:
+    return switch (keycode) {
+      case Input.Keys.O -> {
         // Pattern: Decorator (Usage)
         // Apply Fire Damage to current attack
         player.setAttackStrategy(new FireDamageDecorator(player.getAttackStrategy()));
         Gdx.app.log("GameController", "Fire Damage Power-up Activated!");
-        return true;
-      case Input.Keys.F5:
+        yield true;
+      }
+      case Input.Keys.F5 -> {
         // Pattern: Memento (Usage - Save)
         quickSave = model.createMemento();
         Gdx.app.log("GameController", "Game Quick Saved!");
-        return true;
-      case Input.Keys.F9:
+        yield true;
+      }
+      case Input.Keys.F9 -> {
         // Pattern: Memento (Usage - Load)
         if (quickSave != null) {
           model.restoreMemento(quickSave);
@@ -42,13 +44,15 @@ public class GameController extends InputAdapter {
         } else {
           Gdx.app.log("GameController", "No Quick Save found!");
         }
-        return true;
-      case Input.Keys.P:
+        yield true;
+      }
+      case Input.Keys.P -> {
         // Attack
         player.doAnAttack();
-        return true;
-    }
-    return false;
+        yield true;
+      }
+      default -> false;
+    };
   }
 
   public void update(float delta) {
