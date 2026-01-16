@@ -1,59 +1,105 @@
 package io.github.soulslight.model;
 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Body; // necessario per la fisica
 
 public abstract class Entity {
 
-  protected Vector2 position;
-  protected float health;
-  protected AttackStrategy attackStrategy;
+    protected Vector2 position;
 
-  // COSTRUTTORE VUOTO (Utile per i Nemici/Prototype)
-  public Entity() {
-    this.position = new Vector2(0, 0);
-    this.health = 100;
-  }
+    protected Body body;// per il corpo fisico
+    protected TextureRegion textureRegion; // per la grafica
 
-  // COSTRUTTORE COMPLETO (Player)
-  public Entity(Vector2 position, float health) {
-    this.position = position;
-    this.health = health;
-  }
+    protected float health;
+    protected float maxHealth; // per la barra vita
+    protected boolean isDead = false;//flag per determinare quando un nemico è morto
 
-  public Vector2 getPosition() {
-    return position;
-  }
+    protected AttackStrategy attackStrategy;
 
-  public void setPosition(float x, float y) {
-    this.position.set(x, y);
-  }
 
-  public float getX() {
-    return this.position.x;
-  }
+    public Entity() {
+        this.position = new Vector2(0, 0);
+        this.health = 100;
+        this.maxHealth = 100;
+    }
 
-  public float getY() {
-    return this.position.y;
-  }
 
-  public void setHealth(float health) {
-    this.health = health;
-  }
+    public Entity(Vector2 position, float health) {
+        this.position = position;
+        this.health = health;
+        this.maxHealth = health;
+    }
 
-  public float getHealth() {
-    return health;
-  }
+    // metodo per sincronizzare grafica e fisica
+    public void update(float delta) {
+        if (body != null) {
 
-  public AttackStrategy getAttackStrategy() {
-    return attackStrategy;
-  }
+            this.position.set(body.getPosition());
+        }
+    }
 
-  public void takeDamage(float amount) {
-    this.health -= amount;
-    if (this.health < 0) this.health = 0;
-  }
+    //Metodo per infliggere il danno
+    public void takeDamage(float amount) {
+        if (isDead) return;
 
-  public boolean isDead() {
-    return this.health <= 0;
-  }
+        this.health -= amount;
+        if (this.health <= 0) {
+            this.health = 0;
+            this.isDead = true;
+        }
+    }
+
+    public boolean isDead() {
+        return this.health <= 0;
+    }
+
+    public void setPosition(float x, float y) {
+        this.position.set(x, y);
+        if (body != null) body.setTransform(x, y, body.getAngle());
+    }
+
+    public void setHealth(float health) {
+        this.health = health;
+        this.maxHealth = health;
+    }
+
+    public void setAttackStrategy(AttackStrategy strategy) {
+        this.attackStrategy = strategy;
+    }
+
+    public void setTextureRegion(TextureRegion tr) {
+        this.textureRegion = tr;
+    }
+
+    public Body getBody() {
+        return body;
+    }
+
+    public Vector2 getPosition() {
+        return position;
+    }
+
+    public float getX() {
+        return this.position.x;
+    }
+
+    public float getY() {
+        return this.position.y;
+    }
+
+
+    public float getHealth() {
+        return health;
+    }
+
+    public float getMaxHealth() {
+        return maxHealth;
+    }
+
+    public AttackStrategy getAttackStrategy() {
+        return attackStrategy;
+    }
+
+
 }
