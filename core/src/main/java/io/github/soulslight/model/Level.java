@@ -1,45 +1,63 @@
 package io.github.soulslight.model;
 
 import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.utils.Disposable;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/** Represents a game level containing the map and entities. */
-public class Level {
-  private TiledMap map;
-  private List<Enemy> enemies;
-  private String musicTrack;
-  private float ambientLight;
+/**
+ * Represents a game level containing the map and entities.
+ */
+public class Level implements Disposable {
 
-  public Level() {
-    this.enemies = new ArrayList<>();
-  }
+    private TiledMap map;
 
-  public TiledMap getMap() {
-    return map;
-  }
+    private List<AbstractEnemy> enemies;
 
-  public void setMap(TiledMap map) {
-    this.map = map;
-  }
+    private String musicTrack;
+    private float ambientLight;
 
-  public void addEnemy(Enemy enemy) {
-    this.enemies.add(enemy);
-  }
+    public Level() {
+        this.enemies = new ArrayList<>();
+    }
 
-  public List<Enemy> getEnemies() {
-    return enemies;
-  }
+    public TiledMap getMap() {
+        return map;
+    }
 
-  public void setMusicTrack(String musicTrack) {
-    this.musicTrack = musicTrack;
-  }
+    public void setMap(TiledMap map) {
+        this.map = map;
+    }
 
-  public void setAmbientLight(float ambientLight) {
-    this.ambientLight = ambientLight;
-  }
+    public void addEnemy(AbstractEnemy enemy) {
+        this.enemies.add(enemy);
+    }
 
-  public void dispose() {
-    if (map != null) map.dispose();
-  }
+    public List<AbstractEnemy> getEnemies() {
+        return enemies;
+    }
+
+    public void setMusicTrack(String musicTrack) {
+        this.musicTrack = musicTrack;
+    }
+
+    public String getMusicTrack() {//Per quando avremo le musiche
+        return musicTrack;
+    }
+
+    public void setAmbientLight(float ambientLight) {
+        this.ambientLight = ambientLight;
+    }
+
+    public float getAmbientLight() {
+        return ambientLight;
+    }
+
+    @Override
+    public void dispose() {
+        if (map != null) map.dispose();
+
+        enemies.clear();
+    }
 }
