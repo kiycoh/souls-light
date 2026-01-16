@@ -95,7 +95,7 @@ public class SplashScreen implements Screen {
             slashPlayed = true;
         }
 
-        // sends straigh to menu if pressing: SPACE, ENTER or ESC
+        // sends straight to menu if pressing: SPACE, ENTER or ESC
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
             || Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
             || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
