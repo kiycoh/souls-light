@@ -1,23 +1,29 @@
 package io.github.soulslight.model;
 
-/** Pattern: Abstract Factory (Concrete Factory) Creates enemies for the Dungeon environment. */
 public class DungeonEnemyFactory implements EnemyFactory {
 
-  private final Enemy skeletonPrototype;
-  private final Enemy darkMagePrototype;
+    @Override
+    public AbstractEnemy createMelee() {
+        return EnemyRegistry.getEnemy("Chaser");
+    }
 
-  public DungeonEnemyFactory() {
-    skeletonPrototype = new Enemy("Skeleton", 40, new WarriorAttack());
-    darkMagePrototype = new Enemy("Dark Mage", 25, new MageAttack());
-  }
+    @Override
+    public AbstractEnemy createRanged() {
+        return EnemyRegistry.getEnemy("Ranger");
+    }
 
-  @Override
-  public Enemy createMeleeEnemy() {
-    return skeletonPrototype.clone();
-  }
+    @Override
+    public AbstractEnemy createTank() {
+        return EnemyRegistry.getEnemy("Shielder");
+    }
 
-  @Override
-  public Enemy createRangedEnemy() {
-    return darkMagePrototype.clone();
-  }
+    @Override
+    public AbstractEnemy createBall() {
+        return EnemyRegistry.getEnemy("SpikedBall");
+    }
+
+    @Override
+    public AbstractEnemy createBoss() {
+        return EnemyRegistry.getEnemy("Oblivion");
+    }
 }

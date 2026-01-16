@@ -1,8 +1,18 @@
 package io.github.soulslight.model;
 
-/** Pattern: Abstract Factory Interface for creating families of enemies. */
 public interface EnemyFactory {
-  Enemy createMeleeEnemy();
+    // Chaser
+    AbstractEnemy createMelee();
 
-  Enemy createRangedEnemy();
+    // Ranger
+    AbstractEnemy createRanged();
+
+    // Shielder
+    AbstractEnemy createTank();
+
+    //SpikedBall
+    AbstractEnemy createBall();
+
+    //Oblivion
+    AbstractEnemy createBoss();
 }

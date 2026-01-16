@@ -1,45 +1,52 @@
 package io.github.soulslight.model;
 
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+
+
 import java.util.HashMap;
 
 public class EnemyRegistry {
-  private static HashMap<String, AbstractEnemy> cache = new HashMap<>();
+    private final static HashMap<String, AbstractEnemy> cache = new HashMap<>();
 
-  public static void loadCache() {
-    // Creiamo il nemico
-    Chaser chaser = new Chaser();
-    chaser.setHP(100);
+    //Metodo per caricare un'istanza sola per ciascun nemico e poi poter clonare
+    public static void loadCache(TextureAtlas atlas) {
 
-    Ranger ranger = new Ranger();
-    ranger.setHP(70);
+        //Creiamo i nemici
+        Chaser chaser = new Chaser();
+        chaser.setHealth(100);
 
-    SpikedBall spikedBall = new SpikedBall();
-    spikedBall.setHP(500);
+        Ranger ranger = new Ranger();
+        ranger.setHealth(70);
 
-    Shielder shielder = new Shielder();
-    shielder.setHP(500);
+        SpikedBall spikedBall = new SpikedBall();
+        spikedBall.setHealth(500);
 
-    // Controlla se siamo dentro al gioco vero
-    if (com.badlogic.gdx.Gdx.files != null
-        && com.badlogic.gdx.Gdx.files.internal("placeHolder.png").exists()) {
-      Texture spriteSheet = new Texture("placeHolder.png");
-      chaser.setTextureRegion(new TextureRegion(spriteSheet, 0, 0, 32, 32));
-      ranger.setTextureRegion(new TextureRegion(spriteSheet, 0, 0, 32, 32));
-    } else {
+        Shielder shielder = new Shielder();
+        shielder.setHealth(250);
 
+        Oblivion oblivion = new Oblivion();
+
+        // Assegnamo la grafica
+        if (atlas != null) {
+            // findRegion cerca il nome del file nell'atlas
+            chaser.setTextureRegion(atlas.findRegion("skeleton"));
+            ranger.setTextureRegion(atlas.findRegion("archer"));
+            spikedBall.setTextureRegion(atlas.findRegion("slime"));
+            shielder.setTextureRegion(atlas.findRegion("shielder"));
+            oblivion.setTextureRegion(atlas.findRegion("boss_oblivion"));
+        }
+
+        //Aggiungiamo alla cache
+        cache.put("Chaser", chaser);
+        cache.put("Ranger", ranger);
+        cache.put("SpikedBall", spikedBall);
+        cache.put("Shielder", shielder);
+        cache.put("Oblivion", oblivion);
     }
 
-    // Aggiungiamo alla cache
-    cache.put("Chaser", chaser);
-    cache.put("Ranger", ranger);
-    cache.put("SpikedBall", spikedBall);
-    cache.put("Shielder", shielder);
-  }
-
-  public static AbstractEnemy getEnemy(String type) {
-    AbstractEnemy prototype = cache.get(type);
-    return (prototype != null) ? prototype.clone() : null;
-  }
+    //Prende il tipo del nemico dalla cache
+    public static AbstractEnemy getEnemy(String type) {
+        AbstractEnemy prototype = cache.get(type);
+        return (prototype != null) ? prototype.clone() : null;
+    }
 }
