@@ -8,7 +8,6 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.ResourceManager;
 import io.github.soulslight.model.Enemy;
