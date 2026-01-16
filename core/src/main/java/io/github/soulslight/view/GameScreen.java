@@ -8,6 +8,7 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.ResourceManager;
 import io.github.soulslight.model.Enemy;
@@ -65,11 +66,43 @@ public final class GameScreen implements GameState {
     // Update camera position to follow player
     Player player = model.getPlayer();
     if (player != null) {
-      // Convert Physics (Meters) to Screen (Pixels) for Camera
-      camera.position.set(
-          player.getPosition().x * io.github.soulslight.model.Constants.PPM,
-          player.getPosition().y * io.github.soulslight.model.Constants.PPM,
-          0);
+      // Calculate target position (Player position in pixels)
+      float targetX = player.getPosition().x * io.github.soulslight.model.Constants.PPM;
+      float targetY = player.getPosition().y * io.github.soulslight.model.Constants.PPM;
+
+      // Get Map Dimensions
+      com.badlogic.gdx.maps.MapProperties prop = model.getMap().getProperties();
+      int mapWidth = prop.get("width", Integer.class);
+      int mapHeight = prop.get("height", Integer.class);
+      int tilePixelWidth = prop.get("tilewidth", Integer.class);
+      int tilePixelHeight = prop.get("tileheight", Integer.class);
+
+      float mapPixelWidth = mapWidth * tilePixelWidth;
+      float mapPixelHeight = mapHeight * tilePixelHeight;
+
+      // Calculate Clamped Camera Position
+      float cameraHalfWidth = camera.viewportWidth * 0.5f;
+      float cameraHalfHeight = camera.viewportHeight * 0.5f;
+
+      float minX = cameraHalfWidth;
+      float minY = cameraHalfHeight;
+      float maxX = mapPixelWidth - cameraHalfWidth;
+      float maxY = mapPixelHeight - cameraHalfHeight;
+
+      // Ensure map is larger than viewport to avoid crossing bounds (center if smaller)
+      if (mapPixelWidth < camera.viewportWidth) {
+        targetX = mapPixelWidth / 2f;
+      } else {
+        targetX = com.badlogic.gdx.math.MathUtils.clamp(targetX, minX, maxX);
+      }
+
+      if (mapPixelHeight < camera.viewportHeight) {
+        targetY = mapPixelHeight / 2f;
+      } else {
+        targetY = com.badlogic.gdx.math.MathUtils.clamp(targetY, minY, maxY);
+      }
+
+      camera.position.set(targetX, targetY, 0);
     }
     camera.update();
 

@@ -21,6 +21,11 @@ public record NoiseMapStrategy(
   @Override
   public TiledMap generate() {
     var map = new TiledMap();
+    map.getProperties().put("width", width);
+    map.getProperties().put("height", height);
+    map.getProperties().put("tilewidth", TILE_SIZE);
+    map.getProperties().put("tileheight", TILE_SIZE);
+
     var layer = new TiledMapTileLayer(width, height, TILE_SIZE, TILE_SIZE);
 
     var noise = new Noise();
