@@ -1,6 +1,7 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
@@ -45,7 +46,7 @@ public class SplashScreen implements Screen {
     @Override
     public void show() {
 
-        // camera + viewpoint
+        // camera + viewport
         camera = new OrthographicCamera();
         viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
         viewport.apply();
@@ -94,10 +95,21 @@ public class SplashScreen implements Screen {
             slashPlayed = true;
         }
 
+        // sends straigh to menu if pressing: SPACE, ENTER or ESC
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
+            || Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
+            || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            goToMenu();
+        }
+
         // sends to menu after intro animation
         if (animation.isAnimationFinished(stateTime)) {
-            game.setScreen(new MainMenuScreen(game, batch));
+            goToMenu();
         }
+    }
+
+    private void goToMenu() {
+        game.setScreen(new MainMenuScreen(game, batch));
     }
 
     @Override
