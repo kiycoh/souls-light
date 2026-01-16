@@ -11,4 +11,5 @@ public abstract class AbstractAttack implements AttackStrategy {
   public abstract float getAttackSpeed();
 
   public abstract String getSoundID();
+
 }

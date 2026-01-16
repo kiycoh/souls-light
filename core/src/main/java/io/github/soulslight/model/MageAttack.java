@@ -5,19 +5,24 @@ import java.util.List;
 
 /** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Mage). */
 public class MageAttack extends AbstractAttack {
-  @Override
-  public void attack() {
+
+    private final float damage;
+    public MageAttack(float damage) {
+        this.damage = damage;
+    }
+    @Override
+    public void attack() {
     Gdx.app.log("MageAttack", "Attack executed");
   }
 
   @Override
   public float getRange() {
-    return 13.0f;
+    return 300.0f;
   }
 
   @Override
   public float getDamage() {
-    return 25.0f;
+    return this.damage;
   }
 
   @Override

@@ -6,6 +6,10 @@ import java.util.List;
 /** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Warrior). */
 public class WarriorAttack extends AbstractAttack {
 
+    private final float damage;
+    public WarriorAttack(float damage) {
+        this.damage = damage;
+    }
   @Override
   public void attack() {
     Gdx.app.log("WarriorAttack", "Attack executed");
@@ -13,12 +17,12 @@ public class WarriorAttack extends AbstractAttack {
 
   @Override
   public float getRange() {
-    return 1.0f;
+    return 45.0f;
   }
 
   @Override
   public float getDamage() {
-    return 20.0f;
+    return this.damage;
   }
 
   @Override
@@ -33,7 +37,7 @@ public class WarriorAttack extends AbstractAttack {
 
   @Override
   public void executeAttack(Entity attacker, List<Entity> targets) {
-    // Logica : colpisci il primo che è a tiro
+    // Logica: colpisci il primo che è a tiro
     for (Entity target : targets) {
       // Verifica distanza
       if (attacker.getPosition().dst(target.getPosition()) <= getRange()) {
