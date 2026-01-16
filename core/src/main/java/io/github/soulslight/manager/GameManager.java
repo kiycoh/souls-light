@@ -12,7 +12,7 @@ public class GameManager {
   private static GameManager instance;
   private Level currentLevel;
   private Player player;
-
+    public static boolean DEBUG_MODE = false;
   private GameManager() {}
 
   public static synchronized GameManager getInstance() {
