@@ -33,21 +33,21 @@
 </data>
  </layer>
  <objectgroup id="2" name="Livello di oggetti 1" offsetx="4.66667" offsety="5.33333">
-  <object id="1" x="360" y="69.3333">
+  <object id="1" x="66" y="211.333">
    <properties>
     <property name="enemyType" value="ranger"/>
    </properties>
    <point/>
   </object>
-  <object id="2" x="362" y="230.667">
+  <object id="2" x="354" y="230.667">
    <properties>
     <property name="enemyType" value="shielder"/>
    </properties>
    <point/>
   </object>
-  <object id="3" x="236" y="135.333">
+  <object id="3" x="93.3333" y="199.333">
    <properties>
-    <property name="enemyType" value="ball"/>
+    <property name="enemyType" value="shielder"/>
    </properties>
    <point/>
   </object>
@@ -57,9 +57,9 @@
    </properties>
    <point/>
   </object>
-  <object id="5" x="364.667" y="184" visible="0">
+  <object id="5" x="364.667" y="184">
    <properties>
-    <property name="enemyType" value="shielder"/>
+    <property name="enemyType" value="ranger"/>
    </properties>
    <point/>
   </object>
