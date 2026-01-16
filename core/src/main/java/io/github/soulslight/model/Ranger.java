@@ -1,69 +1,121 @@
 package io.github.soulslight.model;
 
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.World;
+
 import java.util.List;
 
 public class Ranger extends AbstractEnemy {
 
-  private static final float FLEE_DISTANCE_RATIO = 0.5f;
+    private static final float FLEE_DISTANCE = 200f;
+    private static final float ATTACK_RANGE = 400f;
 
-  public Ranger() {
-    super();
-    this.health = 70;
-    this.speed = 50.0f;
-    this.attackStrategy = new ArcherAttack();
-  }
-
-  private Ranger(Ranger other) {
-    super(other);
-    this.attackStrategy = other.attackStrategy;
-  }
-
-  @Override
-  public AbstractEnemy clone() {
-    return new Ranger(this);
-  }
-
-  @Override
-  public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players.isEmpty() || this.health <= 0) return;
-
-    Player target = players.get(0);
-    float distance = this.position.dst(target.getPosition());
-    float maxRange = this.attackStrategy.getRange();
-    float minSafeDistance = maxRange * FLEE_DISTANCE_RATIO;
-
-    if (distance < minSafeDistance) {
-      // Escapes if too close
-      moveAway(target.getPosition(), deltaTime);
-      // Optional: If you want it to shoot WHILE escaping, leave this.attack(players) here too.
-
-    } else if (distance <= maxRange) {
-      // PERFECT DISTANCE -> Stands still and shoots
-      this.attack(players);
-
-    } else {
-      // TOO FAR -> Get closer
-      moveTowards(target.getPosition(), deltaTime);
+    private enum State {
+        COMBAT,     // attacco, fuga
+        SEARCHING,  // ricerca quando perde il player
+        PATROLLING  // ronda
     }
-  }
 
-  // Goes towards the target if too far
-  @Override
-  public void moveTowards(Vector2 targetPos, float deltaTime) {
-    Vector2 direction = targetPos.cpy().sub(this.position);
-    direction.nor();
-    this.position.mulAdd(direction, this.speed * deltaTime);
-  }
+    private State currentState = State.PATROLLING;
 
-  // Escapes from the target
-  public void moveAway(Vector2 targetPos, float deltaTime) {
-    // Calculation: (MyPosition - TargetPosition) creates a vector pointing AWAY from the target
-    Vector2 direction = this.position.cpy().sub(targetPos);
+    private float attackTimer = 0;
+    private boolean readyToShoot = false;
 
-    direction.nor(); // Normalize to 1
+    public Ranger() {
+        super();
+        setupStats();
+    }
 
-    // Moves in the escape direction
-    this.position.mulAdd(direction, this.speed * deltaTime);
-  }
+
+    private void setupStats() {
+        this.health = 70;
+        this.maxHealth = 70;
+        this.speed = 130.0f;
+    }
+
+    public Ranger(Ranger other) {
+        super(other);
+        this.currentState = other.currentState;
+    }
+
+    @Override
+    public AbstractEnemy clone() {
+        return new Ranger(this);
+    }
+
+    @Override
+    public void updateBehavior(List<Player> players, float deltaTime) {
+        if (players.isEmpty() || this.health <= 0) return;
+
+        Player target = players.get(0);
+
+        //  gestione timer
+        if (attackTimer > 0) attackTimer -= deltaTime;
+
+        // controlla se vede il nemico
+        boolean canSee = canSeePlayer(target, body.getWorld());
+
+        if (canSee) {
+            currentState = State.COMBAT;
+            searchTimer = SEARCH_DURATION; // Reset memoria
+
+            handleCombatLogic(target, deltaTime);
+
+        } else {
+
+            if (searchTimer > 0) {
+                currentState = State.SEARCHING;
+                searchTimer -= deltaTime;
+                handleSearchLogic(deltaTime);
+            } else {
+                currentState = State.PATROLLING;
+                updateWanderPatrol(deltaTime);
+            }
+        }
+    }
+
+    private void handleCombatLogic(Player target, float deltaTime) {
+        Vector2 myPos = (body != null) ? body.getPosition() : this.position;
+        float distance = myPos.dst(target.getPosition());
+
+        // Scappa se troppo vicino
+        if (distance < FLEE_DISTANCE) {
+            // Troppo vicino: Scappa usando il metodo del padre!
+            moveAway(target.getPosition());
+        } else if (distance > ATTACK_RANGE - 50f) {
+            // Troppo lontano: cerca di avvicinarsi
+            moveTowards(target.getPosition(), deltaTime);
+        } else {
+            // Distanza perfetta:si ferma
+            if (body != null) body.setLinearVelocity(0, 0);
+        }
+
+        // Se i giocatori sono entro il range attacca
+        if (distance <= ATTACK_RANGE) {
+            if (attackTimer <= 0) {
+                readyToShoot = true;
+                attackTimer = 2.0f; // Cooldown
+                System.out.println("RANGER: Fire!");
+            }
+        }
+    }
+
+    private void handleSearchLogic(float deltaTime) {
+        float distToLastPos = getPosition().dst(lastKnownPlayerPos);
+
+        if (distToLastPos > 15f) {
+            // Si muove per ricercare
+            moveTowards(lastKnownPlayerPos, deltaTime);
+        } else {
+            if (body != null) body.setLinearVelocity(0, 0);
+        }
+    }
+
+    public boolean isReadyToShoot() {
+        return readyToShoot;
+    }
+
+    public void resetShot() {
+        this.readyToShoot = false;
+    }
 }
