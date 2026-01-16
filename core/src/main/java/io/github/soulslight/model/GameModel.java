@@ -4,6 +4,7 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Disposable;
+import java.util.List;
 
 /**
  * Pattern: Facade GameModel acts as a Facade, providing a simplified interface to the complex
@@ -12,7 +13,6 @@ import com.badlogic.gdx.utils.Disposable;
 public class GameModel implements Disposable {
 
   // --- CONSTANTS ---
-  // "Will" is a shared value
   public static final float MAX_WILL = 100f;
 
   // --- Box2D PHYSICS ---
@@ -36,22 +36,36 @@ public class GameModel implements Disposable {
 
     // Entity initialization
     // Pattern: Factory Method (Usage)
-    this.player = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, 0, 0);
-
-    // Register player with GameManager
-    io.github.soulslight.manager.GameManager.getInstance().setPlayer(this.player);
+    // Initialize player at a safer default position (e.g. 100, 100 pixels converted to meters)
+    this.player =
+        new Player(
+            Player.PlayerClass.WARRIOR,
+            this.physicsWorld,
+            100 / Constants.PPM,
+            100 / Constants.PPM);
 
     // Pattern: Builder & Abstract Factory (Usage)
     // Using LevelBuilder to construct the level with enemies from a factory
     this.level =
         new LevelBuilder()
-            .buildMap(MapGenerator.generateProceduralMap(12345L))
-            .spawnEnemies(new DungeonEnemyFactory(), 2, 1) // 2 Melee, 1 Ranged
-            .setEnvironment("dungeon_theme.mp3", 0.3f)
+            .buildMap(
+                MapGenerator.generate(
+                    new NoiseMapStrategy(
+                        12345L, MapGenerator.MAP_WIDTH, MapGenerator.MAP_HEIGHT, 0.15f, 3, -0.1f)))
+            .spawnEnemies(new ForestEnemyFactory(), 2, 1)
+            .setEnvironment("shine7.mp3", 0.3f)
             .build();
 
-    // Register level with GameManager
-    io.github.soulslight.manager.GameManager.getInstance().setCurrentLevel(this.level);
+    // Create Map Collision Bodies
+    CollisionHandler.createMapBodies(physicsWorld, level.getMap());
+
+    // Create Enemy Bodies
+    for (Enemy enemy : level.getEnemies()) {
+      enemy.createBody(physicsWorld);
+    }
+
+    // Set Contact Listener
+    physicsWorld.setContactListener(new GameContactListener());
   }
 
   /**
@@ -65,7 +79,17 @@ public class GameModel implements Disposable {
     // Box2D physics update
     physicsWorld.step(1 / 60f, 6, 2);
 
-    // Player update logic if needed
+    // Update Enemies
+    if (level != null) {
+      List<Enemy> enemies = level.getEnemies();
+      for (int i = enemies.size() - 1; i >= 0; i--) {
+        Enemy enemy = enemies.get(i);
+        enemy.update(player, deltaTime);
+        if (enemy.getHealth() <= 0) {
+          enemies.remove(i);
+        }
+      }
+    }
   }
 
   // --- VIEW & CONTROLLER GETTERS ---
@@ -75,6 +99,10 @@ public class GameModel implements Disposable {
 
   public Player getPlayer() {
     return player;
+  }
+
+  public Level getLevel() {
+    return level;
   }
 
   public TiledMap getMap() {
@@ -97,12 +125,12 @@ public class GameModel implements Disposable {
 
   // --- MEMENTO PATTERN ---
   public GameStateMemento createMemento() {
-    return new GameStateMemento(currentWill, player.getPosition());
+    return new GameStateMemento(currentWill, player.getPosition().x, player.getPosition().y);
   }
 
   public void restoreMemento(GameStateMemento memento) {
-    this.currentWill = memento.getWill();
-    this.player.getPosition().set(memento.getPosition());
+    this.currentWill = memento.will();
+    this.player.getPosition().set(memento.x(), memento.y());
   }
 
   // --- DISPOSABLE ---
@@ -112,26 +140,8 @@ public class GameModel implements Disposable {
     if (level != null) {
       level.dispose();
     }
-    // Clean up GameManager references to avoid stale objects
-    io.github.soulslight.manager.GameManager.getInstance().cleanUp();
   }
 
-  /** Pattern: Memento Stores the internal state of the GameModel. */
-  public static class GameStateMemento {
-    private final float will;
-    private final Vector2 position;
-
-    public GameStateMemento(float will, Vector2 position) {
-      this.will = will;
-      this.position = new Vector2(position); // Deep copy
-    }
-
-    public float getWill() {
-      return will;
-    }
-
-    public Vector2 getPosition() {
-      return position;
-    }
-  }
+  /** Pattern: Memento Stores the internal state of the GameModel. Implemented as a Record. */
+  public record GameStateMemento(float will, float x, float y) {}
 }

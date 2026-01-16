@@ -3,10 +3,10 @@ package io.github.soulslight.model;
 import com.badlogic.gdx.math.Vector2;
 import java.util.List;
 
-public class Shielder extends AbstractEnemy {
+public class Shielder extends Enemy {
 
   // List of allies to know who to defend
-  private List<AbstractEnemy> knownAllies;
+  private List<Enemy> knownAllies;
 
   public Shielder() {
     super();
@@ -24,17 +24,17 @@ public class Shielder extends AbstractEnemy {
   }
 
   @Override
-  public AbstractEnemy clone() {
+  public Enemy clone() {
     return new Shielder(this);
   }
 
   // Call in GameScreen: shielder.setAllies(activeEnemies);
-  public void setAllies(List<AbstractEnemy> allies) {
+  public void setAllies(List<Enemy> allies) {
     this.knownAllies = allies;
   }
 
   @Override
-  public void updateBehavior(List<Player> players, float deltaTime) {
+  public void update(Player player, float deltaTime) {
     // --- DEATH LOGIC (Suicide) ---
     // If it has no list or if it's the only one in the list -> Dies
     if (knownAllies == null || knownAllies.size() <= 1) {
@@ -42,20 +42,19 @@ public class Shielder extends AbstractEnemy {
       return;
     }
 
-    if (players.isEmpty()) return;
-    Player player = players.get(0);
+    if (player == null) return;
 
     // --- ATTACK LOGIC (Shield Bash) ---
     // If the player is too close, stops moving and pushes them away
     float distToPlayer = this.getPosition().dst(player.getPosition());
     if (distToPlayer <= this.attackStrategy.getRange()) {
-      this.attack(players);
+      this.attack(player);
       return; // to stand still while attacking, else comment out pls
     }
 
     // --- MOVEMENT LOGIC (Protection) ---
     // Finds the most vulnerable enemy to protect
-    AbstractEnemy vip = findProtectee(player.getPosition());
+    Enemy vip = findProtectee(player.getPosition());
 
     if (vip != null) {
       // Calculates the exact point BETWEEN the Player and the Ally
@@ -68,11 +67,11 @@ public class Shielder extends AbstractEnemy {
   }
 
   // Looks for the ally closest to the Player that is not myself.
-  private AbstractEnemy findProtectee(Vector2 playerPos) {
-    AbstractEnemy bestCandidate = null;
+  private Enemy findProtectee(Vector2 playerPos) {
+    Enemy bestCandidate = null;
     float minDistance = Float.MAX_VALUE;
 
-    for (AbstractEnemy ally : knownAllies) {
+    for (Enemy ally : knownAllies) {
       if (ally == this) continue; // Do not protect itself
       if (ally instanceof Shielder) continue; // Shielders do not protect each other
 

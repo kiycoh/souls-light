@@ -3,17 +3,13 @@ package io.github.soulslight;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.ResourceManager;
-import io.github.soulslight.model.GameModel;
 import io.github.soulslight.view.SplashScreen;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class SoulsLightGame extends Game {
 
   private SpriteBatch batch;
-  private GameModel model;
-  private GameController controller;
 
   public SpriteBatch getBatch() {
     return batch;

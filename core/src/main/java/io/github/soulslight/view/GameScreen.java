@@ -1,7 +1,6 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -11,10 +10,11 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.ResourceManager;
+import io.github.soulslight.model.Enemy;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.Player;
 
-public class GameScreen implements Screen {
+public final class GameScreen implements GameState {
 
   // --- MVC DEPENDENCIES ---
   private final SpriteBatch batch;
@@ -65,7 +65,43 @@ public class GameScreen implements Screen {
     // Update camera position to follow player
     Player player = model.getPlayer();
     if (player != null) {
-      camera.position.set(player.getPosition().x, player.getPosition().y, 0);
+      // Calculate target position (Player position in pixels)
+      float targetX = player.getPosition().x * io.github.soulslight.model.Constants.PPM;
+      float targetY = player.getPosition().y * io.github.soulslight.model.Constants.PPM;
+
+      // Get Map Dimensions
+      com.badlogic.gdx.maps.MapProperties prop = model.getMap().getProperties();
+      int mapWidth = prop.get("width", Integer.class);
+      int mapHeight = prop.get("height", Integer.class);
+      int tilePixelWidth = prop.get("tilewidth", Integer.class);
+      int tilePixelHeight = prop.get("tileheight", Integer.class);
+
+      float mapPixelWidth = mapWidth * tilePixelWidth;
+      float mapPixelHeight = mapHeight * tilePixelHeight;
+
+      // Calculate Clamped Camera Position
+      float cameraHalfWidth = camera.viewportWidth * 0.5f;
+      float cameraHalfHeight = camera.viewportHeight * 0.5f;
+
+      float minX = cameraHalfWidth;
+      float minY = cameraHalfHeight;
+      float maxX = mapPixelWidth - cameraHalfWidth;
+      float maxY = mapPixelHeight - cameraHalfHeight;
+
+      // Ensure map is larger than viewport to avoid crossing bounds (center if smaller)
+      if (mapPixelWidth < camera.viewportWidth) {
+        targetX = mapPixelWidth / 2f;
+      } else {
+        targetX = com.badlogic.gdx.math.MathUtils.clamp(targetX, minX, maxX);
+      }
+
+      if (mapPixelHeight < camera.viewportHeight) {
+        targetY = mapPixelHeight / 2f;
+      } else {
+        targetY = com.badlogic.gdx.math.MathUtils.clamp(targetY, minY, maxY);
+      }
+
+      camera.position.set(targetX, targetY, 0);
     }
     camera.update();
 
@@ -80,8 +116,24 @@ public class GameScreen implements Screen {
     batch.setProjectionMatrix(camera.combined);
 
     batch.begin();
+
+    // Draw Enemies
+    if (model.getLevel() != null) {
+      for (Enemy enemy : model.getLevel().getEnemies()) {
+        enemy.draw(batch);
+      }
+    }
+
     if (player != null) {
-      batch.draw(playerTexture, player.getPosition().x, player.getPosition().y);
+      // Convert Physics (Meters) to Screen (Pixels) for Drawing
+      // Center texture on body
+      float x =
+          (player.getPosition().x * io.github.soulslight.model.Constants.PPM)
+              - (playerTexture.getWidth() / 2f);
+      float y =
+          (player.getPosition().y * io.github.soulslight.model.Constants.PPM)
+              - (playerTexture.getHeight() / 2f);
+      batch.draw(playerTexture, x, y);
     }
     batch.end();
 

@@ -1,7 +1,6 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -17,7 +16,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.manager.SettingsManager;
 
-public class SettingsScreen implements Screen {
+public final class SettingsScreen implements GameState {
 
   private final SoulsLightGame game;
   private final SpriteBatch batch;

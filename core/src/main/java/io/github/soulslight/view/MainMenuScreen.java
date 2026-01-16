@@ -1,7 +1,6 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -19,10 +18,9 @@ import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
-import io.github.soulslight.manager.EventManager;
 import io.github.soulslight.model.GameModel;
 
-public class MainMenuScreen implements Screen {
+public final class MainMenuScreen implements GameState {
 
   private final SoulsLightGame game;
   private final SpriteBatch batch;
@@ -97,7 +95,7 @@ public class MainMenuScreen implements Screen {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            EventManager.getInstance().notifyNewGame();
+            // EventManager.getInstance().notifyNewGame(); // Removed
             GameModel model = new GameModel();
             GameController controller = new GameController(model);
             game.setScreen(new GameScreen(batch, model, controller));
@@ -116,7 +114,7 @@ public class MainMenuScreen implements Screen {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            EventManager.getInstance().notifyExit();
+            // EventManager.getInstance().notifyExit(); // Removed
             Gdx.app.exit();
           }
         });
