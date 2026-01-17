@@ -2,112 +2,166 @@ package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.soulslight.controller.GameController;
-import io.github.soulslight.manager.ResourceManager;
+import io.github.soulslight.manager.GameManager;
+import io.github.soulslight.manager.TextureManager;
+import io.github.soulslight.model.AbstractEnemy;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.Player;
+import io.github.soulslight.model.Projectile;
 
 public class GameScreen implements Screen {
 
-  // --- MVC DEPENDENCIES ---
-  private final SpriteBatch batch;
-  private final GameModel model;
-  private final GameController controller;
+    private final SpriteBatch batch;
+    private final GameModel model;
+    private final GameController controller;
 
-  // --- PIXEL ART RENDERING ---
-  private static final float WORLD_WIDTH = 720;
-  private static final float WORLD_HEIGHT = 480;
+    private final GameHUD hud;
+    private final OrthographicCamera camera;
+    private final Viewport viewport;
+    private final OrthogonalTiledMapRenderer mapRenderer;
+    private final Box2DDebugRenderer debugRenderer;
 
-  private final OrthographicCamera camera;
-  private final Viewport viewport;
-  private final OrthogonalTiledMapRenderer mapRenderer;
-  private final Texture playerTexture;
+    public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
+        this.batch = batch;
+        this.model = model;
+        this.controller = controller;
 
-  public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
-    this.batch = batch;
-    this.model = model;
-    this.controller = controller;
+        //Setup Camera
+        this.camera = new OrthographicCamera();
+        this.viewport = new FitViewport(720, 480, camera);
 
-    // Setup Camera e Viewport for Pixel Art
-    this.camera = new OrthographicCamera();
+        //Setup Renderer Mappa
+        this.mapRenderer = new OrthogonalTiledMapRenderer(model.getMap(), batch);
 
-    // FitViewport maintains aspect ratio while scaling to fit the screen.
-    this.viewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
+        // Setup HUD e Debug
+        this.hud = new GameHUD();
+        this.debugRenderer = new Box2DDebugRenderer();
 
-    // Map Renderer
-    this.mapRenderer = new OrthogonalTiledMapRenderer(model.getMap(), batch);
-
-    // Use ResourceManager for player texture
-    this.playerTexture = ResourceManager.getInstance().getPlayerTexture();
-  }
-
-  @Override
-  public void show() {
-    // Activate controller as input processor
-    Gdx.input.setInputProcessor(controller);
-  }
-
-  @Override
-  public void render(float delta) {
-    // MVC Update Loop
-    if (!model.isPaused()) {
-      controller.update(delta);
-      model.update(delta);
+        //Caricamento Assets
+        TextureManager.load();
     }
 
-    // Update camera position to follow player
-    Player player = model.getPlayer();
-    if (player != null) {
-      camera.position.set(player.getPosition().x, player.getPosition().y, 0);
+    @Override
+    public void show() {
+        //Attiva il controller per ricevere gli input
+        Gdx.input.setInputProcessor(controller);
+        adjustCameraToMap();
     }
-    camera.update();
 
-    // Rendering
-    ScreenUtils.clear(0, 0, 0, 1); // (black background)
+    @Override
+    public void render(float delta) {
+        if (!model.isPaused()) {
+            controller.update(delta); // Gestione input continuo (WASD)
+            model.update(delta);      // Fisica e logica di gioco
+        }
 
-    // Render Map
-    mapRenderer.setView(camera);
-    mapRenderer.render();
+        camera.update();
+        ScreenUtils.clear(0, 0, 0, 1);
 
-    // Apply batch with camera projection
-    batch.setProjectionMatrix(camera.combined);
+        mapRenderer.setView(camera);
+        mapRenderer.render();
 
-    batch.begin();
-    if (player != null) {
-      batch.draw(playerTexture, player.getPosition().x, player.getPosition().y);
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+
+        Player player = model.getPlayer();
+        if (player != null) {
+            if (player.isDead()) batch.setColor(Color.RED);
+            drawEntity(TextureManager.get("player"), player.getPosition(), 32, 32);
+            batch.setColor(Color.WHITE);
+        }
+
+        for (AbstractEnemy enemy : model.getActiveEnemies()) {
+            if (enemy.isDead()) continue;
+
+            Texture tex = TextureManager.getEnemyTexture(enemy);
+            float size = (enemy instanceof io.github.soulslight.model.Oblivion) ? 64 : 32;
+
+            drawEntity(tex, enemy.getPosition(), size, size);
+        }
+
+        Texture tArrow = TextureManager.get("arrow");
+        if (tArrow == null) tArrow = TextureManager.get("player");
+
+        for (Projectile p : model.getProjectiles()) {
+            batch.draw(tArrow,
+                p.getPosition().x - 16, p.getPosition().y - 4,
+                16, 4, 32, 8, 1, 1, p.getRotation(),
+                0, 0, tArrow.getWidth(), tArrow.getHeight(), false, false
+            );
+        }
+        batch.end();
+
+        hud.render(batch, player, model.getActiveEnemies());
+
+        if (GameManager.DEBUG_MODE) {
+            debugRenderer.render(model.getWorld(), camera.combined);
+        }
     }
-    batch.end();
 
-    // Debug Renderer for Box2D (to be added)
-  }
+    // Metodo helper per disegnare centrato
+    private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
+        if (tex != null) {
+            batch.draw(tex, pos.x - width / 2, pos.y - height / 2, width, height);
+        }
+    }
 
-  @Override
-  public void resize(int width, int height) {
-    // Window resizing
-    viewport.update(width, height, true); // true = centra la camera
-  }
+    private void adjustCameraToMap() {
+        if (model.getMap() == null) return;
 
-  @Override
-  public void pause() {}
+        MapProperties prop = model.getMap().getProperties();
+        int mapWidth = prop.get("width", Integer.class);
+        int mapHeight = prop.get("height", Integer.class);
+        int tileWidth = prop.get("tilewidth", Integer.class);
+        int tileHeight = prop.get("tileheight", Integer.class);
 
-  @Override
-  public void resume() {}
+        float totalMapWidth = mapWidth * tileWidth;
+        float totalMapHeight = mapHeight * tileHeight;
 
-  @Override
-  public void hide() {}
+        viewport.setWorldSize(totalMapWidth, totalMapHeight);
+        viewport.apply();
+        camera.position.set(totalMapWidth / 2f, totalMapHeight / 2f, 0);
+        camera.update();
+    }
 
-  @Override
-  public void dispose() {
-    // Dispose resources that are not managed by ResourceManager or Game class
-    // Note: batch is managed by Game class, textures by ResourceManager
-    mapRenderer.dispose();
-    model.dispose();
-  }
+   //come per restartGame() al momento non funziona
+   /* public SpriteBatch getBatch() {
+        return this.batch;
+    }*/
+
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height);
+    }
+
+    @Override
+    public void pause() {
+    }
+
+    @Override
+    public void resume() {
+    }
+
+    @Override
+    public void hide() {
+    }
+
+    @Override
+    public void dispose() {
+        if (mapRenderer != null) mapRenderer.dispose();
+        if (debugRenderer != null) debugRenderer.dispose();
+        if (hud != null) hud.dispose();
+    }
 }
