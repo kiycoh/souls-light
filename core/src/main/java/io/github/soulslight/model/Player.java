@@ -15,7 +15,6 @@ public class Player extends Entity {
   private static final float LINEAR_DAMPING = 10.0f; // High damping for tight "Souls-like" movement
 
   private final PlayerClass type;
-  private AttackStrategy attackStrategy;
 
   // Box2D Body (represents the player in the physics world)
   private final Body body;
@@ -24,25 +23,25 @@ public class Player extends Entity {
     WARRIOR {
       @Override
       public AttackStrategy getStrategy() {
-        return new WarriorAttack();
+        return new WarriorAttack(20.0f);
       }
     },
     MAGE {
       @Override
       public AttackStrategy getStrategy() {
-        return new MageAttack();
+        return new MageAttack(25.0f);
       }
     },
     THIEF {
       @Override
       public AttackStrategy getStrategy() {
-        return new ThiefAttack();
+        return new ThiefAttack(8.0f);
       }
     },
     ARCHER {
       @Override
       public AttackStrategy getStrategy() {
-        return new ArcherAttack();
+        return new ArcherAttack(7.0f);
       }
     };
 

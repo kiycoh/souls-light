@@ -8,7 +8,7 @@ public class Ranger extends Enemy {
   private static final float FLEE_DISTANCE_RATIO = 0.5f;
 
   public Ranger() {
-    this(70, 50.0f, new ArcherAttack());
+    this(70, 50.0f, new ArcherAttack(7.0f));
   }
 
   public Ranger(float health, float speed, AttackStrategy strategy) {

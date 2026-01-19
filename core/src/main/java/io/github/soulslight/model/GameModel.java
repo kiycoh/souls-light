@@ -52,7 +52,7 @@ public class GameModel implements Disposable {
                 MapGenerator.generate(
                     new NoiseMapStrategy(
                         12345L, MapGenerator.MAP_WIDTH, MapGenerator.MAP_HEIGHT, 0.15f, 3, -0.1f)))
-            .spawnEnemies(new ForestEnemyFactory(), 2, 1)
+            .spawnEnemies(new EnemyFactory(), 2, 1)
             .setEnvironment("shine7.mp3", 0.3f)
             .build();
 

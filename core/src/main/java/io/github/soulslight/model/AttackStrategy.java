@@ -1,6 +1,6 @@
 package io.github.soulslight.model;
 
-import java.util.*;
+import java.util.List;
 
 /**
  * Pattern: Strategy (Strategy Interface) Defines the common interface for all supported attack

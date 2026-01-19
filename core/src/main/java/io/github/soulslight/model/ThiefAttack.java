@@ -10,6 +10,11 @@ public class ThiefAttack extends AbstractAttack {
     Gdx.app.log("ThiefAttack", "Attack executed");
   }
 
+  private final float damage;
+    public ThiefAttack(float damage) {
+        this.damage = damage;
+    }
+
   @Override
   public float getRange() {
     return 0.8f;
@@ -17,7 +22,7 @@ public class ThiefAttack extends AbstractAttack {
 
   @Override
   public float getDamage() {
-    return 8.0f;
+    return this.damage;
   }
 
   @Override

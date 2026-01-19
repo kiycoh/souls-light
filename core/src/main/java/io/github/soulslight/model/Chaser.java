@@ -6,7 +6,7 @@ import io.github.soulslight.utils.LogHelper;
 public class Chaser extends Enemy {
 
   public Chaser() {
-    this(100, 80.0f, new WarriorAttack());
+    this(100, 80.0f, new WarriorAttack(20.0f));
   }
 
   public Chaser(float health, float speed, AttackStrategy strategy) {
