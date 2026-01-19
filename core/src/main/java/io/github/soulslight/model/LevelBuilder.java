@@ -7,7 +7,12 @@ import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class LevelBuilder {
     private Level level;
@@ -21,10 +26,10 @@ public class LevelBuilder {
         return this;
     }
 
-    // --- 1. GENERAZIONE NEMICI (SPAWN) ---
+    // --- 1A. Enemy generation from tmx file (legacy method from InGameEnemies branch) ---
     public LevelBuilder spawnFromTiled(EnemyFactory factory, World world) {
 
-        // Calcolo dimensioni mappa per il Boss
+        // Boss room size calculations
         MapProperties prop = level.getMap().getProperties();
         int mapW = prop.get("width", Integer.class);
         int mapH = prop.get("height", Integer.class);
@@ -94,16 +99,116 @@ public class LevelBuilder {
         return this;
     }
 
-    // --- 2. GENERAZIONE FISICA MURI (NUOVO) ---
+    // --- 1B. Random enemy generation on generated map ---
+    public LevelBuilder spawnRandom(
+        EnemyFactory factory,
+        World world,
+        int meleeCount,
+        int rangedCount,
+        int tankCount,
+        int ballCount,
+        boolean spawnBoss
+    ) {
+        TiledMap map = level.getMap();
+        if (map == null || map.getLayers().getCount() == 0) {
+            System.out.println("WARNING: Map is null or has no layers. Cannot spawnRandom.");
+            return this;
+        }
+
+        MapProperties prop = map.getProperties();
+        int mapW = prop.get("width", Integer.class);
+        int mapH = prop.get("height", Integer.class);
+        int tileW = prop.get("tilewidth", Integer.class);
+        int tileH = prop.get("tileheight", Integer.class);
+
+        float totalMapWidth = mapW * tileW;
+        float totalMapHeight = mapH * tileH;
+
+        TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(0);
+        float tileSize = layer.getTileWidth();
+
+        // Collects all "floor" type tiles
+        List<Vector2> spawnPoints = new ArrayList<>();
+        for (int x = 0; x < layer.getWidth(); x++) {
+            for (int y = 0; y < layer.getHeight(); y++) {
+                if (isFloor(layer, x, y)) {
+                    float px = x * tileSize + tileSize / 2f;
+                    float py = y * tileSize + tileSize / 2f;
+                    spawnPoints.add(new Vector2(px, py));
+                }
+            }
+        }
+
+        if (spawnPoints.isEmpty()) {
+            System.out.println("WARNING: No floor tiles found for random spawn.");
+            return this;
+        }
+
+        // Shuffles spawn points
+        Collections.shuffle(spawnPoints);
+
+        int index = 0;
+
+        // --- MELEE ---
+        for (int i = 0; i < meleeCount && index < spawnPoints.size(); i++) {
+            AbstractEnemy e = factory.createMelee();
+            spawnEnemy(e, spawnPoints.get(index++), world, totalMapWidth, totalMapHeight);
+        }
+
+        // --- RANGED ---
+        for (int i = 0; i < rangedCount && index < spawnPoints.size(); i++) {
+            AbstractEnemy e = factory.createRanged();
+            spawnEnemy(e, spawnPoints.get(index++), world, totalMapWidth, totalMapHeight);
+        }
+
+        // --- TANK ---
+        for (int i = 0; i < tankCount && index < spawnPoints.size(); i++) {
+            AbstractEnemy e = factory.createTank();
+            spawnEnemy(e, spawnPoints.get(index++), world, totalMapWidth, totalMapHeight);
+        }
+
+        // --- BALL ---
+        for (int i = 0; i < ballCount && index < spawnPoints.size(); i++) {
+            AbstractEnemy e = factory.createBall();
+            spawnEnemy(e, spawnPoints.get(index++), world, totalMapWidth, totalMapHeight);
+        }
+
+        // --- BOSS ---
+        if (spawnBoss && index < spawnPoints.size()) {
+            AbstractEnemy boss = factory.createBoss();
+            spawnEnemy(boss, spawnPoints.get(index), world, totalMapWidth, totalMapHeight);
+        }
+
+        return this;
+    }
+
+    // Centralized helper for single spawn
+    private void spawnEnemy(
+        AbstractEnemy enemy,
+        Vector2 pos,
+        World world,
+        float totalMapWidth,
+        float totalMapHeight
+    ) {
+        if (enemy == null) return;
+
+        enemy.createBody(world, pos.x, pos.y);
+        enemy.setSpawnPoint(pos.x, pos.y);
+
+        if (enemy instanceof Oblivion) {
+            ((Oblivion) enemy).setMapBounds(totalMapWidth, totalMapHeight);
+        }
+
+        level.addEnemy(enemy);
+    }
+
+    // --- 2. Wall physics generation ---
     public LevelBuilder buildPhysicsFromMap(World world) {
-        // Qui chiamiamo il metodo privato passando il 'world' ricevuto
         createCollisionFromProperties(world);
         return this;
     }
 
-    // Metodo privato estratto (fuori da buildPhysicsFromMap!)
     private void createCollisionFromProperties(World world) {
-        // Prende il layer 0 (dove ci sono i muri)
         TiledMapTileLayer layer = (TiledMapTileLayer) level.getMap().getLayers().get(0);
         float tileSize = layer.getTileWidth();
 
@@ -112,10 +217,21 @@ public class LevelBuilder {
                 TiledMapTileLayer.Cell cell = layer.getCell(x, y);
 
                 if (cell != null && cell.getTile() != null) {
-                    boolean isWall = cell.getTile().getProperties().get("isWall", false, Boolean.class);
+
+                    boolean isWall = false;
+
+                    // in case of tmx file: boolean "isWall"
+                    if (cell.getTile().getProperties().containsKey("isWall")) {
+                        isWall = cell.getTile().getProperties().get("isWall", false, Boolean.class);
+                    }
+                    // in case of generated maps: "type" = "wall" property
+                    else if (cell.getTile().getProperties().containsKey("type")) {
+                        isWall = "wall".equals(
+                            cell.getTile().getProperties().get("type", String.class)
+                        );
+                    }
 
                     if (isWall) {
-                        // Passiamo 'world' al metodo che crea il corpo
                         createWallBody(world, x * tileSize, y * tileSize, tileSize);
                     }
                 }
@@ -123,13 +239,12 @@ public class LevelBuilder {
         }
     }
 
-    // Metodo privato estratto
     private void createWallBody(World world, float x, float y, float size) {
         BodyDef bdef = new BodyDef();
         bdef.position.set(x + size / 2, y + size / 2);
         bdef.type = BodyDef.BodyType.StaticBody;
 
-        Body body = world.createBody(bdef); // Usa il parametro 'world', non 'physicsWorld'
+        Body body = world.createBody(bdef);
         PolygonShape shape = new PolygonShape();
         shape.setAsBox(size / 2, size / 2);
 
@@ -141,7 +256,7 @@ public class LevelBuilder {
         shape.dispose();
     }
 
-    // --- 3. SETTAGGI AMBIENTE ---
+    // --- 3. ambient settings ---
     public LevelBuilder setEnvironment(String musicTrack, float lightLevel) {
         level.setMusicTrack(musicTrack);
         level.setAmbientLight(lightLevel);
@@ -150,5 +265,21 @@ public class LevelBuilder {
 
     public Level build() {
         return level;
+    }
+
+    // Helper for "floor" tiles
+    private boolean isFloor(TiledMapTileLayer layer, int x, int y) {
+        if (layer.getCell(x, y) == null || layer.getCell(x, y).getTile() == null) {
+            return false;
+        }
+
+        var props = layer.getCell(x, y).getTile().getProperties();
+
+        if (props.containsKey("type")) {
+            return "floor".equals(props.get("type", String.class));
+        }
+
+        // legacy maps fallback: if it's not marked as wall, is considered as a floor tile
+        return !props.get("isWall", false, Boolean.class);
     }
 }

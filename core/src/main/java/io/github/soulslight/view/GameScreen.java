@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -18,6 +19,7 @@ import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.TextureManager;
 import io.github.soulslight.model.AbstractEnemy;
 import io.github.soulslight.model.GameModel;
+import io.github.soulslight.model.Oblivion;
 import io.github.soulslight.model.Player;
 import io.github.soulslight.model.Projectile;
 
@@ -33,41 +35,47 @@ public class GameScreen implements Screen {
     private final OrthogonalTiledMapRenderer mapRenderer;
     private final Box2DDebugRenderer debugRenderer;
 
+    // Map size in pixel (used for camera clamp)
+    private float mapPixelWidth = 0f;
+    private float mapPixelHeight = 0f;
+
     public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
         this.batch = batch;
         this.model = model;
         this.controller = controller;
 
-        //Setup Camera
+        // Camera + viewport: what you see on screen (not map size)
         this.camera = new OrthographicCamera();
         this.viewport = new FitViewport(720, 480, camera);
 
-        //Setup Renderer Mappa
+        // Map renderer
         this.mapRenderer = new OrthogonalTiledMapRenderer(model.getMap(), batch);
 
-        // Setup HUD e Debug
+        // HUD and Debug
         this.hud = new GameHUD();
         this.debugRenderer = new Box2DDebugRenderer();
 
-        //Caricamento Assets
+        // Assets
         TextureManager.load();
     }
 
     @Override
     public void show() {
-        //Attiva il controller per ricevere gli input
         Gdx.input.setInputProcessor(controller);
-        adjustCameraToMap();
+        cacheMapSizeInPixels();
+        centerCameraOnPlayer(); // posizione iniziale sensata
     }
 
     @Override
     public void render(float delta) {
         if (!model.isPaused()) {
-            controller.update(delta); // Gestione input continuo (WASD)
-            model.update(delta);      // Fisica e logica di gioco
+            controller.update(delta);
+            model.update(delta);
         }
 
-        camera.update();
+        // --- CAMERA CENTERED ON PLAYER (WITH OOB CLASP) ---
+        followPlayerCamera();
+
         ScreenUtils.clear(0, 0, 0, 1);
 
         mapRenderer.setView(camera);
@@ -87,8 +95,7 @@ public class GameScreen implements Screen {
             if (enemy.isDead()) continue;
 
             Texture tex = TextureManager.getEnemyTexture(enemy);
-            float size = (enemy instanceof io.github.soulslight.model.Oblivion) ? 64 : 32;
-
+            float size = (enemy instanceof Oblivion) ? 64 : 32;
             drawEntity(tex, enemy.getPosition(), size, size);
         }
 
@@ -96,12 +103,18 @@ public class GameScreen implements Screen {
         if (tArrow == null) tArrow = TextureManager.get("player");
 
         for (Projectile p : model.getProjectiles()) {
-            batch.draw(tArrow,
+            batch.draw(
+                tArrow,
                 p.getPosition().x - 16, p.getPosition().y - 4,
-                16, 4, 32, 8, 1, 1, p.getRotation(),
-                0, 0, tArrow.getWidth(), tArrow.getHeight(), false, false
+                16, 4, 32, 8,
+                1, 1,
+                p.getRotation(),
+                0, 0,
+                tArrow.getWidth(), tArrow.getHeight(),
+                false, false
             );
         }
+
         batch.end();
 
         hud.render(batch, player, model.getActiveEnemies());
@@ -111,14 +124,42 @@ public class GameScreen implements Screen {
         }
     }
 
-    // Metodo helper per disegnare centrato
-    private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
-        if (tex != null) {
-            batch.draw(tex, pos.x - width / 2, pos.y - height / 2, width, height);
+    private void followPlayerCamera() {
+        Player player = model.getPlayer();
+        if (player == null) {
+            camera.update();
+            return;
         }
+
+        Vector2 p = player.getPosition();
+
+        // half viewport (takes in consideration zoom)
+        float halfW = (camera.viewportWidth * camera.zoom) / 2f;
+        float halfH = (camera.viewportHeight * camera.zoom) / 2f;
+
+        float targetX = p.x;
+        float targetY = p.y;
+
+        // clamp: prevents camera from going out of bounds
+        if (mapPixelWidth > 0 && mapPixelHeight > 0) {
+            targetX = MathUtils.clamp(targetX, halfW, Math.max(halfW, mapPixelWidth - halfW));
+            targetY = MathUtils.clamp(targetY, halfH, Math.max(halfH, mapPixelHeight - halfH));
+        }
+
+        camera.position.set(targetX, targetY, 0);
+        camera.update();
     }
 
-    private void adjustCameraToMap() {
+    private void centerCameraOnPlayer() {
+        Player player = model.getPlayer();
+        if (player == null) return;
+
+        Vector2 p = player.getPosition();
+        camera.position.set(p.x, p.y, 0);
+        camera.update();
+    }
+
+    private void cacheMapSizeInPixels() {
         if (model.getMap() == null) return;
 
         MapProperties prop = model.getMap().getProperties();
@@ -127,36 +168,25 @@ public class GameScreen implements Screen {
         int tileWidth = prop.get("tilewidth", Integer.class);
         int tileHeight = prop.get("tileheight", Integer.class);
 
-        float totalMapWidth = mapWidth * tileWidth;
-        float totalMapHeight = mapHeight * tileHeight;
-
-        viewport.setWorldSize(totalMapWidth, totalMapHeight);
-        viewport.apply();
-        camera.position.set(totalMapWidth / 2f, totalMapHeight / 2f, 0);
-        camera.update();
+        mapPixelWidth = mapWidth * tileWidth;
+        mapPixelHeight = mapHeight * tileHeight;
     }
 
-   //come per restartGame() al momento non funziona
-   /* public SpriteBatch getBatch() {
-        return this.batch;
-    }*/
+    // Center draw
+    private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
+        if (tex != null) {
+            batch.draw(tex, pos.x - width / 2, pos.y - height / 2, width, height);
+        }
+    }
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height);
+        viewport.update(width, height, true);
     }
 
-    @Override
-    public void pause() {
-    }
-
-    @Override
-    public void resume() {
-    }
-
-    @Override
-    public void hide() {
-    }
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void hide() {}
 
     @Override
     public void dispose() {
