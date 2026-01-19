@@ -25,173 +25,185 @@ import io.github.soulslight.model.Projectile;
 
 public class GameScreen implements Screen {
 
-    private final SpriteBatch batch;
-    private final GameModel model;
-    private final GameController controller;
+  private final SpriteBatch batch;
+  private final GameModel model;
+  private final GameController controller;
 
-    private final GameHUD hud;
-    private final OrthographicCamera camera;
-    private final Viewport viewport;
-    private final OrthogonalTiledMapRenderer mapRenderer;
-    private final Box2DDebugRenderer debugRenderer;
+  private final GameHUD hud;
+  private final OrthographicCamera camera;
+  private final Viewport viewport;
+  private final OrthogonalTiledMapRenderer mapRenderer;
+  private final Box2DDebugRenderer debugRenderer;
 
-    // Map size in pixel (used for camera clamp)
-    private float mapPixelWidth = 0f;
-    private float mapPixelHeight = 0f;
+  // Map size in pixel (used for camera clamp)
+  private float mapPixelWidth = 0f;
+  private float mapPixelHeight = 0f;
 
-    public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
-        this.batch = batch;
-        this.model = model;
-        this.controller = controller;
+  public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
+    this.batch = batch;
+    this.model = model;
+    this.controller = controller;
 
-        // Camera + viewport: what you see on screen (not map size)
-        this.camera = new OrthographicCamera();
-        this.viewport = new FitViewport(720, 480, camera);
+    // Camera + viewport: what you see on screen (not map size)
+    this.camera = new OrthographicCamera();
+    this.viewport = new FitViewport(720, 480, camera);
 
-        // Map renderer
-        this.mapRenderer = new OrthogonalTiledMapRenderer(model.getMap(), batch);
+    // Map renderer
+    this.mapRenderer = new OrthogonalTiledMapRenderer(model.getMap(), batch);
 
-        // HUD and Debug
-        this.hud = new GameHUD();
-        this.debugRenderer = new Box2DDebugRenderer();
+    // HUD and Debug
+    this.hud = new GameHUD();
+    this.debugRenderer = new Box2DDebugRenderer();
 
-        // Assets
-        TextureManager.load();
+    // Assets
+    TextureManager.load();
+  }
+
+  @Override
+  public void show() {
+    Gdx.input.setInputProcessor(controller);
+    cacheMapSizeInPixels();
+    centerCameraOnPlayer(); // posizione iniziale sensata
+  }
+
+  @Override
+  public void render(float delta) {
+    if (!model.isPaused()) {
+      controller.update(delta);
+      model.update(delta);
     }
 
-    @Override
-    public void show() {
-        Gdx.input.setInputProcessor(controller);
-        cacheMapSizeInPixels();
-        centerCameraOnPlayer(); // posizione iniziale sensata
+    // --- CAMERA CENTERED ON PLAYER (WITH OOB CLASP) ---
+    followPlayerCamera();
+
+    ScreenUtils.clear(0, 0, 0, 1);
+
+    mapRenderer.setView(camera);
+    mapRenderer.render();
+
+    batch.setProjectionMatrix(camera.combined);
+    batch.begin();
+
+    Player player = model.getPlayer();
+    if (player != null) {
+      if (player.isDead()) batch.setColor(Color.RED);
+      drawEntity(TextureManager.get("player"), player.getPosition(), 32, 32);
+      batch.setColor(Color.WHITE);
     }
 
-    @Override
-    public void render(float delta) {
-        if (!model.isPaused()) {
-            controller.update(delta);
-            model.update(delta);
-        }
+    for (AbstractEnemy enemy : model.getActiveEnemies()) {
+      if (enemy.isDead()) continue;
 
-        // --- CAMERA CENTERED ON PLAYER (WITH OOB CLASP) ---
-        followPlayerCamera();
-
-        ScreenUtils.clear(0, 0, 0, 1);
-
-        mapRenderer.setView(camera);
-        mapRenderer.render();
-
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-
-        Player player = model.getPlayer();
-        if (player != null) {
-            if (player.isDead()) batch.setColor(Color.RED);
-            drawEntity(TextureManager.get("player"), player.getPosition(), 32, 32);
-            batch.setColor(Color.WHITE);
-        }
-
-        for (AbstractEnemy enemy : model.getActiveEnemies()) {
-            if (enemy.isDead()) continue;
-
-            Texture tex = TextureManager.getEnemyTexture(enemy);
-            float size = (enemy instanceof Oblivion) ? 64 : 32;
-            drawEntity(tex, enemy.getPosition(), size, size);
-        }
-
-        Texture tArrow = TextureManager.get("arrow");
-        if (tArrow == null) tArrow = TextureManager.get("player");
-
-        for (Projectile p : model.getProjectiles()) {
-            batch.draw(
-                tArrow,
-                p.getPosition().x - 16, p.getPosition().y - 4,
-                16, 4, 32, 8,
-                1, 1,
-                p.getRotation(),
-                0, 0,
-                tArrow.getWidth(), tArrow.getHeight(),
-                false, false
-            );
-        }
-
-        batch.end();
-
-        hud.render(batch, player, model.getActiveEnemies());
-
-        if (GameManager.DEBUG_MODE) {
-            debugRenderer.render(model.getWorld(), camera.combined);
-        }
+      Texture tex = TextureManager.getEnemyTexture(enemy);
+      float size = (enemy instanceof Oblivion) ? 64 : 32;
+      drawEntity(tex, enemy.getPosition(), size, size);
     }
 
-    private void followPlayerCamera() {
-        Player player = model.getPlayer();
-        if (player == null) {
-            camera.update();
-            return;
-        }
+    Texture tArrow = TextureManager.get("arrow");
+    if (tArrow == null) tArrow = TextureManager.get("player");
 
-        Vector2 p = player.getPosition();
-
-        // half viewport (takes in consideration zoom)
-        float halfW = (camera.viewportWidth * camera.zoom) / 2f;
-        float halfH = (camera.viewportHeight * camera.zoom) / 2f;
-
-        float targetX = p.x;
-        float targetY = p.y;
-
-        // clamp: prevents camera from going out of bounds
-        if (mapPixelWidth > 0 && mapPixelHeight > 0) {
-            targetX = MathUtils.clamp(targetX, halfW, Math.max(halfW, mapPixelWidth - halfW));
-            targetY = MathUtils.clamp(targetY, halfH, Math.max(halfH, mapPixelHeight - halfH));
-        }
-
-        camera.position.set(targetX, targetY, 0);
-        camera.update();
+    for (Projectile p : model.getProjectiles()) {
+      batch.draw(
+          tArrow,
+          p.getPosition().x - 16,
+          p.getPosition().y - 4,
+          16,
+          4,
+          32,
+          8,
+          1,
+          1,
+          p.getRotation(),
+          0,
+          0,
+          tArrow.getWidth(),
+          tArrow.getHeight(),
+          false,
+          false);
     }
 
-    private void centerCameraOnPlayer() {
-        Player player = model.getPlayer();
-        if (player == null) return;
+    batch.end();
 
-        Vector2 p = player.getPosition();
-        camera.position.set(p.x, p.y, 0);
-        camera.update();
+    hud.render(batch, player, model.getActiveEnemies());
+
+    if (GameManager.DEBUG_MODE) {
+      debugRenderer.render(model.getWorld(), camera.combined);
+    }
+  }
+
+  private void followPlayerCamera() {
+    Player player = model.getPlayer();
+    if (player == null) {
+      camera.update();
+      return;
     }
 
-    private void cacheMapSizeInPixels() {
-        if (model.getMap() == null) return;
+    Vector2 p = player.getPosition();
 
-        MapProperties prop = model.getMap().getProperties();
-        int mapWidth = prop.get("width", Integer.class);
-        int mapHeight = prop.get("height", Integer.class);
-        int tileWidth = prop.get("tilewidth", Integer.class);
-        int tileHeight = prop.get("tileheight", Integer.class);
+    // half viewport (takes in consideration zoom)
+    float halfW = (camera.viewportWidth * camera.zoom) / 2f;
+    float halfH = (camera.viewportHeight * camera.zoom) / 2f;
 
-        mapPixelWidth = mapWidth * tileWidth;
-        mapPixelHeight = mapHeight * tileHeight;
+    float targetX = p.x;
+    float targetY = p.y;
+
+    // clamp: prevents camera from going out of bounds
+    if (mapPixelWidth > 0 && mapPixelHeight > 0) {
+      targetX = MathUtils.clamp(targetX, halfW, Math.max(halfW, mapPixelWidth - halfW));
+      targetY = MathUtils.clamp(targetY, halfH, Math.max(halfH, mapPixelHeight - halfH));
     }
 
-    // Center draw
-    private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
-        if (tex != null) {
-            batch.draw(tex, pos.x - width / 2, pos.y - height / 2, width, height);
-        }
-    }
+    camera.position.set(targetX, targetY, 0);
+    camera.update();
+  }
 
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(width, height, true);
-    }
+  private void centerCameraOnPlayer() {
+    Player player = model.getPlayer();
+    if (player == null) return;
 
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
+    Vector2 p = player.getPosition();
+    camera.position.set(p.x, p.y, 0);
+    camera.update();
+  }
 
-    @Override
-    public void dispose() {
-        if (mapRenderer != null) mapRenderer.dispose();
-        if (debugRenderer != null) debugRenderer.dispose();
-        if (hud != null) hud.dispose();
+  private void cacheMapSizeInPixels() {
+    if (model.getMap() == null) return;
+
+    MapProperties prop = model.getMap().getProperties();
+    int mapWidth = prop.get("width", Integer.class);
+    int mapHeight = prop.get("height", Integer.class);
+    int tileWidth = prop.get("tilewidth", Integer.class);
+    int tileHeight = prop.get("tileheight", Integer.class);
+
+    mapPixelWidth = mapWidth * tileWidth;
+    mapPixelHeight = mapHeight * tileHeight;
+  }
+
+  // Center draw
+  private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
+    if (tex != null) {
+      batch.draw(tex, pos.x - width / 2, pos.y - height / 2, width, height);
     }
+  }
+
+  @Override
+  public void resize(int width, int height) {
+    viewport.update(width, height, true);
+  }
+
+  @Override
+  public void pause() {}
+
+  @Override
+  public void resume() {}
+
+  @Override
+  public void hide() {}
+
+  @Override
+  public void dispose() {
+    if (mapRenderer != null) mapRenderer.dispose();
+    if (debugRenderer != null) debugRenderer.dispose();
+    if (hud != null) hud.dispose();
+  }
 }

@@ -6,15 +6,16 @@ import java.util.List;
 /** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Archer). */
 public class ArcherAttack extends AbstractAttack {
 
-    private final float damage;
-    public ArcherAttack(float damage) {
-        this.damage = damage;
-    }
-    @Override
+  private final float damage;
+
+  public ArcherAttack(float damage) {
+    this.damage = damage;
+  }
+
+  @Override
   public void attack() {
     Gdx.app.log("ArcherAttack", "Attack executed");
   }
-
 
   @Override
   public float getRange() {

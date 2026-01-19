@@ -1,18 +1,18 @@
 package io.github.soulslight.model;
 
 public interface EnemyFactory {
-    // Chaser
-    AbstractEnemy createMelee();
+  // Chaser
+  AbstractEnemy createMelee();
 
-    // Ranger
-    AbstractEnemy createRanged();
+  // Ranger
+  AbstractEnemy createRanged();
 
-    // Shielder
-    AbstractEnemy createTank();
+  // Shielder
+  AbstractEnemy createTank();
 
-    //SpikedBall
-    AbstractEnemy createBall();
+  // SpikedBall
+  AbstractEnemy createBall();
 
-    //Oblivion
-    AbstractEnemy createBoss();
+  // Oblivion
+  AbstractEnemy createBoss();
 }

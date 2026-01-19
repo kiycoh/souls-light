@@ -8,55 +8,52 @@ import io.github.soulslight.model.GameStateMemento;
 
 public class SaveManager {
 
-    private static final String SAVE_FILE = "savegame.json";
-    private final Json json;
+  private static final String SAVE_FILE = "savegame.json";
+  private final Json json;
 
-    public SaveManager() {
-        this.json = new Json();
+  public SaveManager() {
+    this.json = new Json();
+  }
+
+  // Salva il gioco
+  public void saveGame(GameModel model) {
+
+    float currentHealth = 0;
+    if (model.getPlayer() != null) {
+      currentHealth = model.getPlayer().getHealth();
     }
 
-    // Salva il gioco
-    public void saveGame(GameModel model) {
+    // 1. Crea il memento con la VITA (Health)
+    GameStateMemento memento =
+        new GameStateMemento(currentHealth, model.getPlayer().getPosition(), 1);
 
-        float currentHealth = 0;
-        if (model.getPlayer() != null) {
-            currentHealth = model.getPlayer().getHealth();
-        }
+    // Converte in file di testo
+    String text = json.toJson(memento);
+    FileHandle file = Gdx.files.local(SAVE_FILE);
+    file.writeString(text, false);
 
-        // 1. Crea il memento con la VITA (Health)
-        GameStateMemento memento = new GameStateMemento(
-            currentHealth,
-            model.getPlayer().getPosition(),
-            1
-        );
+    Gdx.app.log("SaveManager", "Partita salvata (HP: " + currentHealth + ") su: " + file.path());
+  }
 
-        // Converte in file di testo
-        String text = json.toJson(memento);
-        FileHandle file = Gdx.files.local(SAVE_FILE);
-        file.writeString(text, false);
+  // Ricarica il salvataggio
+  public void loadGame(GameModel model) {
+    FileHandle file = Gdx.files.local(SAVE_FILE);
 
-        Gdx.app.log("SaveManager", "Partita salvata (HP: " + currentHealth + ") su: " + file.path());
+    if (!file.exists()) {
+      Gdx.app.log("SaveManager", "Nessun salvataggio trovato.");
+      return;
     }
 
-   //Ricarica il salvataggio
-    public void loadGame(GameModel model) {
-        FileHandle file = Gdx.files.local(SAVE_FILE);
-
-        if (!file.exists()) {
-            Gdx.app.log("SaveManager", "Nessun salvataggio trovato.");
-            return;
-        }
-
-        try {
-            GameStateMemento memento = json.fromJson(GameStateMemento.class, file.readString());
-            model.restoreMemento(memento); // Deleghiamo al model
-            Gdx.app.log("SaveManager", "Partita caricata con successo!");
-        } catch (Exception e) {
-            Gdx.app.error("SaveManager", "Errore nel caricamento del salvataggio", e);
-        }
+    try {
+      GameStateMemento memento = json.fromJson(GameStateMemento.class, file.readString());
+      model.restoreMemento(memento); // Deleghiamo al model
+      Gdx.app.log("SaveManager", "Partita caricata con successo!");
+    } catch (Exception e) {
+      Gdx.app.error("SaveManager", "Errore nel caricamento del salvataggio", e);
     }
+  }
 
-    public boolean hasSaveFile() {
-        return Gdx.files.local(SAVE_FILE).exists();
-    }
+  public boolean hasSaveFile() {
+    return Gdx.files.local(SAVE_FILE).exists();
+  }
 }
