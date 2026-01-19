@@ -35,7 +35,7 @@ public class GameScreen implements Screen {
   private final OrthogonalTiledMapRenderer mapRenderer;
   private final Box2DDebugRenderer debugRenderer;
 
-  // Map size in pixel (used for camera clamp)
+  // Map size in pixels, used to clamp the camera within map bounds
   private float mapPixelWidth = 0f;
   private float mapPixelHeight = 0f;
 
@@ -44,7 +44,7 @@ public class GameScreen implements Screen {
     this.model = model;
     this.controller = controller;
 
-    // Camera + viewport: what you see on screen (not map size)
+    // Camera + viewport: defines the visible area on screen, independent of map size
     this.camera = new OrthographicCamera();
     this.viewport = new FitViewport(720, 480, camera);
 
@@ -63,7 +63,7 @@ public class GameScreen implements Screen {
   public void show() {
     Gdx.input.setInputProcessor(controller);
     cacheMapSizeInPixels();
-    centerCameraOnPlayer(); // posizione iniziale sensata
+    centerCameraOnPlayer(); // Set initial camera position on player
   }
 
   @Override
@@ -73,7 +73,7 @@ public class GameScreen implements Screen {
       model.update(delta);
     }
 
-    // --- CAMERA CENTERED ON PLAYER (WITH OOB CLASP) ---
+    // --- CAMERA CENTERED ON PLAYER (clamped to map bounds) ---
     followPlayerCamera();
 
     ScreenUtils.clear(0, 0, 0, 1);
@@ -140,7 +140,7 @@ public class GameScreen implements Screen {
 
     Vector2 p = player.getPosition();
 
-    // half viewport (takes in consideration zoom)
+    // Half viewport size (taking camera zoom into account)
     float halfW = (camera.viewportWidth * camera.zoom) / 2f;
     float halfH = (camera.viewportHeight * camera.zoom) / 2f;
 
@@ -166,6 +166,7 @@ public class GameScreen implements Screen {
     camera.update();
   }
 
+  // Cache map dimensions in pixels from Tiled map properties
   private void cacheMapSizeInPixels() {
     if (model.getMap() == null) return;
 
@@ -179,7 +180,7 @@ public class GameScreen implements Screen {
     mapPixelHeight = mapHeight * tileHeight;
   }
 
-  // Center draw
+  // Draw texture centered on entity position
   private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
     if (tex != null) {
       batch.draw(tex, pos.x - width / 2, pos.y - height / 2, width, height);

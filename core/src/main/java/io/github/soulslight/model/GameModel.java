@@ -20,7 +20,7 @@ public class GameModel implements Disposable {
   private Player player;
   private Level level;
 
-  // Accumulator for fixed timestep
+  // Accumulator used to step the physics world with a fixed timestep
   private float physicsAccumulator = 0;
 
   private final ProjectileManager projectileManager;
@@ -33,11 +33,11 @@ public class GameModel implements Disposable {
     this.currentWill = MAX_WILL / 2;
     this.isPaused = false;
 
-    // ---- PROCEDURALLY GENERATED MAP ----
+    // ---- PROCEDURALLY GENERATED TILED MAP ----
     long seed = System.currentTimeMillis();
     TiledMap myMap = MapGenerator.generateProceduralMap(seed);
 
-    // ---- PLAYER: spawns on valid flood tile ----
+    // ---- Player: spawns on the first valid floor tile ----
     Vector2 spawn = findFirstFloorSpawn(myMap);
     this.player = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, spawn.x, spawn.y);
     GameManager.getInstance().setPlayer(this.player);
@@ -47,7 +47,7 @@ public class GameModel implements Disposable {
 
     EnemyFactory factory = new DungeonEnemyFactory();
 
-    // ---- LEVEL BUILDER (random spawn) ----
+    // ---- LEVEL BUILDER (builds map, physics and randomly spawns enemies) ----
     this.level =
         new LevelBuilder()
             .buildMap(myMap)
@@ -64,7 +64,7 @@ public class GameModel implements Disposable {
             .setEnvironment("dungeon_theme.mp3", 0.3f)
             .build();
 
-    // Shielder 'target' setup
+    // Configure Shielder enemies with references to allied enemies
     if (this.level.getEnemies() != null) {
       for (AbstractEnemy e : this.level.getEnemies()) {
         if (e instanceof Shielder) {
@@ -76,7 +76,10 @@ public class GameModel implements Disposable {
     GameManager.getInstance().setCurrentLevel(this.level);
   }
 
-  /** Finds a valid spawn point ("floor" tile) and returns pixel coordinates */
+  /**
+ * Finds the first valid spawn point (a "floor" tile) and returns its pixel coordinates.
+ */
+
   private Vector2 findFirstFloorSpawn(TiledMap map) {
     if (map == null || map.getLayers().getCount() == 0) {
       return new Vector2(17, 17);
@@ -112,6 +115,7 @@ public class GameModel implements Disposable {
     return new Vector2(17, 17);
   }
 
+//Main game update: updates entities, steps physics with fixed timestep and cleans up dead enemies
   public void update(float deltaTime) {
     if (isPaused) return;
 
@@ -120,6 +124,7 @@ public class GameModel implements Disposable {
 
     physicsAccumulator += deltaTime;
 
+// Step physics world at a fixed 60 FPS
     while (physicsAccumulator >= 1 / 60f) {
       physicsWorld.step(1 / 60f, 6, 2);
       projectileManager.update(1 / 60f, player);
