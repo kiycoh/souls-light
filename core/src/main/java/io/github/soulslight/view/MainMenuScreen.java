@@ -9,13 +9,14 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Scaling;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.model.GameModel;
@@ -28,17 +29,18 @@ public final class MainMenuScreen implements GameState {
   private final Stage stage;
   private final BitmapFont font;
 
-  private Texture logoTexture;
   private Texture backgroundTexture;
   private Image backgroundImage;
+
   // music
   private Music menuMusic;
 
   public MainMenuScreen(SoulsLightGame game, SpriteBatch batch) {
     this.game = game;
     this.batch = batch;
-    this.stage = new Stage(new ScreenViewport(), batch);
-    this.font = new BitmapFont(); // Use default font for now
+
+    this.stage = new Stage(new FitViewport(1280, 720), batch);
+    this.font = new BitmapFont();
   }
 
   @Override
@@ -51,13 +53,12 @@ public final class MainMenuScreen implements GameState {
     menuMusic.setVolume(0.5f);
     menuMusic.play();
 
-    // Visual setup
     setupBackground();
     setupUI();
   }
 
   private void setupBackground() {
-    backgroundTexture = new Texture(Gdx.files.internal("ui/menubg.jpg"));
+    backgroundTexture = new Texture(Gdx.files.internal("ui/menubg.png"));
     backgroundImage = new Image(backgroundTexture);
     backgroundImage.setScaling(Scaling.stretch);
     backgroundImage.setFillParent(true);
@@ -67,16 +68,12 @@ public final class MainMenuScreen implements GameState {
   private void setupUI() {
     Table table = new Table();
     table.setFillParent(true);
-    table.top().left();
+
+    table.bottom();
+    table.center();
+    table.padBottom(-220f);
+
     stage.addActor(table);
-
-    // Logo
-    logoTexture = new Texture(Gdx.files.internal("ui/logo.png"));
-    Image logoImage = new Image(logoTexture);
-    logoImage.setScaling(Scaling.fit);
-    logoImage.setScale(1.4f);
-
-    table.add(logoImage).width(500f).padTop(40f).padBottom(40f).padLeft(-80f).left().row();
 
     font.getData().setScale(1.3f);
 
@@ -90,6 +87,18 @@ public final class MainMenuScreen implements GameState {
     TextButton continueButton = new TextButton("Continue", standardStyle);
     TextButton optionsButton = new TextButton("Options", standardStyle);
     TextButton exitButton = new TextButton("Exit", standardStyle);
+
+    // setup for fade in
+    newGameButton.getColor().a = 0f;
+    continueButton.getColor().a = 0f;
+    optionsButton.getColor().a = 0f;
+    exitButton.getColor().a = 0f;
+
+    // fade in
+    newGameButton.addAction(Actions.fadeIn(1f));
+    continueButton.addAction(Actions.sequence(Actions.delay(0.2f), Actions.fadeIn(1f)));
+    optionsButton.addAction(Actions.sequence(Actions.delay(0.4f), Actions.fadeIn(1f)));
+    exitButton.addAction(Actions.sequence(Actions.delay(0.6f), Actions.fadeIn(1f)));
 
     newGameButton.addListener(
         new ClickListener() {
@@ -122,10 +131,10 @@ public final class MainMenuScreen implements GameState {
     final float btnWidth = 300f;
     final float btnHeight = 60f;
 
-    table.add(newGameButton).width(btnWidth).height(btnHeight).left().row();
-    table.add(continueButton).width(btnWidth).height(btnHeight).left().row();
-    table.add(optionsButton).width(btnWidth).height(btnHeight).left().row();
-    table.add(exitButton).width(btnWidth).height(btnHeight).padBottom(100f).left().row();
+    table.add(newGameButton).width(btnWidth).height(btnHeight).pad(8f).row();
+    table.add(continueButton).width(btnWidth).height(btnHeight).pad(8f).row();
+    table.add(optionsButton).width(btnWidth).height(btnHeight).pad(8f).row();
+    table.add(exitButton).width(btnWidth).height(btnHeight).pad(8f).row();
   }
 
   @Override
@@ -156,7 +165,6 @@ public final class MainMenuScreen implements GameState {
     stage.dispose();
     font.dispose();
 
-    logoTexture.dispose();
     backgroundTexture.dispose();
 
     if (menuMusic != null) {
