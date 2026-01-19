@@ -25,7 +25,8 @@ public class CombatTest {
   public void testWarriorStats() {
     AttackStrategy strategy = new WarriorAttack(20.0f);
     // SINTASSI JUNIT 5: assertEquals(atteso, attuale, delta, "Messaggio Opzionale")
-    assertEquals(45.0f / Constants.PPM, strategy.getRange(), 0.01f, "Il guerriero attacca a corto raggio");
+    assertEquals(
+        45.0f / Constants.PPM, strategy.getRange(), 0.01f, "Il guerriero attacca a corto raggio");
     assertEquals(20.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
     assertEquals(1.0f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere media");
     assertEquals(
@@ -36,7 +37,8 @@ public class CombatTest {
   public void testMageStats() {
     AttackStrategy strategy = new MageAttack(25.0f);
     // Sintassi: (atteso, attuale, tolleranza, messaggio)
-    assertEquals(300.0f / Constants.PPM, strategy.getRange(), 0.01f, "Il mago attacca a lungo raggio");
+    assertEquals(
+        300.0f / Constants.PPM, strategy.getRange(), 0.01f, "Il mago attacca a lungo raggio");
     assertEquals(25.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
     assertEquals(0.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere lenta");
     assertEquals(
@@ -58,7 +60,8 @@ public class CombatTest {
   @Test
   public void testArcherStats() {
     AttackStrategy strategy = new ArcherAttack(7.0f);
-    assertEquals(250.0f / Constants.PPM, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
+    assertEquals(
+        250.0f / Constants.PPM, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
     assertEquals(7.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
     assertEquals(1.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere medio-alta");
     assertEquals(

@@ -11,9 +11,10 @@ public class ThiefAttack extends AbstractAttack {
   }
 
   private final float damage;
-    public ThiefAttack(float damage) {
-        this.damage = damage;
-    }
+
+  public ThiefAttack(float damage) {
+    this.damage = damage;
+  }
 
   @Override
   public float getRange() {

@@ -6,10 +6,12 @@ import java.util.List;
 /** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Warrior). */
 public class WarriorAttack extends AbstractAttack {
 
-    private final float damage;
-    public WarriorAttack(float damage) {
-        this.damage = damage;
-    }
+  private final float damage;
+
+  public WarriorAttack(float damage) {
+    this.damage = damage;
+  }
+
   @Override
   public void attack() {
     Gdx.app.log("WarriorAttack", "Attack executed");
