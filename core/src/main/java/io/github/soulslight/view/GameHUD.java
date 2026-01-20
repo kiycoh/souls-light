@@ -7,8 +7,8 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout; // Utile per centrare il testo
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
-import io.github.soulslight.model.AbstractEnemy;
-import io.github.soulslight.model.Player;
+import io.github.soulslight.model.enemies.AbstractEnemy;
+import io.github.soulslight.model.entities.Player;
 import java.util.List;
 
 public class GameHUD {

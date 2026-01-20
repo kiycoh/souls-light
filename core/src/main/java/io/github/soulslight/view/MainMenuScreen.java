@@ -30,7 +30,6 @@ public final class MainMenuScreen implements GameState {
   private final BitmapFont font;
 
   private Texture backgroundTexture;
-  private Image backgroundImage;
 
   // music
   private Music menuMusic;
@@ -59,7 +58,7 @@ public final class MainMenuScreen implements GameState {
 
   private void setupBackground() {
     backgroundTexture = new Texture(Gdx.files.internal("ui/menubg.png"));
-    backgroundImage = new Image(backgroundTexture);
+    Image backgroundImage = new Image(backgroundTexture);
     backgroundImage.setScaling(Scaling.stretch);
     backgroundImage.setFillParent(true);
     stage.addActor(backgroundImage);

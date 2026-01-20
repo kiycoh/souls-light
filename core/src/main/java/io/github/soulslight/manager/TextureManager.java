@@ -2,11 +2,11 @@ package io.github.soulslight.manager;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
-import io.github.soulslight.model.AbstractEnemy;
-import io.github.soulslight.model.Oblivion;
-import io.github.soulslight.model.Ranger;
-import io.github.soulslight.model.Shielder;
-import io.github.soulslight.model.SpikedBall;
+import io.github.soulslight.model.enemies.AbstractEnemy;
+import io.github.soulslight.model.enemies.Oblivion;
+import io.github.soulslight.model.enemies.Ranger;
+import io.github.soulslight.model.enemies.Shielder;
+import io.github.soulslight.model.enemies.SpikedBall;
 import java.util.HashMap;
 import java.util.Map;
 

@@ -16,11 +16,11 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.TextureManager;
-import io.github.soulslight.model.AbstractEnemy;
 import io.github.soulslight.model.GameModel;
-import io.github.soulslight.model.Oblivion;
-import io.github.soulslight.model.Player;
-import io.github.soulslight.model.Projectile;
+import io.github.soulslight.model.enemies.AbstractEnemy;
+import io.github.soulslight.model.enemies.Oblivion;
+import io.github.soulslight.model.entities.Player;
+import io.github.soulslight.model.entities.Projectile;
 
 public final class GameScreen implements GameState {
 

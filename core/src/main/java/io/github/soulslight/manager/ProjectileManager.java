@@ -2,8 +2,8 @@ package io.github.soulslight.manager;
 
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.physics.box2d.*;
-import io.github.soulslight.model.Player;
-import io.github.soulslight.model.Projectile;
+import io.github.soulslight.model.entities.Player;
+import io.github.soulslight.model.entities.Projectile;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

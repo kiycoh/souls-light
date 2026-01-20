@@ -29,7 +29,7 @@ public class ResourceManager implements Disposable {
   public Texture getPlayerTexture() {
     if (playerTexture == null) {
       Pixmap pixmap = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
-      pixmap.setColor(Color.RED);
+      pixmap.setColor(Color.GREEN);
       pixmap.fill();
       playerTexture = new Texture(pixmap);
       pixmap.dispose();
@@ -40,7 +40,7 @@ public class ResourceManager implements Disposable {
   public Texture getEnemyTexture() {
     if (enemyTexture == null) {
       Pixmap pixmap = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
-      pixmap.setColor(Color.GREEN);
+      pixmap.setColor(Color.RED);
       pixmap.fill();
       enemyTexture = new Texture(pixmap);
       pixmap.dispose();

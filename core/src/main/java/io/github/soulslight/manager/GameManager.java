@@ -2,9 +2,9 @@ package io.github.soulslight.manager;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.maps.tiled.TiledMap;
-import io.github.soulslight.model.Level;
-import io.github.soulslight.model.MapGenerator;
-import io.github.soulslight.model.Player;
+import io.github.soulslight.model.entities.Player;
+import io.github.soulslight.model.map.Level;
+import io.github.soulslight.model.map.MapGenerator;
 
 public class GameManager {
   public static final float PPM = 100f;

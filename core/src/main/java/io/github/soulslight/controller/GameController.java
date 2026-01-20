@@ -5,9 +5,9 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.SaveManager;
-import io.github.soulslight.model.FireDamageDecorator;
 import io.github.soulslight.model.GameModel;
-import io.github.soulslight.model.Player;
+import io.github.soulslight.model.combat.FireDamageDecorator;
+import io.github.soulslight.model.entities.Player;
 
 public class GameController extends InputAdapter {
 

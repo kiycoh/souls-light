@@ -82,7 +82,7 @@ public final class SettingsScreen implements GameState {
             var settings = SettingsManager.getInstance();
             settings.setFullscreen(!settings.isFullscreen());
             fullscreenBtn.setText(getFullscreenText());
-            // Note: Actual fullscreen switching logic should be handled by a GraphicsManager
+            // Note: A GraphicsManager should handle actual fullscreen switching logic
           }
         });
 
