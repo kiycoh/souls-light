@@ -1,5 +1,6 @@
 package io.github.soulslight.model;
 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.tiles.StaticTiledMapTile;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Random;
 import make.some.noise.Noise;
 
 public record NoiseMapStrategy(
@@ -34,25 +36,51 @@ public record NoiseMapStrategy(
     noise.setFrequency(frequency);
     noise.setFractalOctaves(octaves);
 
+    // --- WALL TILE ---
     var wallTile = new StaticTiledMapTile(ResourceManager.getInstance().getWallTextureRegion());
-    var floorTile = new StaticTiledMapTile(ResourceManager.getInstance().getFloorTextureRegion());
-
     wallTile.getProperties().put("type", "wall");
-    floorTile.getProperties().put("type", "floor");
 
-    // Initial gen
+    // --- FLOOR TILES ---
+    TextureRegion[] floorRegions = ResourceManager.getInstance().getFloorTextureRegions();
+    StaticTiledMapTile[] floorTiles;
+
+    if (floorRegions != null && floorRegions.length > 0) {
+      floorTiles = new StaticTiledMapTile[floorRegions.length];
+      for (int i = 0; i < floorRegions.length; i++) {
+        StaticTiledMapTile t = new StaticTiledMapTile(floorRegions[i]);
+        t.getProperties().put("type", "floor");
+        floorTiles[i] = t;
+      }
+    } else {
+      // fallback: if for some reason no variants are available, use the old single floor tile
+      StaticTiledMapTile singleFloor =
+          new StaticTiledMapTile(ResourceManager.getInstance().getFloorTextureRegion());
+      singleFloor.getProperties().put("type", "floor");
+      floorTiles = new StaticTiledMapTile[] {singleFloor};
+    }
+
+    // floor pattern is tied to seed
+    Random rnd = new Random(seed);
+
+    // Initial generation
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
         float n = noise.getConfiguredNoise(x, y);
-        // Using configurable threshold. Values > threshold are WALLS.
-        StaticTiledMapTile selectedTile = (n > wallThreshold) ? wallTile : floorTile;
-        setTile(layer, x, y, selectedTile);
+
+        if (n > wallThreshold) {
+          // wall
+          setTile(layer, x, y, wallTile);
+        } else {
+          // random floor
+          StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
+          setTile(layer, x, y, selectedTile);
+        }
       }
     }
 
     // Cellular automata smoothing
     for (int i = 0; i < SMOOTHING_ITERATIONS; i++) {
-      smoothMap(layer, wallTile, floorTile);
+      smoothMap(layer, wallTile, floorTiles, rnd);
     }
 
     // Identify regions (rooms)
@@ -64,9 +92,9 @@ public record NoiseMapStrategy(
       System.out.println("Region " + i + " Size: " + regions.get(i).size() + " tiles.");
     }
 
-    // connect regions
+    // Connect regions
     if (regions.size() > 1) {
-      connectRegions(regions, layer, floorTile);
+      connectRegions(regions, layer, floorTiles, rnd);
     }
 
     map.getLayers().add(layer);
@@ -74,15 +102,18 @@ public record NoiseMapStrategy(
   }
 
   private void smoothMap(
-      TiledMapTileLayer layer, StaticTiledMapTile wallTile, StaticTiledMapTile floorTile) {
-    // Create a buffer to store next state
+      TiledMapTileLayer layer,
+      StaticTiledMapTile wallTile,
+      StaticTiledMapTile[] floorTiles,
+      Random rnd) {
+
     boolean[][] nextState = new boolean[width][height]; // true = wall, false = floor
 
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
         int wallNeighbors = countWallNeighbors(layer, x, y);
 
-        // Standard "4-5 Rule" for cave generation:
+        // 4-5 Rule
         // If a cell is a wall and has >= 4 wall neighbors, it stays a wall.
         // If a cell is a floor and has >= 5 wall neighbors, it becomes a wall.
         boolean isWall = isWall(layer, x, y);
@@ -98,7 +129,12 @@ public record NoiseMapStrategy(
     // Apply next state
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        setTile(layer, x, y, nextState[x][y] ? wallTile : floorTile);
+        if (nextState[x][y]) {
+          setTile(layer, x, y, wallTile);
+        } else {
+          StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
+          setTile(layer, x, y, selectedTile);
+        }
       }
     }
   }
@@ -171,7 +207,11 @@ public record NoiseMapStrategy(
   }
 
   private void connectRegions(
-      List<List<GridPoint2>> regions, TiledMapTileLayer layer, StaticTiledMapTile floorTile) {
+      List<List<GridPoint2>> regions,
+      TiledMapTileLayer layer,
+      StaticTiledMapTile[] floorTiles,
+      Random rnd) {
+
     regions.sort((r1, r2) -> Integer.compare(r2.size(), r1.size()));
 
     List<GridPoint2> mainRegion = regions.get(0);
@@ -195,26 +235,35 @@ public record NoiseMapStrategy(
       }
 
       if (bestMain != null && bestOther != null) {
-        createCorridor(bestMain, bestOther, layer, floorTile);
+        createCorridor(bestMain, bestOther, layer, floorTiles, rnd);
       }
     }
   }
 
   private void createCorridor(
-      GridPoint2 start, GridPoint2 end, TiledMapTileLayer layer, StaticTiledMapTile floorTile) {
+      GridPoint2 start,
+      GridPoint2 end,
+      TiledMapTileLayer layer,
+      StaticTiledMapTile[] floorTiles,
+      Random rnd) {
+
     int x = start.x;
     int y = start.y;
 
     while (x != end.x) {
-      setTile(layer, x, y, floorTile);
+      StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
+      setTile(layer, x, y, selectedTile);
       x += (end.x > x) ? 1 : -1;
     }
 
     while (y != end.y) {
-      setTile(layer, x, y, floorTile);
+      StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
+      setTile(layer, x, y, selectedTile);
       y += (end.y > y) ? 1 : -1;
     }
-    setTile(layer, end.x, end.y, floorTile);
+
+    StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
+    setTile(layer, end.x, end.y, selectedTile);
   }
 
   private void setTile(TiledMapTileLayer layer, int x, int y, StaticTiledMapTile tile) {
@@ -226,11 +275,13 @@ public record NoiseMapStrategy(
 
   private boolean isFloor(TiledMapTileLayer layer, int x, int y) {
     return layer.getCell(x, y) != null
+        && layer.getCell(x, y).getTile() != null
         && "floor".equals(layer.getCell(x, y).getTile().getProperties().get("type"));
   }
 
   private boolean isWall(TiledMapTileLayer layer, int x, int y) {
     return layer.getCell(x, y) != null
+        && layer.getCell(x, y).getTile() != null
         && "wall".equals(layer.getCell(x, y).getTile().getProperties().get("type"));
   }
 }
