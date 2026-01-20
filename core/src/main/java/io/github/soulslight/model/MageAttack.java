@@ -19,7 +19,7 @@ public class MageAttack extends AbstractAttack {
 
   @Override
   public float getRange() {
-    return 300.0f / Constants.PPM;
+    return 300.0f;
   }
 
   @Override

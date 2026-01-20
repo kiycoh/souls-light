@@ -1,31 +1,18 @@
 package io.github.soulslight.model;
 
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import io.github.soulslight.manager.ResourceManager;
+public interface EnemyFactory {
+  // Chaser
+  AbstractEnemy createMelee();
 
-/** Pattern: Factory (Simple Factory) Creates enemies using prototypes. */
-public class EnemyFactory {
+  // Ranger
+  AbstractEnemy createRanged();
 
-  private final Enemy meleePrototype;
-  private final Enemy rangedPrototype;
+  // Shielder
+  AbstractEnemy createTank();
 
-  public EnemyFactory() {
-    // Initialize melee prototype (e.g., Skeleton/Goblin style)
-    meleePrototype = new Chaser(35, 80, new WarriorAttack(20.0f));
-    meleePrototype.setTextureRegion(
-        new TextureRegion(ResourceManager.getInstance().getEnemyTexture()));
+  // SpikedBall
+  AbstractEnemy createBall();
 
-    // Initialize ranged prototype (e.g., Archer/Mage style)
-    rangedPrototype = new Ranger(20, 50, new ArcherAttack(10.0f));
-    rangedPrototype.setTextureRegion(
-        new TextureRegion(ResourceManager.getInstance().getEnemyTexture()));
-  }
-
-  public Enemy createMeleeEnemy() {
-    return meleePrototype.clone();
-  }
-
-  public Enemy createRangedEnemy() {
-    return rangedPrototype.clone();
-  }
+  // Oblivion
+  AbstractEnemy createBoss();
 }

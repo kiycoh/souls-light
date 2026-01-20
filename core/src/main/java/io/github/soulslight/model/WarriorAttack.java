@@ -19,7 +19,7 @@ public class WarriorAttack extends AbstractAttack {
 
   @Override
   public float getRange() {
-    return 45.0f / Constants.PPM;
+    return 45.0f;
   }
 
   @Override

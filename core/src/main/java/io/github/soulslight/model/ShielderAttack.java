@@ -1,26 +1,25 @@
 package io.github.soulslight.model;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import java.util.List;
 
 public class ShielderAttack extends AbstractAttack {
 
-  private static final float KNOCKBACK_FORCE = 500.0f; // Push force
+  private static final float KNOCKBACK_SPEED = 10.0f;
 
   @Override
   public float getRange() {
-    return 40.0f; // Short range
+    return 40.0f;
   }
 
   @Override
   public float getDamage() {
-    return 0.0f; // No damage, push only
+    return 0.0f;
   }
 
   @Override
   public float getAttackSpeed() {
-    return 1.0f; // Can push every second
+    return 1.5f;
   }
 
   @Override
@@ -30,19 +29,29 @@ public class ShielderAttack extends AbstractAttack {
 
   @Override
   public void executeAttack(Entity attacker, List<Entity> targets) {
-    for (Entity target : targets) {
-      // Checks distance
-      if (attacker.getPosition().dst(target.getPosition()) <= getRange()) {
+    if (targets.isEmpty()) return;
 
-        // Calculate push direction: (Target - Attacker)
-        // The vector must point TOWARDS the target (away from the attacker)
-        Vector2 knockbackDir = target.getPosition().cpy().sub(attacker.getPosition());
+    Entity target = targets.get(0);
+    Vector2 attackerPos =
+        (attacker.getBody() != null) ? attacker.getBody().getPosition() : attacker.getPosition();
+    Vector2 targetPos =
+        (target.getBody() != null) ? target.getBody().getPosition() : target.getPosition();
 
-        // Apply Knockback (if target is a Player)
-        if (target instanceof Player) {
-          ((Player) target).applyKnockback(knockbackDir, KNOCKBACK_FORCE);
-          Gdx.app.log("ShielderAttack", "SHIELD BASH! Il player è stato respinto.");
-        }
+    float dist = attackerPos.dst(targetPos);
+
+    if (dist <= getRange() + 8f) { // Margine tolleranza
+      target.takeDamage(getDamage());
+
+      // Direzione dal nemico al player
+      Vector2 knockbackDir = targetPos.cpy().sub(attackerPos);
+      if (knockbackDir.len2() < 0.01f) knockbackDir.set(1, 0); // Evita errori se sono sovrapposti
+      knockbackDir.nor();
+
+      // ...
+      if (target instanceof Player) {
+        Player p = (Player) target;
+        // L'attacco potente dello scudo deve stunnare un po' (0.25s o 0.3s)
+        p.applyKnockback(knockbackDir, KNOCKBACK_SPEED, 0.25f);
       }
     }
   }

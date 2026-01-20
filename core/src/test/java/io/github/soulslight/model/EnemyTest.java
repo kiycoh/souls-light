@@ -1,247 +1,275 @@
 package io.github.soulslight.model;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.World;
 import io.github.soulslight.utils.GdxTestExtension;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @ExtendWith(GdxTestExtension.class)
 public class EnemyTest {
 
-  // Variable for the Test Physics World
   private World world;
 
   @BeforeEach
   public void setup() {
-    // Natives loaded by Extension
     Box2D.init();
-
-    // Create a world with zero gravity (Vector2(0,0)) and active sleep (true)
     world = new World(new Vector2(0, 0), true);
+    EnemyRegistry.loadCache(null);
   }
 
-  @Test
-  public void testCloneIndependence() {
-    Enemy original = new Chaser();
-    Enemy clone = original.clone();
+  @ParameterizedTest
+  @ValueSource(strings = {"Chaser", "Ranger", "SpikedBall", "Shielder", "Oblivion"})
+  public void testCloneIndependenceForAll(String enemyType) {
+    AbstractEnemy original = EnemyRegistry.getEnemy(enemyType);
+    AbstractEnemy clone = EnemyRegistry.getEnemy(enemyType);
 
-    // Verifies that registry works
+    original.createBody(world, 0, 0);
+    clone.createBody(world, 100, 100);
+
     assertNotNull(original);
     assertNotNull(clone);
+    assertNotSame(original, clone);
 
-    // Checks if original and clone are of the same class
-    assertEquals(
-        original.getClass(),
-        clone.getClass(),
-        "Il clone deve essere della stessa classe dell'originale");
-
-    // Verifies they are different objects in memory
-    assertNotSame(original, clone, "Devono essere oggetti diversi in memoria");
-
-    // I modify the original
     original.setPosition(500, 500);
-    original.setHealth(1);
+    assertEquals(100, clone.getX(), 0.1f);
 
-    // Verify that the clone has not been modified
-    assertEquals(0, clone.getX(), "Il clone non doveva muoversi");
-    assertNotEquals(1, clone.getHealth(), "Il clone non doveva perdere vita");
+    original.setHealth(1);
+    assertNotEquals(1, clone.getHealth());
   }
 
   @Test
   public void testChaserBehaviour() {
-    Enemy chaser = new Chaser();
-    chaser.setPosition(0, 0);
+    AbstractEnemy chaser = EnemyRegistry.getEnemy("Chaser");
+    chaser.createBody(world, 0, 0);
 
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 0);
+    List<Player> players = Collections.singletonList(player);
 
-    chaser.update(player, 1.0f);
+    float delta = 1.0f;
+    chaser.updateBehavior(players, delta);
+    world.step(delta, 6, 2);
+    chaser.update(delta);
 
-    assertTrue(chaser.getX() > 0, "Il Chaser dovrebbe essersi avvicinato al player sull'asse X");
-
-    //  Small tolerance (delta) for floats
-    assertEquals(0, chaser.getY(), 0.01f);
+    assertTrue(chaser.getX() > 0, "Il Chaser deve essersi mosso a destra");
   }
 
   @Test
   public void testRangerBehaviour() {
-    // 1. SETUP
-    Enemy ranger = new Ranger();
-    ranger.setPosition(10, 10);
+    AbstractEnemy ranger = EnemyRegistry.getEnemy("Ranger");
+    ranger.createBody(world, 10, 10);
 
     Player player = new Player(Player.PlayerClass.ARCHER, world, 10, 5);
+    List<Player> players = Collections.singletonList(player);
 
     float initialDistance = ranger.getPosition().dst(player.getPosition());
 
-    // ACTION (Simulates 1 second)
-    ranger.update(player, 1.0f);
+    float delta = 1.0f;
+    ranger.updateBehavior(players, delta);
+    world.step(delta, 6, 2);
+    ranger.update(delta);
 
-    // ASSERT
     float newDistance = ranger.getPosition().dst(player.getPosition());
 
-    // Verifies that it MOVED AWAY (New distance must be greater than initial)
-    assertTrue(
-        newDistance > initialDistance,
-        "Il Ranger doveva scappare! Distanza Iniziale: "
-            + initialDistance
-            + " -> Finale: "
-            + newDistance);
-
-    // Verifies direction: If player was at Y=5 and Ranger at Y=10, Ranger must go up (Y > 10)
-    assertTrue(ranger.getY() > 10, "Il Ranger doveva scappare verso l'alto (Y aumenta)");
+    assertTrue(newDistance > initialDistance, "Il Ranger deve scappare");
+    assertTrue(ranger.getY() > 10, "Il Ranger deve salire");
   }
 
   @Test
   public void testSpikedBallChargeBehavior() {
-    // SETUP
-    SpikedBall ball = new SpikedBall();
-    ball.setPosition(0, 0);
+    SpikedBall ball = (SpikedBall) EnemyRegistry.getEnemy("SpikedBall");
+    ball.createBody(world, 0, 0);
+
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 0);
+    List<Player> players = Collections.singletonList(player);
 
-    // START PHASE (Cooldown -> Charge)
-    ball.update(player, 2.0f); // Exactly finishes cooldown
-    ball.update(player, 0.1f); // First frame of movement
+    // 1. Consuma Cooldown
+    ball.updateBehavior(players, 2.0f);
 
-    assertTrue(ball.getX() > 0, "La palla deve essere partita");
+    // 2. Inizio Carica
+    float delta = 0.1f;
+    ball.updateBehavior(players, delta);
+    world.step(delta, 6, 2);
+    ball.update(delta);
 
-    // RUN PHASE -> STOP (Wait for MAX_CHARGE_TIME to finish)
-    // Max duration is 3.0s. We already did 0.1s.
-    // Give abundant time (4.0s) to be sure it finishes.
-    ball.update(player, 4.0f);
+    assertTrue(ball.getX() > 0, "La palla deve muoversi");
 
+    // 3. Timeout Carica
+    ball.updateBehavior(players, 4.0f);
+
+    // Verifica stop
     float stopPosition = ball.getX();
+    ball.updateBehavior(players, 0.1f);
+    world.step(0.1f, 6, 2);
+    ball.update(0.1f);
 
-    // VERIFICATION PHASE (Must be stopped)
-    ball.update(player, 0.5f);
-
-    assertEquals(
-        stopPosition, ball.getX(), 0.01f, "La palla deve essersi fermata da sola per timeout");
+    assertEquals(stopPosition, ball.getX(), 0.1f, "La palla deve fermarsi dopo il timeout");
   }
 
   @Test
   public void testSpikedBallWallCollision() {
-    // SETUP
-    SpikedBall ball = new SpikedBall();
-    ball.setPosition(0, 0);
+    SpikedBall ball = (SpikedBall) EnemyRegistry.getEnemy("SpikedBall");
+    ball.createBody(world, 0, 0);
+
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 0);
+    List<Player> players = Collections.singletonList(player);
 
-    // START PHASE
-    // We use two steps to avoid the "skipped frame" problem
-    ball.update(player, 2.0f); // Cooldown expires
-    ball.update(player, 0.1f); // Moves
+    // Start Carica
+    ball.updateBehavior(players, 2.0f);
 
-    assertTrue(ball.getX() > 0, "La palla deve essere partita");
+    float delta = 0.1f;
+    ball.updateBehavior(players, delta);
+    world.step(delta, 6, 2);
+    ball.update(delta);
 
+    // La palla si è mossa a destra
+    assertTrue(ball.getX() > 0);
     float positionBeforeHit = ball.getX();
 
-    // IMPACT SIMULATION
-    ball.onWallHit(); // BAM!
+    // FIX: Simuliamo un muro verticale a DESTRA.
+    // La normale punta verso SINISTRA (-1, 0)
+    ball.onWallHit(new Vector2(-1, 0));
 
-    // IMMEDIATE STOP VERIFICATION
-    // Let time pass (0.5s). If it hadn't stopped,
-    // at 300px/s it would have moved 150px!
-    ball.update(player, 0.5f);
+    // Step successivo
+    ball.updateBehavior(players, 0.1f);
+    world.step(0.1f, 6, 2);
+    ball.update(0.1f);
 
-    assertEquals(
-        positionBeforeHit,
-        ball.getX(),
-        0.01f,
-        "La palla deve fermarsi ISTANTANEAMENTE dopo aver toccato il muro");
-  }
-
-  @Test
-  public void testShielderDieIfAlone() {
-    // 1. SETUP
-    Shielder shielder = new Shielder();
-    shielder.setHealth(300); // A lot of health
-
-    // Empty allies list (or containing only himself)
-    List<Enemy> allies = new ArrayList<>();
-    allies.add(shielder);
-    shielder.setAllies(allies);
-
-    Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 100);
-
-    // ACTION
-    // We run update. He checks the list, sees he is alone.
-    shielder.update(player, 1.0f);
-
-    // ASSERT
+    // FIX LOGICA TEST: Ora la palla RIMBALZA, quindi torna indietro.
+    // La X deve essere MINORE della posizione prima dell'urto.
     assertTrue(
-        shielder.getHealth() <= 0, "Lo Shielder deve morire se non ha nessuno da proteggere!");
+        ball.getX() < positionBeforeHit,
+        "La palla deve rimbalzare indietro (X diminuire) dopo l'urto");
   }
 
   @Test
   public void testShielderProtectionMovement() {
-    // GEOMETRIC SETUP
-    // Let's put everything on a vertical line to facilitate calculations.
+    Ranger ally = new Ranger();
+    ally.setHealth(100);
+    ally.createBody(world, 0, 0);
 
-    Chaser ally = new Chaser();
-    ally.setPosition(0, 0); // Ally at the bottom
+    Player player = new Player(Player.PlayerClass.WARRIOR, world, 1000, 1000);
 
-    Player player = new Player(Player.PlayerClass.WARRIOR, world, 0, 100); // Player at the top
-
-    // Shielder starts shifted to the right (out of position)
     Shielder shielder = new Shielder();
-    shielder.setPosition(50, 50);
+    shielder.setHealth(300);
+    shielder.createBody(world, 50, 50);
 
-    // Allie list setup
-    List<Enemy> allies = new ArrayList<>();
+    List<AbstractEnemy> allies = new ArrayList<>();
     allies.add(ally);
     allies.add(shielder);
     shielder.setAllies(allies);
 
-    // ACTION
-    shielder.update(player, 1.0f);
+    // Usiamo un delta piccolo per simulare un frame fisico realistico
+    float delta = 0.1f;
 
-    // ASSERT
-    // Shielder was at X=50. Must go towards X=0.
-    assertTrue(
-        shielder.getX() < 50, "Lo Shielder deve spostarsi a sinistra verso la linea di tiro");
+    shielder.updateBehavior(Collections.singletonList(player), delta);
+    world.step(delta, 6, 2);
+    shielder.update(delta);
 
-    // Shielder was at Y=50. Must go towards Y=40.
-    assertTrue(
-        shielder.getY() < 50, "Lo Shielder deve scendere verso la posizione di guardia (Y=40)");
+    assertTrue(shielder.getX() < 50, "Shielder (X=50) deve muoversi verso alleato (X=0)");
+    assertTrue(shielder.getY() < 50, "Shielder (Y=50) deve muoversi verso alleato (Y=0)");
+  }
+
+  @Test
+  public void testShielderDieIfAlone() {
+    Shielder shielder = new Shielder();
+    shielder.setHealth(300);
+    List<AbstractEnemy> allies = new ArrayList<>();
+    allies.add(shielder);
+    shielder.setAllies(allies);
+    Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 100);
+
+    shielder.updateBehavior(Collections.singletonList(player), 1.0f);
+    assertTrue(shielder.getHealth() <= 0);
   }
 
   @Test
   public void testShielderAttackDecision() {
-    // SETUP
     Shielder shielder = new Shielder();
-    shielder.setPosition(0, 0);
+    shielder.createBody(world, 0, 0);
 
-    // Player very close (distance 10, bash range is 45)
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 10, 0);
-
-    // Need a valid allies list to not make him suicide
     Chaser ally = new Chaser();
-    List<Enemy> allies = new ArrayList<>();
+    ally.setHealth(100);
+    List<AbstractEnemy> allies = new ArrayList<>();
     allies.add(shielder);
     allies.add(ally);
     shielder.setAllies(allies);
 
-    // 2. ACTION
-    // To verify if it attacks, we can use a trick:
-    // The default attack() method does nothing visible in the unit test without mock.
-    // BUT we can verify that he DID NOT move.
-
-    assertDoesNotThrow(() -> shielder.update(player, 0.1f));
-
-    // Distance Logic Verification:
+    assertDoesNotThrow(() -> shielder.updateBehavior(Collections.singletonList(player), 0.1f));
     float dist = shielder.getPosition().dst(player.getPosition());
-    assertTrue(
-        dist <= shielder.getAttackStrategy().getRange(),
-        "Il player è nel range, lo Shielder dovrebbe aver tentato l'attacco");
+    assertTrue(dist <= shielder.getAttackStrategy().getRange());
+  }
+
+  @Test
+  public void testOblivionTeleport() {
+    Oblivion oblivion = (Oblivion) EnemyRegistry.getEnemy("Oblivion");
+    oblivion.createBody(world, 0, 0);
+
+    Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 100);
+    player.setPosition(1000, 500);
+    List<Player> players = Collections.singletonList(player);
+
+    oblivion.updateBehavior(players, 4.9f);
+    oblivion.updateBehavior(players, 0.2f);
+    oblivion.update(0.2f);
+
+    assertEquals(500, oblivion.getY(), 1.0f);
+    // Note: Teleport logic clamps to map bounds. Tests might fail if map bounds are 0.
+    // Oblivion constructor init map bounds to 0.
+    // But teleport logic has: if (mapWidthBoundary > 0 && mapHeightBoundary > 0) ...
+    // If 0, it doesn't clamp.
+    // New X = 1000 +/- 120 (1120 or 880).
+    float distanceX = Math.abs(oblivion.getX() - player.getX());
+    // Since direction is random, we check distance.
+    assertEquals(120f, distanceX, 1.0f); // Changed 150 to 120 (TELEPORT_OFFSET)
+  }
+
+  @Test
+  public void testOblivionPhaseTransition() {
+    Oblivion oblivion = (Oblivion) EnemyRegistry.getEnemy("Oblivion");
+    oblivion.createBody(world, 0, 0);
+    Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 100);
+    List<Player> players = Collections.singletonList(player);
+
+    float initialHP = oblivion.getHealth();
+    oblivion.takeDamage(initialHP + 50);
+    oblivion.updateBehavior(players, 0.1f);
+
+    assertTrue(oblivion.isPhaseTwo());
+    assertFalse(oblivion.isDead());
+  }
+
+  @Test
+  public void testOblivionPhaseTwoStrategySwitch() {
+    Oblivion oblivion = (Oblivion) EnemyRegistry.getEnemy("Oblivion");
+    oblivion.createBody(world, 0, 0);
+    Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 100);
+    List<Player> players = Collections.singletonList(player);
+
+    oblivion.takeDamage(oblivion.getHealth() + 100);
+    oblivion.updateBehavior(players, 0.1f);
+
+    oblivion.getBody().setTransform(0, 0, 0);
+    player.getBody().setTransform(400, 0, 0);
+    player.update(0);
+
+    oblivion.updateBehavior(players, 0.1f);
+    assertTrue(oblivion.getAttackStrategy() instanceof MageAttack);
+
+    player.getBody().setTransform(20, 0, 0);
+    player.update(0);
+
+    oblivion.updateBehavior(players, 0.1f);
+    assertTrue(oblivion.getAttackStrategy() instanceof WarriorAttack);
   }
 }

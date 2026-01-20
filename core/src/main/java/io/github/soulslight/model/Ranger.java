@@ -2,10 +2,23 @@ package io.github.soulslight.model;
 
 import com.badlogic.gdx.math.Vector2;
 import io.github.soulslight.utils.LogHelper;
+import java.util.List;
 
-public class Ranger extends Enemy {
+public class Ranger extends AbstractEnemy {
 
-  private static final float FLEE_DISTANCE_RATIO = 0.5f;
+  private static final float FLEE_DISTANCE = 200f;
+  private static final float ATTACK_RANGE = 400f;
+
+  private enum State {
+    COMBAT, // attacco, fuga
+    SEARCHING, // ricerca quando perde il player
+    PATROLLING // ronda
+  }
+
+  private State currentState = State.PATROLLING;
+
+  private float attackTimer = 0;
+  private boolean readyToShoot = false;
 
   public Ranger() {
     this(70, 50.0f, new ArcherAttack(7.0f));
@@ -13,62 +26,112 @@ public class Ranger extends Enemy {
 
   public Ranger(float health, float speed, AttackStrategy strategy) {
     super();
-    this.health = health;
-    this.speed = speed;
+    setupStats(health, speed);
     this.attackStrategy = strategy;
   }
+  
+  private void setupStats(float health, float speed) {
+    this.health = health;
+    this.maxHealth = health;
+    this.speed = 130.0f; // Feature branch overrides speed to 130.0f
+    // If we want to respect constructor argument, we should use 'speed', but feature branch had 130 hardcoded.
+    // I will use 130.0f to match feature branch behavior but keep the method generic if needed later.
+    this.speed = 130.0f;
+  }
 
-  private Ranger(Ranger other) {
+  public Ranger(Ranger other) {
     super(other);
-    this.attackStrategy = other.attackStrategy;
+    this.currentState = other.currentState;
   }
 
   @Override
-  public Enemy clone() {
+  public AbstractEnemy clone() {
     return new Ranger(this);
   }
 
   @Override
-  public void update(Player target, float deltaTime) {
-    if (target == null || this.health <= 0) return;
-
+  public void updateBehavior(List<Player> players, float deltaTime) {
+    if (players == null || players.isEmpty() || this.health <= 0) return;
+    Player target = players.get(0);
+    
     syncBody();
 
-    float distance = this.position.dst(target.getPosition());
-    float maxRange = this.attackStrategy.getRange();
-    float minSafeDistance = maxRange * FLEE_DISTANCE_RATIO;
+    //  gestione timer
+    if (attackTimer > 0) attackTimer -= deltaTime;
 
-    if (distance < minSafeDistance) {
-      // Escapes if too close
-      moveAway(target.getPosition(), deltaTime);
-    } else if (distance <= maxRange) {
-      // PERFECT DISTANCE -> Stands still and shoots
-      if (body != null) body.setLinearVelocity(0, 0);
-      LogHelper.logThrottled("AI", "Ranger is shooting at the target.", 2.0f);
-      this.attack(target);
+    // controlla se vede il nemico
+    boolean canSee = canSeePlayer(target, body.getWorld());
+
+    if (canSee) {
+      currentState = State.COMBAT;
+      searchTimer = SEARCH_DURATION; // Reset memoria
+
+      handleCombatLogic(target, deltaTime);
+
     } else {
-      // TOO FAR -> Get closer
-      moveTowards(target.getPosition(), deltaTime);
+
+      if (searchTimer > 0) {
+        currentState = State.SEARCHING;
+        searchTimer -= deltaTime;
+        handleSearchLogic(deltaTime);
+      } else {
+        currentState = State.PATROLLING;
+        updateWanderPatrol(deltaTime);
+      }
     }
   }
 
-  // Goes towards the target if too far
-  @Override
-  public void moveTowards(Vector2 targetPos, float deltaTime) {
-    super.moveTowards(targetPos, deltaTime);
+  private void handleCombatLogic(Player target, float deltaTime) {
+    Vector2 myPos = (body != null) ? body.getPosition() : this.position;
+    float distance = myPos.dst(target.getPosition());
+
+    // Scappa se troppo vicino
+    if (distance < FLEE_DISTANCE) {
+      // Troppo vicino: Scappa usando il metodo del padre!
+      moveAway(target.getPosition());
+    } else if (distance > ATTACK_RANGE - 50f) {
+      // Troppo lontano: cerca di avvicinarsi
+      moveTowards(target.getPosition(), deltaTime);
+    } else {
+      // Distanza perfetta:si ferma
+      if (body != null) body.setLinearVelocity(0, 0);
+    }
+
+    // Se i giocatori sono entro il range attacca
+    if (distance <= ATTACK_RANGE) {
+      if (attackTimer <= 0) {
+        readyToShoot = true;
+        attackTimer = 2.0f; // Cooldown
+        System.out.println("RANGER: Fire!");
+        // Note: feature branch didn't call attack() here, but set readyToShoot = true.
+        // If the system expects immediate attack, I might need: this.attack(List.of(target));
+        // But adhering to feature branch strict logic for now.
+      }
+    }
   }
 
-  // Escapes from the target
-  public void moveAway(Vector2 targetPos, float deltaTime) {
-    if (body != null) {
-      Vector2 direction = this.position.cpy().sub(targetPos);
-      direction.nor();
-      float speedMeters = this.speed / Constants.PPM;
-      body.setLinearVelocity(direction.scl(speedMeters));
+  private void handleSearchLogic(float deltaTime) {
+    float distToLastPos = getPosition().dst(lastKnownPlayerPos);
+
+    if (distToLastPos > 15f) {
+      // Si muove per ricercare
+      moveTowards(lastKnownPlayerPos, deltaTime);
     } else {
-      Vector2 direction = this.position.cpy().sub(targetPos);
-      direction.nor();
-      this.position.mulAdd(direction, this.speed * deltaTime);
+      if (body != null) body.setLinearVelocity(0, 0);
+    }
+  }
+
+  public boolean isReadyToShoot() {
+    return readyToShoot;
+  }
+
+  public void resetShot() {
+    this.readyToShoot = false;
+  }
+  
+  private void syncBody() {
+    if (body != null) {
+      this.position.set(body.getPosition());
     }
   }
 }

@@ -1,13 +1,17 @@
 package io.github.soulslight.model;
 
 import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.utils.Disposable;
 import java.util.ArrayList;
 import java.util.List;
 
 /** Represents a game level containing the map and entities. */
-public class Level {
+public class Level implements Disposable {
+
   private TiledMap map;
-  private List<Enemy> enemies;
+
+  private List<AbstractEnemy> enemies;
+
   private String musicTrack;
   private float ambientLight;
 
@@ -23,11 +27,11 @@ public class Level {
     this.map = map;
   }
 
-  public void addEnemy(Enemy enemy) {
+  public void addEnemy(AbstractEnemy enemy) {
     this.enemies.add(enemy);
   }
 
-  public List<Enemy> getEnemies() {
+  public List<AbstractEnemy> getEnemies() {
     return enemies;
   }
 
@@ -35,11 +39,22 @@ public class Level {
     this.musicTrack = musicTrack;
   }
 
+  public String getMusicTrack() { // Per quando avremo le musiche
+    return musicTrack;
+  }
+
   public void setAmbientLight(float ambientLight) {
     this.ambientLight = ambientLight;
   }
 
+  public float getAmbientLight() {
+    return ambientLight;
+  }
+
+  @Override
   public void dispose() {
     if (map != null) map.dispose();
+
+    enemies.clear();
   }
 }

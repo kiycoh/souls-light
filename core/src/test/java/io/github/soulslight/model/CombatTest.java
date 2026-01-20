@@ -23,11 +23,10 @@ public class CombatTest {
 
   @Test
   public void testWarriorStats() {
-    AttackStrategy strategy = new WarriorAttack(20.0f);
+    AttackStrategy strategy = new WarriorAttack(45);
     // SINTASSI JUNIT 5: assertEquals(atteso, attuale, delta, "Messaggio Opzionale")
-    assertEquals(
-        45.0f / Constants.PPM, strategy.getRange(), 0.01f, "Il guerriero attacca a corto raggio");
-    assertEquals(20.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
+    assertEquals(45.0f, strategy.getRange(), 0.01f, "Il guerriero attacca a corto raggio");
+    assertEquals(45.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
     assertEquals(1.0f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere media");
     assertEquals(
         "sword_swing", strategy.getSoundID(), "Il suono riprodotto deve essere quello della spada");
@@ -35,11 +34,10 @@ public class CombatTest {
 
   @Test
   public void testMageStats() {
-    AttackStrategy strategy = new MageAttack(25.0f);
+    AttackStrategy strategy = new MageAttack(45);
     // Sintassi: (atteso, attuale, tolleranza, messaggio)
-    assertEquals(
-        300.0f / Constants.PPM, strategy.getRange(), 0.01f, "Il mago attacca a lungo raggio");
-    assertEquals(25.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
+    assertEquals(300.0f, strategy.getRange(), 0.01f, "Il mago attacca a lungo raggio");
+    assertEquals(45.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
     assertEquals(0.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere lenta");
     assertEquals(
         "stick_sound", strategy.getSoundID(), "Il suono riprodotto deve essere quello del bastone");
@@ -47,9 +45,9 @@ public class CombatTest {
 
   @Test
   public void testThiefStats() {
-    AttackStrategy strategy = new ThiefAttack(8.0f);
+    AttackStrategy strategy = new ThiefAttack(20);
     assertEquals(0.8f, strategy.getRange(), 0.01f, "Il ladro attacca a corto raggio");
-    assertEquals(8.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
+    assertEquals(20.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
     assertEquals(2.0f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere alta");
     assertEquals(
         "dagger_sound",
@@ -59,10 +57,9 @@ public class CombatTest {
 
   @Test
   public void testArcherStats() {
-    AttackStrategy strategy = new ArcherAttack(7.0f);
-    assertEquals(
-        250.0f / Constants.PPM, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
-    assertEquals(7.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
+    AttackStrategy strategy = new ArcherAttack(25);
+    assertEquals(100.0f, strategy.getRange(), 0.01f, "L'arciere attacca a lungo raggio");
+    assertEquals(25.0f, strategy.getDamage(), 0.06f, "Il danno deve essere basso");
     assertEquals(1.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere medio-alta");
     assertEquals(
         "bow_sound", strategy.getSoundID(), "Il suono riprodotto deve essere quello dell'arco");
@@ -84,7 +81,7 @@ public class CombatTest {
     // Controllo i VALORI (AssertEquals)
     // Sintassi: (ValoreAtteso, ValoreReale, Delta, "Messaggio opzionale")
     assertEquals(
-        20.0f,
+        35.0f,
         warrior.getAttackStrategy().getDamage(),
         0.01f,
         "Il player deve fare i danni del guerriero");
@@ -102,7 +99,7 @@ public class CombatTest {
 
     // Controllo i VALORI (AssertEquals)
     assertEquals(
-        25.0f, mage.getAttackStrategy().getDamage(), 0.01f, "Il player deve fare i danni del mago");
+        45.0f, mage.getAttackStrategy().getDamage(), 0.01f, "Il player deve fare i danni del mago");
   }
 
   @Test
@@ -117,7 +114,7 @@ public class CombatTest {
 
     // Controllo i VALORI (AssertEquals)
     assertEquals(
-        8.0f,
+        20.0f,
         thief.getAttackStrategy().getDamage(),
         0.01f,
         "Il player deve fare i danni del ladro");
@@ -136,7 +133,7 @@ public class CombatTest {
 
     // Controllo i VALORI (AssertEquals)
     assertEquals(
-        7.0f,
+        25.0f,
         archer.getAttackStrategy().getDamage(),
         0.01f,
         "Il player deve fare i danni dell'arciere");

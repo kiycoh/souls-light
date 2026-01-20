@@ -6,7 +6,7 @@ public class ContactDamageAttack extends AbstractAttack {
 
   @Override
   public float getRange() {
-    return 30.0f;
+    return 40.0f;
   }
 
   @Override

@@ -1,113 +1,165 @@
 package io.github.soulslight.model;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
+import java.util.Collections;
+import java.util.List;
 
-public class SpikedBall extends Enemy {
+public class SpikedBall extends AbstractEnemy {
 
-  // States
+  // La Spikedball ha 4 possibili stadi
   private enum State {
+    PATROLLING,
+    SEARCHING,
     COOLDOWN,
     CHARGING
   }
 
-  private State currentState;
+  private State currentState = State.PATROLLING;
+  private float stateTimer;
+  private final float COOLDOWN_TIME = 1.5f;
+  private final float MAX_CHARGE_TIME = 2.5f;
 
-  // Timer and Parameters
-  private float stateTimer; // duration of a state (charge or attack)
-  private final float COOLDOWN_TIME = 2.0f;
-  private final float MAX_CHARGE_TIME = 3.0f; // Rolls for 1 second
-
-  private Vector2 chargeDirection; // Does not change direction during charge
+  private Vector2 chargeDirection;
+  private boolean hasHitPlayer = false;
 
   public SpikedBall() {
     super();
-    this.health = 500.0f; // tough
-    this.speed = 300.0f; // fast (Chaser is 80)
-
-    this.currentState = State.COOLDOWN;
-    this.stateTimer = COOLDOWN_TIME;
+    setupStats();
+    this.currentState = State.PATROLLING;
     this.chargeDirection = new Vector2(0, 0);
-
     this.attackStrategy = new ContactDamageAttack();
+  }
+
+  private void setupStats() {
+    this.health = 500.0f;
+    this.maxHealth = 500.0f;
+    this.speed = 250.0f;
   }
 
   public SpikedBall(SpikedBall other) {
     super(other);
-    this.currentState = State.COOLDOWN;
-    this.stateTimer = COOLDOWN_TIME;
+    this.currentState = State.PATROLLING;
     this.chargeDirection = new Vector2(0, 0);
   }
 
   @Override
-  public Enemy clone() {
+  public AbstractEnemy clone() {
     return new SpikedBall(this);
   }
 
   @Override
-  public void update(Player target, float deltaTime) {
-    if (target == null) return;
+  public void updateBehavior(List<Player> players, float deltaTime) {
+    if (players.isEmpty() || this.health <= 0) return;
+    Player target = players.get(0);
+    
+    syncBody();
 
-    // Single timer management for both states
-    stateTimer -= deltaTime;
+    boolean canSee = canSeePlayer(target, body.getWorld());
 
-    if (currentState == State.COOLDOWN) {
-      // --- AIM AND WAIT
-
-      if (stateTimer <= 0) {
-        // Looks for player position
-        prepareCharge(target.getPosition());
+    if (currentState == State.CHARGING) {
+      updateCharge(players, deltaTime);
+    } else if (canSee) {
+      searchTimer = SEARCH_DURATION;
+      if (currentState != State.COOLDOWN) {
+        currentState = State.COOLDOWN;
+        stateTimer = COOLDOWN_TIME;
+        if (body != null) body.setLinearVelocity(0, 0);
       }
 
-    } else if (currentState == State.CHARGING) {
-      // --- CHARGE THE PLAYER
-
-      Vector2 currentPos = this.getPosition();
-      currentPos.mulAdd(chargeDirection, speed * deltaTime);
-
-      // Hits anyone in its path
-      checkCollisions(target);
-
-      // If timer ends, stop and recharge
+      stateTimer -= deltaTime;
       if (stateTimer <= 0) {
-        stopCharge();
+        prepareCharge(target.getPosition());
+      }
+    } else {
+      if (searchTimer > 0) {
+        currentState = State.SEARCHING;
+        searchTimer -= deltaTime;
+        handleSearchLogic(deltaTime);
+      } else {
+        currentState = State.PATROLLING;
+        updateWanderPatrol(deltaTime);
       }
     }
   }
 
-  public void onWallHit() {
-    if (currentState == State.CHARGING) {
-      Gdx.app.log("SpikedBall", "SBAM! Toccato il muro. Stop carica.");
+  private void updateCharge(List<Player> players, float deltaTime) {
+    stateTimer -= deltaTime;
+
+    if (body != null) {
+      body.setLinearVelocity(chargeDirection.x * speed, chargeDirection.y * speed);
+      this.position.set(body.getPosition());
+    }
+
+    checkCollisions(players);
+
+    if (stateTimer <= 0) {
       stopCharge();
     }
   }
 
   private void prepareCharge(Vector2 targetPos) {
-    /*System.out.println("--- CHARGE PREPARATION ---");
-    System.out.println("My Position: " + this.getPosition());
-    System.out.println("Target Position: " + targetPos);*/
-
-    this.chargeDirection = targetPos.cpy().sub(this.getPosition());
-
-    Gdx.app.log("SpikedBall", "Vettore Direzione (Pre-Normalize): " + this.chargeDirection);
-
-    this.chargeDirection.nor();
-
-    // System.out.println("Direction Vector (Final): " + this.chargeDirection);
-
+    hasHitPlayer = false;
+    Vector2 myPos = (body != null) ? body.getPosition() : this.position;
+    this.chargeDirection = targetPos.cpy().sub(myPos).nor();
     this.currentState = State.CHARGING;
     this.stateTimer = MAX_CHARGE_TIME;
   }
 
   private void stopCharge() {
     this.currentState = State.COOLDOWN;
-    this.stateTimer = COOLDOWN_TIME; // Resets timer for pause
+    this.stateTimer = COOLDOWN_TIME;
+    if (body != null) body.setLinearVelocity(0, 0);
   }
 
-  private void checkCollisions(Player player) {
-    // If it touches the player (distance < sum of radii, e.g. 20 pixels)
-    if (this.getPosition().dst(player.getPosition()) < 20f) {
-      this.attack(player);
+  private void handleSearchLogic(float deltaTime) {
+    float distToLastPos = getPosition().dst(lastKnownPlayerPos);
+    if (distToLastPos > 20f) {
+      moveTowards(lastKnownPlayerPos, deltaTime);
+    } else {
+      if (body != null) body.setLinearVelocity(0, 0);
+    }
+  }
+
+  private void checkCollisions(List<Player> players) {
+    Vector2 myPos = getPosition();
+    float collisionRadius = 35f;
+
+    for (Player p : players) {
+      if (myPos.dst(p.getPosition()) < collisionRadius && !hasHitPlayer) {
+        // Respinge il player
+        this.chargeDirection.scl(-1);
+        this.attackStrategy.executeAttack(this, Collections.singletonList(p));
+        this.stateTimer = 0.4f; // Rimbalza per mezzo secondo e poi stop
+        hasHitPlayer = true;
+
+        if (p.getBody() != null) {
+          Vector2 knockbackDir = p.getPosition().cpy().sub(myPos).nor();
+          p.applyKnockback(knockbackDir, 800f, 0.2f);
+        }
+      }
+    }
+  }
+
+  public void onWallHit(Vector2 normal) {
+    if (currentState == State.CHARGING) {
+
+      float dot = chargeDirection.dot(normal);
+      chargeDirection.mulAdd(normal, -2f * dot);
+      chargeDirection.nor();
+
+      stateTimer -= 0.6f;
+
+      if (stateTimer <= 0) {
+        stopCharge();
+      }
+
+      System.out.println("SpikedBall: RIMBALZO ANGOLARE!");
+    }
+  }
+
+  private void syncBody() {
+    if (body != null) {
+      this.position.set(body.getPosition());
     }
   }
 }

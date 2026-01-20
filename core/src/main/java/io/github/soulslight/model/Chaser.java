@@ -2,50 +2,137 @@ package io.github.soulslight.model;
 
 import com.badlogic.gdx.math.Vector2;
 import io.github.soulslight.utils.LogHelper;
+import java.util.List;
 
-public class Chaser extends Enemy {
+public class Chaser extends AbstractEnemy {
+
+  // Diversi stati
+  private enum State {
+    CHASING, // Inseguimento quando vede i players
+    ATTACKING, // Attacco
+    RETREATING, // Fuga dopo ogni colpo inferto
+    SEARCHING, // Ricerca subito dopo aver perso le tracce dei giocatori
+    PATROLLING // Ronda intorno allo spawn quando non sa dove siamo
+  }
+
+  // Inizia nello stato di ronda
+  private State currentState = State.PATROLLING;
+
+  private float retreatTimer = 0f;
+  private float attackCooldown = 0f;
+
+  private static final float STOP_DISTANCE = 30f;
+
+  // Durata tempo di ritirata dopo un colpo
+  private static final float RETREAT_DURATION = 0.8f;
+
+  // Tempo tra un colpo ed un altro
+  private static final float ATTACK_RATE = 1.5f;
 
   public Chaser() {
-    this(100, 80.0f, new WarriorAttack(20.0f));
+    this(100, 90.0f, new WarriorAttack(20.0f));
   }
 
   public Chaser(float health, float speed, AttackStrategy strategy) {
     super();
     this.health = health;
+    this.maxHealth = health;
     this.speed = speed;
     this.attackStrategy = strategy;
   }
 
-  private Chaser(Chaser other) {
+  public Chaser(Chaser other) {
     super(other);
-    this.attackStrategy = other.attackStrategy;
   }
 
   @Override
-  public Enemy clone() {
+  public AbstractEnemy clone() {
     return new Chaser(this);
   }
 
   @Override
-  public void update(Player target, float deltaTime) {
-    if (target == null || this.health <= 0) return;
-
+  public void updateBehavior(List<Player> players, float deltaTime) {
+    if (players == null || players.isEmpty() || this.health <= 0) return;
+    
+    // Default to first player
+    Player target = players.get(0);
+    
     syncBody();
 
-    float distance = this.position.dst(target.getPosition());
-    float range = this.attackStrategy.getRange();
+    if (attackCooldown > 0) attackCooldown -= deltaTime;
+    if (retreatTimer > 0) retreatTimer -= deltaTime;
 
-    if (distance <= range) {
-      LogHelper.logThrottled("AI", "Chaser is attacking the target.", 2.0f);
-      this.attack(target);
-      if (body != null) body.setLinearVelocity(0, 0); // Stop when attacking
+    Vector2 myPos = (body != null) ? body.getPosition() : this.position;
+
+    boolean canSee = canSeePlayer(target, body.getWorld());
+
+    if (canSee) {
+      searchTimer = SEARCH_DURATION; // Reset della memoria
+      float distance = myPos.dst(target.getPosition());
+
+      if (currentState == State.SEARCHING || currentState == State.PATROLLING) {
+        currentState = State.CHASING;
+      }
+      switch (currentState) {
+        case CHASING:
+          if (distance <= STOP_DISTANCE) {
+            if (body != null) body.setLinearVelocity(0, 0);
+            currentState = State.ATTACKING;
+          } else {
+            moveTowards(target.getPosition(), deltaTime);
+          }
+          break;
+
+        case ATTACKING:
+          if (body != null) body.setLinearVelocity(0, 0);
+          if (attackCooldown <= 0) {
+            this.attack(players);
+            currentState = State.RETREATING;
+            retreatTimer = RETREAT_DURATION;
+            attackCooldown = ATTACK_RATE;
+          } else if (distance > STOP_DISTANCE + 15f) {
+            currentState = State.CHASING;
+          }
+          break;
+
+        case RETREATING:
+          moveAway(target.getPosition());
+          if (retreatTimer <= 0) currentState = State.CHASING;
+          break;
+      }
     } else {
-      moveTowards(target.getPosition(), deltaTime);
+      if (currentState == State.RETREATING && retreatTimer > 0) {
+        moveAway(target.getPosition());
+        return;
+      }
+
+      if (searchTimer > 0) {
+        currentState = State.SEARCHING;
+        searchTimer -= deltaTime;
+
+        float distToLastPos = myPos.dst(lastKnownPlayerPos);
+        if (distToLastPos > 15f) {
+          moveTowards(lastKnownPlayerPos, deltaTime);
+        } else {
+          if (body != null) body.setLinearVelocity(0, 0);
+        }
+      } else {
+        currentState = State.PATROLLING;
+        updateWanderPatrol(deltaTime);
+      }
     }
   }
 
-  @Override
-  public void moveTowards(Vector2 targetPos, float deltaTime) {
-    super.moveTowards(targetPos, deltaTime);
+  // Method to sync body position back to Entity state (from Enemy.java, moved here or rely on AbstractEnemy?)
+  // AbstractEnemy doesn't seem to have syncBody(), but it updates position in moveTowards/moveAway.
+  // However, Chaser.updateBehavior calls syncBody().
+  // Enemy.java had syncBody(). AbstractEnemy.java did not.
+  // I should add syncBody() to Chaser or AbstractEnemy. 
+  // Let's add it to Chaser for now to be safe, or just inline it: this.position.set(body.getPosition());
+  
+  private void syncBody() {
+    if (body != null) {
+      this.position.set(body.getPosition());
+    }
   }
 }

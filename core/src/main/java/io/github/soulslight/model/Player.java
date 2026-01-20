@@ -1,165 +1,166 @@
 package io.github.soulslight.model;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.BodyDef;
-import com.badlogic.gdx.physics.box2d.CircleShape;
-import com.badlogic.gdx.physics.box2d.FixtureDef;
-import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.physics.box2d.*;
+import java.util.List;
 
 public class Player extends Entity {
 
-  // --- PHYSICS CONSTANTS ---
-  // Define minimal body radius
-  private static final float BODY_RADIUS = 0.4f;
-  private static final float LINEAR_DAMPING = 10.0f; // High damping for tight "Souls-like" movement
+  private static final float BODY_RADIUS = 14.0f;
+  private static final float NORMAL_DAMPING = 10.0f; // Attrito per non scivolare
+  // private float speed = 300f; al momento la speed è data da gamecontroller, da cambiare
+  // evetualmente
+  private boolean wasInKnockback = false;
 
   private final PlayerClass type;
+  private float knockbackTimer = 0f;
+  private float invincibilityTimer = 0f;
+  private final float INVINCIBILITY_DURATION = 0.1f;
+  private float attackCooldown = 0f;
+  private static final float ATTACK_COOLDOWN_DURATION = 0.5f;
 
-  // Box2D Body (represents the player in the physics world)
-  private final Body body;
+  private Vector2 currentKnockbackVelocity = new Vector2();
 
   public enum PlayerClass {
     WARRIOR {
       @Override
       public AttackStrategy getStrategy() {
-        return new WarriorAttack(20.0f);
+        return new WarriorAttack(35);
       }
     },
     MAGE {
       @Override
       public AttackStrategy getStrategy() {
-        return new MageAttack(25.0f);
+        return new MageAttack(45);
       }
     },
     THIEF {
       @Override
       public AttackStrategy getStrategy() {
-        return new ThiefAttack(8.0f);
+        return new ThiefAttack(20);
       }
     },
     ARCHER {
       @Override
       public AttackStrategy getStrategy() {
-        return new ArcherAttack(7.0f);
+        return new ArcherAttack(25);
       }
     };
 
-    // Abstract method that every constant defined above MUST implement
     public abstract AttackStrategy getStrategy();
   }
 
-  // Inject World via Constructor
   public Player(PlayerClass type, World world, float startX, float startY) {
+    super();
+
     if (type == null) {
       throw new IllegalArgumentException("Player Type cannot be null");
     }
-    if (world == null) {
-      throw new IllegalArgumentException("Physics World cannot be null");
-    }
-
+    this.health = 500;
+    this.maxHealth = 500;
     this.type = type;
+    // this.speed= 100; al momento la speed è data da gamecontroller, da cambiare evetualmente
     this.attackStrategy = type.getStrategy();
-
-    // Initialize Physics Body immediately
-    this.body = createBody(world, startX, startY);
+    this.position = new Vector2(startX, startY);
+    createBody(world, startX, startY);
   }
 
   @Override
-  public void setPosition(float x, float y) {
-    if (body != null) {
-      body.setTransform(x, y, body.getAngle());
+  public void update(float delta) {
+
+    if (invincibilityTimer > 0) invincibilityTimer -= delta;
+    if (knockbackTimer > 0) knockbackTimer -= delta;
+    if (attackCooldown > 0) attackCooldown -= delta;
+
+    if (knockbackTimer > 0) {
+      wasInKnockback = true;
+
+      if (body != null) {
+        body.setLinearDamping(0f);
+
+        body.setLinearVelocity(currentKnockbackVelocity);
+      }
+
+      super.update(delta);
+      return;
     }
+
+    // Uscita dal knockback
+    if (wasInKnockback) {
+      wasInKnockback = false;
+      if (body != null) {
+        body.setLinearVelocity(0, 0);
+        body.setLinearDamping(NORMAL_DAMPING);
+      }
+    }
+
+    super.update(delta);
   }
 
-  // ---------------------------------------------------------
-  // PHYSICS INITIALIZATION (One-Time Allocation)
-  // ---------------------------------------------------------
-  private Body createBody(World world, float x, float y) {
-    // Define Body
+  public void applyKnockback(Vector2 direction, float speedForce, float duration) {
+    if (body == null) return;
+
+    this.currentKnockbackVelocity.set(direction).nor().scl(speedForce);
+
+    this.knockbackTimer = duration;
+
+    body.setLinearDamping(0f);
+    body.setLinearVelocity(currentKnockbackVelocity);
+  }
+
+  private void createBody(World world, float x, float y) {
     BodyDef bdef = new BodyDef();
     bdef.position.set(x, y);
-    bdef.type = BodyDef.BodyType.DynamicBody; // Player moves
-    bdef.fixedRotation = true; // Prevent player from rolling like a ball
-    bdef.linearDamping = LINEAR_DAMPING; // Stop quickly when input ceases
+    bdef.type = BodyDef.BodyType.DynamicBody;
+    bdef.fixedRotation = true;
 
-    Body pBody = world.createBody(bdef);
+    bdef.linearDamping = NORMAL_DAMPING;
 
-    // Define Shape (Circle for smooth sliding)
+    this.body = world.createBody(bdef);
+
     CircleShape shape = new CircleShape();
     shape.setRadius(BODY_RADIUS);
 
-    // Define Fixture
     FixtureDef fdef = new FixtureDef();
     fdef.shape = shape;
     fdef.density = 1.0f;
-    fdef.friction = 0.0f; // No friction with walls to prevent sticking
+    fdef.friction = 0.0f;
     fdef.restitution = 0.0f; // No bouncing
     fdef.filter.categoryBits = Constants.BIT_PLAYER;
     fdef.filter.maskBits = Constants.BIT_WALL | Constants.BIT_ENEMY;
 
-    // Create Fixture & Dispose Shape (Crucial for memory!)
-    pBody.createFixture(fdef);
+    this.body.createFixture(fdef);
+    this.body.setUserData(this);
     shape.dispose();
-
-    return pBody;
   }
 
-  // ---------------------------------------------------------
-  // HOT PATH METHODS (Zero-Allocation)
-  // ---------------------------------------------------------
+  public void attack(List<AbstractEnemy> enemies) {
+    if (attackCooldown > 0) return;
+    attackCooldown = ATTACK_COOLDOWN_DURATION;
+    for (AbstractEnemy enemy : enemies) {
+      if (enemy == null || enemy.isDead()) continue;
+      if (this.getPosition().dst(enemy.getPosition()) <= attackStrategy.getRange()) {
+        enemy.takeDamage(attackStrategy.getDamage());
+      }
+    }
+  }
 
-  public void setAttackStrategy(AttackStrategy attackStrategy) {
-    this.attackStrategy = attackStrategy;
+  public void move(float x, float y) {
+    if (body != null) body.setLinearVelocity(x, y);
+  }
+
+  @Override
+  public void takeDamage(float amount) {
+    if (invincibilityTimer > 0) return;
+    super.takeDamage(amount);
+    if (!isDead()) invincibilityTimer = INVINCIBILITY_DURATION;
   }
 
   public void doAnAttack() {
-    if (attackStrategy != null) {
-      attackStrategy.attack();
-    }
+    if (attackStrategy != null) attackStrategy.attack();
   }
 
-  /**
-   * Applies velocity to the physics body.
-   *
-   * @param targetVelocityX The desired speed on X (not displacement!)
-   * @param targetVelocityY The desired speed on Y (not displacement!)
-   */
-  public void move(float targetVelocityX, float targetVelocityY) {
-    // Directly set velocity to body.
-    // Note: In a real simulation, applyForce is more "physical",
-    // but setLinearVelocity gives snappy controls required for this genre.
-    body.setLinearVelocity(targetVelocityX, targetVelocityY);
-  }
-
-  /** Stop the player immediately (e.g., when no keys are pressed). */
-  public void stop() {
-    body.setLinearVelocity(0, 0);
-  }
-
-  @Override
-  public Vector2 getPosition() {
-    return body.getPosition(); // Returns reference to internal Vector2 (Do not modify externally!)
-  }
-
-  public Body getBody() {
-    return body;
-  }
-
-  @Override
-  public AttackStrategy getAttackStrategy() {
-    return attackStrategy;
-  }
-
-  public void applyKnockback(Vector2 direction, float force) {
-    if (this.body != null) {
-      // Normalize the direction for safety
-      direction.nor();
-
-      // 'force' determines how strong the push is (e.g. 10.0f - 50.0f)
-      this.body.applyLinearImpulse(direction.scl(force), this.body.getWorldCenter(), true);
-    } else {
-      this.position.mulAdd(direction, force);
-    }
+  public boolean isInvincible() {
+    return invincibilityTimer > 0;
   }
 }

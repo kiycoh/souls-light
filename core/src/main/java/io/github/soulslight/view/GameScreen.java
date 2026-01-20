@@ -1,149 +1,194 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.soulslight.controller.GameController;
-import io.github.soulslight.manager.ResourceManager;
-import io.github.soulslight.model.Enemy;
+import io.github.soulslight.manager.GameManager;
+import io.github.soulslight.manager.TextureManager;
+import io.github.soulslight.model.AbstractEnemy;
 import io.github.soulslight.model.GameModel;
+import io.github.soulslight.model.Oblivion;
 import io.github.soulslight.model.Player;
+import io.github.soulslight.model.Projectile;
 
 public final class GameScreen implements GameState {
 
-  // --- MVC DEPENDENCIES ---
   private final SpriteBatch batch;
   private final GameModel model;
   private final GameController controller;
 
-  // --- PIXEL ART RENDERING ---
-  private static final float WORLD_WIDTH = 720;
-  private static final float WORLD_HEIGHT = 480;
-
+  private final GameHUD hud;
   private final OrthographicCamera camera;
   private final Viewport viewport;
   private final OrthogonalTiledMapRenderer mapRenderer;
-  private final Texture playerTexture;
+  private final Box2DDebugRenderer debugRenderer;
+
+  // Map size in pixel (used for camera clamp)
+  private float mapPixelWidth = 0f;
+  private float mapPixelHeight = 0f;
 
   public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
     this.batch = batch;
     this.model = model;
     this.controller = controller;
 
-    // Setup Camera e Viewport for Pixel Art
+    // Camera + viewport: what you see on screen (not map size)
     this.camera = new OrthographicCamera();
+    this.viewport = new FitViewport(720, 480, camera);
 
-    // FitViewport maintains aspect ratio while scaling to fit the screen.
-    this.viewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
-
-    // Map Renderer
+    // Map renderer
     this.mapRenderer = new OrthogonalTiledMapRenderer(model.getMap(), batch);
 
-    // Use ResourceManager for player texture
-    this.playerTexture = ResourceManager.getInstance().getPlayerTexture();
+    // HUD and Debug
+    this.hud = new GameHUD();
+    this.debugRenderer = new Box2DDebugRenderer();
+
+    // Assets
+    TextureManager.load();
   }
 
   @Override
   public void show() {
-    // Activate controller as input processor
     Gdx.input.setInputProcessor(controller);
+    cacheMapSizeInPixels();
+    centerCameraOnPlayer(); // posizione iniziale sensata
   }
 
   @Override
   public void render(float delta) {
-    // MVC Update Loop
     if (!model.isPaused()) {
       controller.update(delta);
       model.update(delta);
     }
 
-    // Update camera position to follow player
-    Player player = model.getPlayer();
-    if (player != null) {
-      // Calculate target position (Player position in pixels)
-      float targetX = player.getPosition().x * io.github.soulslight.model.Constants.PPM;
-      float targetY = player.getPosition().y * io.github.soulslight.model.Constants.PPM;
+    // --- CAMERA CENTERED ON PLAYER (WITH OOB CLASP) ---
+    followPlayerCamera();
 
-      // Get Map Dimensions
-      com.badlogic.gdx.maps.MapProperties prop = model.getMap().getProperties();
-      int mapWidth = prop.get("width", Integer.class);
-      int mapHeight = prop.get("height", Integer.class);
-      int tilePixelWidth = prop.get("tilewidth", Integer.class);
-      int tilePixelHeight = prop.get("tileheight", Integer.class);
+    ScreenUtils.clear(0, 0, 0, 1);
 
-      float mapPixelWidth = mapWidth * tilePixelWidth;
-      float mapPixelHeight = mapHeight * tilePixelHeight;
-
-      // Calculate Clamped Camera Position
-      float cameraHalfWidth = camera.viewportWidth * 0.5f;
-      float cameraHalfHeight = camera.viewportHeight * 0.5f;
-
-      float minX = cameraHalfWidth;
-      float minY = cameraHalfHeight;
-      float maxX = mapPixelWidth - cameraHalfWidth;
-      float maxY = mapPixelHeight - cameraHalfHeight;
-
-      // Ensure map is larger than viewport to avoid crossing bounds (center if smaller)
-      if (mapPixelWidth < camera.viewportWidth) {
-        targetX = mapPixelWidth / 2f;
-      } else {
-        targetX = com.badlogic.gdx.math.MathUtils.clamp(targetX, minX, maxX);
-      }
-
-      if (mapPixelHeight < camera.viewportHeight) {
-        targetY = mapPixelHeight / 2f;
-      } else {
-        targetY = com.badlogic.gdx.math.MathUtils.clamp(targetY, minY, maxY);
-      }
-
-      camera.position.set(targetX, targetY, 0);
-    }
-    camera.update();
-
-    // Rendering
-    ScreenUtils.clear(0, 0, 0, 1); // (black background)
-
-    // Render Map
     mapRenderer.setView(camera);
     mapRenderer.render();
 
-    // Apply batch with camera projection
     batch.setProjectionMatrix(camera.combined);
-
     batch.begin();
 
-    // Draw Enemies
-    if (model.getLevel() != null) {
-      for (Enemy enemy : model.getLevel().getEnemies()) {
-        enemy.draw(batch);
-      }
+    Player player = model.getPlayer();
+    if (player != null) {
+      if (player.isDead()) batch.setColor(Color.RED);
+      drawEntity(TextureManager.get("player"), player.getPosition(), 32, 32);
+      batch.setColor(Color.WHITE);
     }
 
-    if (player != null) {
-      // Convert Physics (Meters) to Screen (Pixels) for Drawing
-      // Center texture on body
-      float x =
-          (player.getPosition().x * io.github.soulslight.model.Constants.PPM)
-              - (playerTexture.getWidth() / 2f);
-      float y =
-          (player.getPosition().y * io.github.soulslight.model.Constants.PPM)
-              - (playerTexture.getHeight() / 2f);
-      batch.draw(playerTexture, x, y);
+    for (AbstractEnemy enemy : model.getActiveEnemies()) {
+      if (enemy.isDead()) continue;
+
+      Texture tex = TextureManager.getEnemyTexture(enemy);
+      float size = (enemy instanceof Oblivion) ? 64 : 32;
+      drawEntity(tex, enemy.getPosition(), size, size);
     }
+
+    Texture tArrow = TextureManager.get("arrow");
+    if (tArrow == null) tArrow = TextureManager.get("player");
+
+    for (Projectile p : model.getProjectiles()) {
+      batch.draw(
+          tArrow,
+          p.getPosition().x - 16,
+          p.getPosition().y - 4,
+          16,
+          4,
+          32,
+          8,
+          1,
+          1,
+          p.getRotation(),
+          0,
+          0,
+          tArrow.getWidth(),
+          tArrow.getHeight(),
+          false,
+          false);
+    }
+
     batch.end();
 
-    // Debug Renderer for Box2D (to be added)
+    hud.render(batch, player, model.getActiveEnemies());
+
+    if (GameManager.DEBUG_MODE) {
+      debugRenderer.render(model.getWorld(), camera.combined);
+    }
+  }
+
+  private void followPlayerCamera() {
+    Player player = model.getPlayer();
+    if (player == null) {
+      camera.update();
+      return;
+    }
+
+    Vector2 p = player.getPosition();
+
+    // half viewport (takes in consideration zoom)
+    float halfW = (camera.viewportWidth * camera.zoom) / 2f;
+    float halfH = (camera.viewportHeight * camera.zoom) / 2f;
+
+    float targetX = p.x;
+    float targetY = p.y;
+
+    // clamp: prevents camera from going out of bounds
+    if (mapPixelWidth > 0 && mapPixelHeight > 0) {
+      targetX = MathUtils.clamp(targetX, halfW, Math.max(halfW, mapPixelWidth - halfW));
+      targetY = MathUtils.clamp(targetY, halfH, Math.max(halfH, mapPixelHeight - halfH));
+    }
+
+    camera.position.set(targetX, targetY, 0);
+    camera.update();
+  }
+
+  private void centerCameraOnPlayer() {
+    Player player = model.getPlayer();
+    if (player == null) return;
+
+    Vector2 p = player.getPosition();
+    camera.position.set(p.x, p.y, 0);
+    camera.update();
+  }
+
+  private void cacheMapSizeInPixels() {
+    if (model.getMap() == null) return;
+
+    MapProperties prop = model.getMap().getProperties();
+    int mapWidth = prop.get("width", Integer.class);
+    int mapHeight = prop.get("height", Integer.class);
+    int tileWidth = prop.get("tilewidth", Integer.class);
+    int tileHeight = prop.get("tileheight", Integer.class);
+
+    mapPixelWidth = mapWidth * tileWidth;
+    mapPixelHeight = mapHeight * tileHeight;
+  }
+
+  // Center draw
+  private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
+    if (tex != null) {
+      batch.draw(tex, pos.x - width / 2, pos.y - height / 2, width, height);
+    }
   }
 
   @Override
   public void resize(int width, int height) {
-    // Window resizing
-    viewport.update(width, height, true); // true = centra la camera
+    viewport.update(width, height, true);
   }
 
   @Override
@@ -157,9 +202,8 @@ public final class GameScreen implements GameState {
 
   @Override
   public void dispose() {
-    // Dispose resources that are not managed by ResourceManager or Game class
-    // Note: batch is managed by Game class, textures by ResourceManager
-    mapRenderer.dispose();
-    model.dispose();
+    if (mapRenderer != null) mapRenderer.dispose();
+    if (debugRenderer != null) debugRenderer.dispose();
+    if (hud != null) hud.dispose();
   }
 }
