@@ -1,7 +1,6 @@
 package io.github.soulslight.model;
 
 import com.badlogic.gdx.math.Vector2;
-import io.github.soulslight.utils.LogHelper;
 import java.util.List;
 
 public class Chaser extends AbstractEnemy {
@@ -53,10 +52,10 @@ public class Chaser extends AbstractEnemy {
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players == null || players.isEmpty() || this.health <= 0) return;
-    
+
     // Default to first player
     Player target = players.get(0);
-    
+
     syncBody();
 
     if (attackCooldown > 0) attackCooldown -= deltaTime;
@@ -123,13 +122,15 @@ public class Chaser extends AbstractEnemy {
     }
   }
 
-  // Method to sync body position back to Entity state (from Enemy.java, moved here or rely on AbstractEnemy?)
+  // Method to sync body position back to Entity state (from Enemy.java, moved here or rely on
+  // AbstractEnemy?)
   // AbstractEnemy doesn't seem to have syncBody(), but it updates position in moveTowards/moveAway.
   // However, Chaser.updateBehavior calls syncBody().
   // Enemy.java had syncBody(). AbstractEnemy.java did not.
-  // I should add syncBody() to Chaser or AbstractEnemy. 
-  // Let's add it to Chaser for now to be safe, or just inline it: this.position.set(body.getPosition());
-  
+  // I should add syncBody() to Chaser or AbstractEnemy.
+  // Let's add it to Chaser for now to be safe, or just inline it:
+  // this.position.set(body.getPosition());
+
   private void syncBody() {
     if (body != null) {
       this.position.set(body.getPosition());

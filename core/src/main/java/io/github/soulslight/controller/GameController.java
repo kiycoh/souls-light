@@ -55,12 +55,12 @@ public class GameController extends InputAdapter {
         GameManager.DEBUG_MODE = !GameManager.DEBUG_MODE;
         Gdx.app.log("Controller", "Debug Mode: " + GameManager.DEBUG_MODE);
         return true;
-        
+
       case Input.Keys.P:
-         // Alternate attack key from HEAD, keeping it for compatibility/testing if desired
-         player.doAnAttack();
-         return true;
-         
+        // Alternate attack key from HEAD, keeping it for compatibility/testing if desired
+        player.doAnAttack();
+        return true;
+
       default:
         return false;
     }

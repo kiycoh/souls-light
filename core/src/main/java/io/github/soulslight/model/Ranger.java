@@ -1,7 +1,6 @@
 package io.github.soulslight.model;
 
 import com.badlogic.gdx.math.Vector2;
-import io.github.soulslight.utils.LogHelper;
 import java.util.List;
 
 public class Ranger extends AbstractEnemy {
@@ -29,13 +28,15 @@ public class Ranger extends AbstractEnemy {
     setupStats(health, speed);
     this.attackStrategy = strategy;
   }
-  
+
   private void setupStats(float health, float speed) {
     this.health = health;
     this.maxHealth = health;
     this.speed = 130.0f; // Feature branch overrides speed to 130.0f
-    // If we want to respect constructor argument, we should use 'speed', but feature branch had 130 hardcoded.
-    // I will use 130.0f to match feature branch behavior but keep the method generic if needed later.
+    // If we want to respect constructor argument, we should use 'speed', but feature branch had 130
+    // hardcoded.
+    // I will use 130.0f to match feature branch behavior but keep the method generic if needed
+    // later.
     this.speed = 130.0f;
   }
 
@@ -53,7 +54,7 @@ public class Ranger extends AbstractEnemy {
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players == null || players.isEmpty() || this.health <= 0) return;
     Player target = players.get(0);
-    
+
     syncBody();
 
     //  gestione timer
@@ -128,7 +129,7 @@ public class Ranger extends AbstractEnemy {
   public void resetShot() {
     this.readyToShoot = false;
   }
-  
+
   private void syncBody() {
     if (body != null) {
       this.position.set(body.getPosition());

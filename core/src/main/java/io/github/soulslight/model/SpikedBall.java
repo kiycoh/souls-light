@@ -51,7 +51,7 @@ public class SpikedBall extends AbstractEnemy {
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players.isEmpty() || this.health <= 0) return;
     Player target = players.get(0);
-    
+
     syncBody();
 
     boolean canSee = canSeePlayer(target, body.getWorld());

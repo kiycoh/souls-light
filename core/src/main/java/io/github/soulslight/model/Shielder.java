@@ -30,7 +30,8 @@ public class Shielder extends AbstractEnemy {
 
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
-    if (this.health <= 0) return; // Removed isDead() check if isDead flag is not consistent, relying on health
+    if (this.health <= 0)
+      return; // Removed isDead() check if isDead flag is not consistent, relying on health
 
     // se non ci sono ranger da proteggere si sacrifica
     if (getRangerToProtect() <= 0) {
@@ -52,14 +53,16 @@ public class Shielder extends AbstractEnemy {
     if (canSee) {
       // Se ci vede si mette in mezzo e ci respinge
       blockLineOfFire(player, vip, deltaTime);
-      
-      // Check for shield bash if close enough (Merged from HEAD logic idea, or feature branch logic?)
-      // Feature branch didn't seem to have explicit attack call in updateBehavior, 
+
+      // Check for shield bash if close enough (Merged from HEAD logic idea, or feature branch
+      // logic?)
+      // Feature branch didn't seem to have explicit attack call in updateBehavior,
       // but maybe blockLineOfFire handles position and collision deals damage via ContactListener?
       // HEAD had: this.attack(player) if close.
       // Feature branch logic only handles movement.
-      // I'll stick to Feature branch movement logic. If attack is needed, it might be contact based or separate.
-      
+      // I'll stick to Feature branch movement logic. If attack is needed, it might be contact based
+      // or separate.
+
     } else {
       // Se non ci vede cammina insieme al ranger da proteggere
       moveToFormation(vip, deltaTime);

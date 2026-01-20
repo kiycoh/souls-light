@@ -139,7 +139,7 @@ public class GameModel implements Disposable {
       // However AbstractEnemy extends Entity.
       // We should check if update(delta) is enough or if we need to call something else.
       // Entity.update(delta) syncs graphics from physics.
-      enemy.update(deltaTime); 
+      enemy.update(deltaTime);
       enemy.updateBehavior(targets, deltaTime);
 
       if (enemy instanceof Ranger ranger) {
@@ -200,7 +200,8 @@ public class GameModel implements Disposable {
   }
 
   public GameStateMemento createMemento() {
-    return new GameStateMemento(player.getHealth(), player.getPosition(), 1); // Level index hardcoded for now
+    return new GameStateMemento(
+        player.getHealth(), player.getPosition(), 1); // Level index hardcoded for now
   }
 
   public void restoreMemento(GameStateMemento memento) {
@@ -213,7 +214,7 @@ public class GameModel implements Disposable {
       player.getBody().setLinearVelocity(0, 0);
       player.getBody().setAwake(true);
     }
-    
+
     // Also restore position in Entity if body wasn't valid (though logic above handles body)
     player.setPosition(memento.playerX, memento.playerY);
   }
