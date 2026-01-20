@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import io.github.soulslight.model.entities.Entity;
 import io.github.soulslight.model.entities.Player;
+import io.github.soulslight.model.enemies.ai.EnemyState;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,8 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
   protected final float MAX_WANDER_DIST = 300f; // Raggio massimo dallo spawn
   // protected final float SENSOR_DIST = 50f;
   protected float speed;
+  
+  private EnemyState aiState;
 
   public AbstractEnemy() {
     super();
@@ -213,6 +216,44 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
       world.destroyBody(body);
       body = null;
     }
+  }
+
+  public void setAIState(EnemyState state) {
+    if (this.aiState != null) {
+      this.aiState.exit(this);
+    }
+    this.aiState = state;
+    if (this.aiState != null) {
+      this.aiState.enter(this);
+    }
+  }
+
+  public EnemyState getCurrentState() {
+    return aiState;
+  }
+
+  public Body getBody() {
+    return body;
+  }
+
+  public Vector2 getSpawnPoint() {
+    return spawnPoint;
+  }
+
+  public float getSpeed() {
+    return speed;
+  }
+
+  public Vector2 getLastKnownPlayerPos() {
+    return lastKnownPlayerPos;
+  }
+
+  public float getSearchTimer() {
+    return searchTimer;
+  }
+
+  public void setSearchTimer(float searchTimer) {
+    this.searchTimer = searchTimer;
   }
 
   public abstract void updateBehavior(List<Player> players, float deltaTime);
