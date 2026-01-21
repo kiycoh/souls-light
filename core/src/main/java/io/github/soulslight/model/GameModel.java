@@ -24,7 +24,7 @@ public class GameModel implements Disposable {
   private final World physicsWorld;
   private float currentWill;
   private boolean isPaused;
-  private Player player;
+  private java.util.List<Player> players;
   private Level level;
 
   // Accumulator for fixed timestep
@@ -39,15 +39,24 @@ public class GameModel implements Disposable {
 
     this.currentWill = MAX_WILL / 2;
     this.isPaused = false;
+    this.players = new java.util.ArrayList<>();
 
     // ---- PROCEDURALLY GENERATED MAP ----
     long seed = System.currentTimeMillis();
     TiledMap myMap = MapGenerator.generateProceduralMap(seed);
 
-    // ---- PLAYER: spawns on valid flood tile ----
+    // ---- PLAYERS: spawn on valid flood tile ----
     Vector2 spawn = findFirstFloorSpawn(myMap);
-    this.player = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, spawn.x, spawn.y);
-    GameManager.getInstance().setPlayer(this.player);
+    
+    // Player 1
+    Player p1 = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, spawn.x, spawn.y);
+    players.add(p1);
+    GameManager.getInstance().addPlayer(p1);
+
+    // Player 2 (spawn slightly offset)
+    Player p2 = new Player(Player.PlayerClass.ARCHER, this.physicsWorld, spawn.x + 20, spawn.y);
+    players.add(p2);
+    GameManager.getInstance().addPlayer(p2);
 
     // Projectile Manager
     this.projectileManager = new ProjectileManager(physicsWorld);
@@ -122,14 +131,19 @@ public class GameModel implements Disposable {
   public void update(float deltaTime) {
     if (isPaused) return;
 
-    if (player != null) player.update(deltaTime);
+    for (Player p : players) {
+        if (p != null) p.update(deltaTime);
+    }
     updateEnemiesLogic(deltaTime);
 
     physicsAccumulator += deltaTime;
 
     while (physicsAccumulator >= 1 / 60f) {
       physicsWorld.step(1 / 60f, 6, 2);
-      projectileManager.update(1 / 60f, player);
+      // Update projectiles for all players
+      if (!players.isEmpty()) {
+         projectileManager.update(1 / 60f, players);
+      }
       physicsAccumulator -= 1 / 60f;
     }
 
@@ -139,7 +153,7 @@ public class GameModel implements Disposable {
   private void updateEnemiesLogic(float deltaTime) {
     if (level == null || level.getEnemies() == null) return;
 
-    List<Player> targets = Collections.singletonList(player);
+    // List<Player> targets = Collections.singletonList(player);
 
     for (AbstractEnemy enemy : level.getEnemies()) {
       // AbstractEnemy doesn't have update(delta) but Entity does.
@@ -147,17 +161,21 @@ public class GameModel implements Disposable {
       // We should check if update(delta) is enough or if we need to call something else.
       // Entity.update(delta) syncs graphics from physics.
       enemy.update(deltaTime);
-      enemy.updateBehavior(targets, deltaTime);
+      enemy.updateBehavior(players, deltaTime);
 
       if (enemy instanceof Ranger ranger) {
         if (ranger.isReadyToShoot()) {
-          projectileManager.addProjectile(
-              new Projectile(
-                  physicsWorld,
-                  ranger.getPosition().x,
-                  ranger.getPosition().y,
-                  player.getPosition()));
-          ranger.resetShot();
+           // Target nearest player
+           Player target = getNearestPlayer(ranger.getPosition());
+           if (target != null) {
+              projectileManager.addProjectile(
+                  new Projectile(
+                      physicsWorld,
+                      ranger.getPosition().x,
+                      ranger.getPosition().y,
+                      target.getPosition()));
+              ranger.resetShot();
+           }
         }
       } else if (enemy instanceof Oblivion boss) {
         if (boss.isReadyToShoot()) {
@@ -174,22 +192,38 @@ public class GameModel implements Disposable {
     }
   }
 
+  private Player getNearestPlayer(Vector2 pos) {
+      Player nearest = null;
+      float minDst = Float.MAX_VALUE;
+      for (Player p : players) {
+          if (p.isDead()) continue;
+          float dst = pos.dst(p.getPosition());
+          if (dst < minDst) {
+              minDst = dst;
+              nearest = p;
+          }
+      }
+      return nearest != null ? nearest : (players.isEmpty() ? null : players.get(0));
+  }
+
   private void checkMeleeCollision(AbstractEnemy enemy) {
     if (enemy instanceof Ranger || enemy.isDead()) return;
 
-    float dist = player.getPosition().dst(enemy.getPosition());
-    float contactThreshold = (enemy instanceof Oblivion) ? 50f : 32f;
+    for (Player player : players) {
+        float dist = player.getPosition().dst(enemy.getPosition());
+        float contactThreshold = (enemy instanceof Oblivion) ? 50f : 32f;
 
-    if (dist < contactThreshold) {
-      if (enemy instanceof Shielder) {
-        Vector2 bounceDir = player.getPosition().cpy().sub(enemy.getPosition()).nor();
+        if (dist < contactThreshold) {
+          if (enemy instanceof Shielder) {
+            Vector2 bounceDir = player.getPosition().cpy().sub(enemy.getPosition()).nor();
 
-        if (bounceDir.len2() < 0.01f) bounceDir.set(1, 0);
+            if (bounceDir.len2() < 0.01f) bounceDir.set(1, 0);
 
-        if (player.getBody() != null) {
-          player.applyKnockback(bounceDir, 100f, 0.2f);
+            if (player.getBody() != null) {
+              player.applyKnockback(bounceDir, 100f, 0.2f);
+            }
+          }
         }
-      }
     }
   }
 
@@ -207,23 +241,35 @@ public class GameModel implements Disposable {
   }
 
   public GameStateMemento createMemento() {
-    return new GameStateMemento(
-        player.getHealth(), player.getPosition(), 1); // Level index hardcoded for now
+    java.util.List<PlayerMemento> playerStates = new java.util.ArrayList<>();
+    for (Player p : players) {
+      playerStates.add(
+          new PlayerMemento(p.getType(), p.getHealth(), p.getPosition().x, p.getPosition().y));
+    }
+    // Level index hardcoded for now
+    return new GameStateMemento(playerStates, 1);
   }
 
   public void restoreMemento(GameStateMemento memento) {
-    if (memento == null || player == null) return;
+    if (memento == null || memento.players == null) return;
 
-    player.setHealth(memento.health);
-
-    if (player.getBody() != null) {
-      player.getBody().setTransform(memento.playerX, memento.playerY, 0);
-      player.getBody().setLinearVelocity(0, 0);
-      player.getBody().setAwake(true);
+    // 1. Clear existing players (physics body + list)
+    for (Player p : players) {
+      if (p.getBody() != null) {
+        physicsWorld.destroyBody(p.getBody());
+      }
     }
+    players.clear();
+    GameManager.getInstance().clearPlayers();
 
-    // Also restore position in Entity if body wasn't valid (though logic above handles body)
-    player.setPosition(memento.playerX, memento.playerY);
+    // 2. Recreate players from Memento
+    for (PlayerMemento pm : memento.players) {
+      Player newPlayer = new Player(pm.type, physicsWorld, pm.x, pm.y);
+      newPlayer.setHealth(pm.health);
+      
+      players.add(newPlayer);
+      GameManager.getInstance().addPlayer(newPlayer);
+    }
   }
 
   public List<Projectile> getProjectiles() {
@@ -234,8 +280,13 @@ public class GameModel implements Disposable {
     return physicsWorld;
   }
 
+  public java.util.List<Player> getPlayers() {
+    return players;
+  }
+  
+  // Backward compatibility
   public Player getPlayer() {
-    return player;
+    return players.isEmpty() ? null : players.get(0);
   }
 
   public Level getLevel() {

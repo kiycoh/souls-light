@@ -11,10 +11,12 @@ public class GameManager {
 
   private static GameManager instance;
   private Level currentLevel;
-  private Player player;
+  private java.util.List<Player> players;
   public static boolean DEBUG_MODE = false;
 
-  private GameManager() {}
+  private GameManager() {
+    this.players = new java.util.ArrayList<>();
+  }
 
   public static synchronized GameManager getInstance() {
     if (instance == null) {
@@ -31,17 +33,26 @@ public class GameManager {
     this.currentLevel = currentLevel;
   }
 
-  public Player getPlayer() {
-    return player;
+  public java.util.List<Player> getPlayers() {
+    return players;
   }
 
-  public void setPlayer(Player player) {
-    this.player = player;
+  public void addPlayer(Player player) {
+    if (this.players == null) {
+        this.players = new java.util.ArrayList<>();
+    }
+    this.players.add(player);
+  }
+  
+  public void clearPlayers() {
+     if (this.players != null) {
+        this.players.clear();
+     }
   }
 
   public void cleanUp() {
     this.currentLevel = null;
-    this.player = null;
+    clearPlayers();
   }
 
   public void loadLevel() {
@@ -59,8 +70,10 @@ public class GameManager {
       currentLevel.setMap(map);
 
       // Initialize player at starting position
-      if (player != null) {
-        player.setPosition(5, 5); // start position
+      if (players != null) {
+          for(Player p : players) {
+             p.setPosition(5, 5); // start position
+          }
       }
 
       Gdx.app.log("GameManager", "Level loaded successfully.");

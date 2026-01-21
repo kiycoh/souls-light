@@ -13,34 +13,38 @@ public final class AttackState implements EnemyState {
 
   @Override
   public void update(AbstractEnemy enemy, List<Player> players, float deltaTime) {
-    if (enemy.getBody() == null) return;
-    if (players.isEmpty()) {
-      enemy.setAIState(new PatrolState());
-      return;
-    }
-    Player target = players.get(0);
-    float dist = enemy.getBody().getPosition().dst(target.getPosition());
-
-    if (isRetreating) {
-      enemy.moveAway(target.getPosition());
-      retreatTimer -= deltaTime;
-      if (retreatTimer <= 0) {
-        isRetreating = false;
-        enemy.setAIState(new ChaseState());
+      if (enemy.getBody() == null) return;
+      if (players.isEmpty()) {
+          enemy.setAIState(new PatrolState());
+          return;
       }
-      return;
-    }
+      Player target = enemy.getNearestTarget(players);
+      if (target == null) {
+          enemy.setAIState(new PatrolState());
+          return;
+      }
+      float dist = enemy.getBody().getPosition().dst(target.getPosition());
 
-    enemy.getBody().setLinearVelocity(0, 0);
-    attackCooldown -= deltaTime;
+      if (isRetreating) {
+          enemy.moveAway(target.getPosition());
+          retreatTimer -= deltaTime;
+          if (retreatTimer <= 0) {
+              isRetreating = false;
+              enemy.setAIState(new ChaseState());
+          }
+          return;
+      }
 
-    if (attackCooldown <= 0) {
-      enemy.attack(players);
-      isRetreating = true;
-      retreatTimer = RETREAT_DURATION;
-      attackCooldown = 1.5f; // Reset
-    } else if (dist > STOP_DISTANCE + 15f) {
-      enemy.setAIState(new ChaseState());
-    }
+      enemy.getBody().setLinearVelocity(0, 0);
+      attackCooldown -= deltaTime;
+
+      if (attackCooldown <= 0) {
+          enemy.attack(players);
+          isRetreating = true;
+          retreatTimer = RETREAT_DURATION;
+          attackCooldown = 1.5f; // Reset
+      } else if (dist > STOP_DISTANCE + 15f) {
+          enemy.setAIState(new ChaseState());
+      }
   }
 }

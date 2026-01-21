@@ -11,7 +11,9 @@ public final class ChaseState implements EnemyState {
   public void update(AbstractEnemy enemy, List<Player> players, float deltaTime) {
     if (enemy.getBody() == null) return;
     if (players.isEmpty()) return;
-    Player target = players.get(0); // Default target
+
+    Player target = enemy.getNearestTarget(players);
+    if (target == null) return;
 
     if (enemy.canSeePlayer(target, enemy.getBody().getWorld())) {
       float distance = enemy.getBody().getPosition().dst(target.getPosition());
