@@ -14,14 +14,14 @@ public final class ChaseState implements EnemyState {
     Player target = players.get(0); // Default target
 
     if (enemy.canSeePlayer(target, enemy.getBody().getWorld())) {
-        float distance = enemy.getBody().getPosition().dst(target.getPosition());
-        if (distance <= STOP_DISTANCE) {
-            enemy.setAIState(new AttackState());
-        } else {
-            enemy.moveTowards(target.getPosition(), deltaTime);
-        }
+      float distance = enemy.getBody().getPosition().dst(target.getPosition());
+      if (distance <= STOP_DISTANCE) {
+        enemy.setAIState(new AttackState());
+      } else {
+        enemy.moveTowards(target.getPosition(), deltaTime);
+      }
     } else {
-        enemy.setAIState(new SearchState());
+      enemy.setAIState(new SearchState());
     }
   }
 }

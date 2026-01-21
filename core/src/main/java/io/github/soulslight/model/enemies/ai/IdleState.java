@@ -12,11 +12,12 @@ public final class IdleState implements EnemyState {
     }
     // Simple transition logic: if sees player, chase
     for (Player p : players) {
-        com.badlogic.gdx.physics.box2d.World world = (enemy.getBody() != null) ? enemy.getBody().getWorld() : null;
-        if (enemy.canSeePlayer(p, world)) {
-            enemy.setAIState(new ChaseState());
-            return;
-        }
+      com.badlogic.gdx.physics.box2d.World world =
+          (enemy.getBody() != null) ? enemy.getBody().getWorld() : null;
+      if (enemy.canSeePlayer(p, world)) {
+        enemy.setAIState(new ChaseState());
+        return;
+      }
     }
   }
 }

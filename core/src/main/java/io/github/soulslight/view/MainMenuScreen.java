@@ -19,6 +19,7 @@ import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
+import io.github.soulslight.manager.SettingsManager;
 import io.github.soulslight.model.GameModel;
 
 public final class MainMenuScreen implements GameState {
@@ -49,7 +50,8 @@ public final class MainMenuScreen implements GameState {
     // Audio initialization
     menuMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/no escape.mp3"));
     menuMusic.setLooping(true);
-    menuMusic.setVolume(0.5f);
+    // uses global settings volume
+    menuMusic.setVolume(SettingsManager.getInstance().getMusicVolume());
     menuMusic.play();
 
     setupBackground();
@@ -103,7 +105,6 @@ public final class MainMenuScreen implements GameState {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            // EventManager.getInstance().notifyNewGame(); // Removed
             GameModel model = new GameModel();
             GameController controller = new GameController(model);
             game.setScreen(new GameScreen(batch, model, controller));
@@ -122,7 +123,6 @@ public final class MainMenuScreen implements GameState {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            // EventManager.getInstance().notifyExit(); // Removed
             Gdx.app.exit();
           }
         });

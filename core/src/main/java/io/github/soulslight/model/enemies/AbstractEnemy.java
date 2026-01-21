@@ -3,9 +3,9 @@ package io.github.soulslight.model.enemies;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import io.github.soulslight.model.enemies.ai.EnemyState;
 import io.github.soulslight.model.entities.Entity;
 import io.github.soulslight.model.entities.Player;
-import io.github.soulslight.model.enemies.ai.EnemyState;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +23,7 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
   protected final float MAX_WANDER_DIST = 300f; // Raggio massimo dallo spawn
   // protected final float SENSOR_DIST = 50f;
   protected float speed;
-  
+
   private EnemyState aiState;
 
   public AbstractEnemy() {
