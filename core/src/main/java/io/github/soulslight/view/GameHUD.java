@@ -24,7 +24,7 @@ public class GameHUD {
     this.layout = new GlyphLayout();
   }
 
-  public void render(SpriteBatch batch, Player player, List<AbstractEnemy> enemies) {
+  public void render(SpriteBatch batch, List<Player> players, List<AbstractEnemy> enemies) {
     // Otteniamo dimensioni schermo attuali
     float screenW = Gdx.graphics.getWidth();
     float screenH = Gdx.graphics.getHeight();
@@ -58,45 +58,83 @@ public class GameHUD {
     shapeRenderer.end();
 
     // =================================================================
-    // FASE 2: HUD GIOCATORE (Coordinate SCHERMO / PIXEL)
+    // FASE 2: HUD GIOCATORI (Coordinate SCHERMO / PIXEL)
     // =================================================================
     shapeRenderer.setProjectionMatrix(uiMatrix);
     shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-    // Barra Rossa Sfondo
-    // Posizione: 20px da sinistra, 30px dal bordo alto
-    float barX = 20;
-    float barY = screenH - 30;
-    float barW = 200;
-    float barH = 20;
+    // --- PLAYER 1 (Top Left) ---
+    if (!players.isEmpty()) {
+        Player p1 = players.get(0);
+        float barX = 20;
+        float barY = screenH - 30;
+        float barW = 200;
+        float barH = 20;
 
-    shapeRenderer.setColor(Color.RED);
-    shapeRenderer.rect(barX, barY, barW, barH);
+        // Sfondo
+        shapeRenderer.setColor(Color.RED);
+        shapeRenderer.rect(barX, barY, barW, barH);
 
-    // Barra Verde Vita Player
-    if (player != null && !player.isDead()) {
-      float hpPercent = player.getHealth() / player.getMaxHealth();
-      shapeRenderer.setColor(Color.GREEN);
-      shapeRenderer.rect(barX, barY, barW * Math.max(0, hpPercent), barH);
+        // Vita
+        if (!p1.isDead()) {
+          float hpPercent = p1.getHealth() / p1.getMaxHealth();
+          shapeRenderer.setColor(Color.GREEN);
+          shapeRenderer.rect(barX, barY, barW * Math.max(0, hpPercent), barH);
+        }
     }
+
+    // --- PLAYER 2 (Top Right) ---
+    if (players.size() > 1) {
+        Player p2 = players.get(1);
+        float barW = 200;
+        float barH = 20;
+        float barX = screenW - barW - 20;
+        float barY = screenH - 30;
+
+        // Sfondo
+        shapeRenderer.setColor(Color.RED);
+        shapeRenderer.rect(barX, barY, barW, barH);
+
+        // Vita (Blue/Cyan for P2 distinction?)
+        if (!p2.isDead()) {
+          float hpPercent = p2.getHealth() / p2.getMaxHealth();
+          shapeRenderer.setColor(Color.CYAN);
+          shapeRenderer.rect(barX, barY, barW * Math.max(0, hpPercent), barH);
+        }
+    }
+
     shapeRenderer.end();
 
     batch.setProjectionMatrix(uiMatrix);
     batch.begin();
 
-    if (player != null && player.isDead()) {
-      String text1 = "HAI PERSO";
-      // String text2 = "Premi 'R' per risorgere";
+    boolean allDead = true;
+    for (Player p : players) {
+        if (!p.isDead()) {
+            allDead = false;
+            break;
+        }
+    }
 
-      // Usiamo GlyphLayout per centrare perfettamente il testo
+    if (allDead && !players.isEmpty()) {
+      String text1 = "GAME OVER";
       font.setColor(Color.RED);
       layout.setText(font, text1);
       font.draw(batch, text1, (screenW - layout.width) / 2, (screenH / 2) + 50);
-
-      /* font.setColor(Color.WHITE);
-      layout.setText(font, text2);
-      font.draw(batch, text2, (screenW - layout.width) / 2, (screenH / 2) - 20);*/
+    } else {
+        // Show "P1 Dead" or "P2 Dead" small text
+        if (!players.isEmpty() && players.get(0).isDead()) {
+            font.setColor(Color.RED);
+            font.draw(batch, "P1 DEAD", 20, screenH - 40);
+        }
+        if (players.size() > 1 && players.get(1).isDead()) {
+            font.setColor(Color.RED);
+            String txt = "P2 DEAD";
+            layout.setText(font, txt);
+            font.draw(batch, txt, screenW - layout.width - 20, screenH - 40);
+        }
     }
+    
     batch.end();
   }
 

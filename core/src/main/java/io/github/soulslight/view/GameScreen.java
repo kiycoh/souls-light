@@ -72,8 +72,8 @@ public final class GameScreen implements GameState {
       model.update(delta);
     }
 
-    // --- CAMERA CENTERED ON PLAYER (WITH OOB CLASP) ---
-    followPlayerCamera();
+    // --- CAMERA CENTERED ON PLAYERS (WITH OOB CLASP) ---
+    followPlayersCamera();
 
     ScreenUtils.clear(0, 0, 0, 1);
 
@@ -83,11 +83,21 @@ public final class GameScreen implements GameState {
     batch.setProjectionMatrix(camera.combined);
     batch.begin();
 
-    Player player = model.getPlayer();
-    if (player != null) {
-      if (player.isDead()) batch.setColor(Color.RED);
-      drawEntity(TextureManager.get("player"), player.getPosition(), 32, 32);
-      batch.setColor(Color.WHITE);
+    for (Player player : model.getPlayers()) {
+        if (player.isDead()) {
+             batch.setColor(Color.RED);
+        } else {
+             batch.setColor(Color.WHITE);
+        }
+        
+        String texName = "player";
+        switch (player.getType()) {
+            case ARCHER: texName = "archer"; break;
+            case WARRIOR: default: texName = "player"; break;
+        }
+        
+        drawEntity(TextureManager.get(texName), player.getPosition(), 32, 32);
+        batch.setColor(Color.WHITE);
     }
 
     for (AbstractEnemy enemy : model.getActiveEnemies()) {
@@ -123,45 +133,64 @@ public final class GameScreen implements GameState {
 
     batch.end();
 
-    hud.render(batch, player, model.getActiveEnemies());
+    hud.render(batch, model.getPlayers(), model.getActiveEnemies());
 
     if (GameManager.DEBUG_MODE) {
       debugRenderer.render(model.getWorld(), camera.combined);
     }
   }
 
-  private void followPlayerCamera() {
-    Player player = model.getPlayer();
-    if (player == null) {
+  private void followPlayersCamera() {
+    java.util.List<Player> players = model.getPlayers();
+    if (players.isEmpty()) {
       camera.update();
       return;
     }
 
-    Vector2 p = player.getPosition();
+    float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE;
+    float maxX = Float.MIN_VALUE, maxY = Float.MIN_VALUE;
+    int aliveCount = 0;
+
+    for (Player p : players) {
+        // Option: Follow dead players too? Usually yes until game over.
+        Vector2 pos = p.getPosition();
+        if (pos.x < minX) minX = pos.x;
+        if (pos.y < minY) minY = pos.y;
+        if (pos.x > maxX) maxX = pos.x;
+        if (pos.y > maxY) maxY = pos.y;
+        aliveCount++;
+    }
+    
+    if (aliveCount == 0) {
+        camera.update();
+        return; 
+    }
+
+    float targetX = (minX + maxX) / 2f;
+    float targetY = (minY + maxY) / 2f;
 
     // half viewport (takes in consideration zoom)
     float halfW = (camera.viewportWidth * camera.zoom) / 2f;
     float halfH = (camera.viewportHeight * camera.zoom) / 2f;
-
-    float targetX = p.x;
-    float targetY = p.y;
 
     // clamp: prevents camera from going out of bounds
     if (mapPixelWidth > 0 && mapPixelHeight > 0) {
       targetX = MathUtils.clamp(targetX, halfW, Math.max(halfW, mapPixelWidth - halfW));
       targetY = MathUtils.clamp(targetY, halfH, Math.max(halfH, mapPixelHeight - halfH));
     }
-
+    
+    // Smooth camera could be added here (lerp), but instant is fine for now
     camera.position.set(targetX, targetY, 0);
     camera.update();
   }
 
   private void centerCameraOnPlayer() {
-    Player player = model.getPlayer();
-    if (player == null) return;
+    java.util.List<Player> players = model.getPlayers();
+    if (players.isEmpty()) return;
 
-    Vector2 p = player.getPosition();
-    camera.position.set(p.x, p.y, 0);
+    // Just center on first player for initial spawn or calculate average
+    Player p = players.get(0);
+    camera.position.set(p.getPosition().x, p.getPosition().y, 0);
     camera.update();
   }
 
