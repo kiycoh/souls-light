@@ -241,28 +241,35 @@ public class GameModel implements Disposable {
   }
 
   public GameStateMemento createMemento() {
-    // Only saving P1 for now to match memento structure
-    if (players.isEmpty()) return new GameStateMemento(100, new Vector2(), 1);
-    Player p1 = players.get(0);
-    return new GameStateMemento(
-        p1.getHealth(), p1.getPosition(), 1); // Level index hardcoded for now
+    java.util.List<PlayerMemento> playerStates = new java.util.ArrayList<>();
+    for (Player p : players) {
+      playerStates.add(
+          new PlayerMemento(p.getType(), p.getHealth(), p.getPosition().x, p.getPosition().y));
+    }
+    // Level index hardcoded for now
+    return new GameStateMemento(playerStates, 1);
   }
 
   public void restoreMemento(GameStateMemento memento) {
-    if (memento == null || players.isEmpty()) return;
-    
-    Player p1 = players.get(0);
+    if (memento == null || memento.players == null) return;
 
-    p1.setHealth(memento.health);
-
-    if (p1.getBody() != null) {
-      p1.getBody().setTransform(memento.playerX, memento.playerY, 0);
-      p1.getBody().setLinearVelocity(0, 0);
-      p1.getBody().setAwake(true);
+    // 1. Clear existing players (physics body + list)
+    for (Player p : players) {
+      if (p.getBody() != null) {
+        physicsWorld.destroyBody(p.getBody());
+      }
     }
+    players.clear();
+    GameManager.getInstance().clearPlayers();
 
-    // Also restore position in Entity if body wasn't valid (though logic above handles body)
-    p1.setPosition(memento.playerX, memento.playerY);
+    // 2. Recreate players from Memento
+    for (PlayerMemento pm : memento.players) {
+      Player newPlayer = new Player(pm.type, physicsWorld, pm.x, pm.y);
+      newPlayer.setHealth(pm.health);
+      
+      players.add(newPlayer);
+      GameManager.getInstance().addPlayer(newPlayer);
+    }
   }
 
   public List<Projectile> getProjectiles() {

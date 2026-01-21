@@ -56,7 +56,9 @@ public class Ranger extends AbstractEnemy {
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players == null || players.isEmpty() || this.health <= 0) return;
-    Player target = players.get(0);
+
+    Player target = getNearestTarget(players);
+    if (target == null) return;
 
     syncBody();
 
