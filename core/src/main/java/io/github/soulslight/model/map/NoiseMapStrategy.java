@@ -36,10 +36,6 @@ public record NoiseMapStrategy(
     noise.setFrequency(frequency);
     noise.setFractalOctaves(octaves);
 
-    // --- WALL TILE ---
-    var wallTile = new StaticTiledMapTile(ResourceManager.getInstance().getWallTextureRegion());
-    wallTile.getProperties().put("type", "wall");
-
     // --- FLOOR TILES ---
     TextureRegion[] floorRegions = ResourceManager.getInstance().getFloorTextureRegions();
     StaticTiledMapTile[] floorTiles;
@@ -59,31 +55,47 @@ public record NoiseMapStrategy(
       floorTiles = new StaticTiledMapTile[] {singleFloor};
     }
 
-    // floor pattern is tied to seed
+    // --- WALL TILES ---
+    TextureRegion[] wallRegions = ResourceManager.getInstance().getWallMaskRegions();
+    StaticTiledMapTile[] wallMaskTiles = new StaticTiledMapTile[16];
+
+    TextureRegion fallbackWallRegion = ResourceManager.getInstance().getWallTextureRegion();
+
+    for (int i = 0; i < 16; i++) {
+      TextureRegion region = null;
+      if (wallRegions != null && i < wallRegions.length) {
+        region = wallRegions[i];
+      }
+      if (region == null) {
+        region = fallbackWallRegion;
+      }
+      StaticTiledMapTile t = new StaticTiledMapTile(region);
+      t.getProperties().put("type", "wall");
+      wallMaskTiles[i] = t;
+    }
+
+    // generic wall used during generation
+    StaticTiledMapTile genericWallTile = wallMaskTiles[15];
+
     Random rnd = new Random(seed);
 
-    // Initial generation
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
         float n = noise.getConfiguredNoise(x, y);
 
         if (n > wallThreshold) {
-          // wall
-          setTile(layer, x, y, wallTile);
+          setTile(layer, x, y, genericWallTile);
         } else {
-          // random floor
           StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
           setTile(layer, x, y, selectedTile);
         }
       }
     }
 
-    // Cellular automata smoothing
     for (int i = 0; i < SMOOTHING_ITERATIONS; i++) {
-      smoothMap(layer, wallTile, floorTiles, rnd);
+      smoothMap(layer, genericWallTile, floorTiles, rnd);
     }
 
-    // Identify regions (rooms)
     List<List<GridPoint2>> regions = getRegions(layer);
 
     System.out.println("Map Generation Log:");
@@ -92,10 +104,11 @@ public record NoiseMapStrategy(
       System.out.println("Region " + i + " Size: " + regions.get(i).size() + " tiles.");
     }
 
-    // Connect regions
     if (regions.size() > 1) {
       connectRegions(regions, layer, floorTiles, rnd);
     }
+
+    applyWallAutotiling(layer, wallMaskTiles);
 
     map.getLayers().add(layer);
     return map;
@@ -112,12 +125,11 @@ public record NoiseMapStrategy(
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
         int wallNeighbors = countWallNeighbors(layer, x, y);
+        boolean isWall = isWall(layer, x, y);
 
         // 4-5 Rule
         // If a cell is a wall and has >= 4 wall neighbors, it stays a wall.
         // If a cell is a floor and has >= 5 wall neighbors, it becomes a wall.
-        boolean isWall = isWall(layer, x, y);
-
         if (isWall) {
           nextState[x][y] = (wallNeighbors >= 4);
         } else {
@@ -180,6 +192,7 @@ public record NoiseMapStrategy(
       TiledMapTileLayer layer,
       boolean[][] visited,
       List<GridPoint2> region) {
+
     Queue<GridPoint2> queue = new LinkedList<>();
     GridPoint2 start = new GridPoint2(startX, startY);
     queue.add(start);
@@ -266,6 +279,37 @@ public record NoiseMapStrategy(
     setTile(layer, end.x, end.y, selectedTile);
   }
 
+  private void applyWallAutotiling(TiledMapTileLayer layer, StaticTiledMapTile[] wallMaskTiles) {
+
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        if (!isWall(layer, x, y)) continue;
+
+        int mask = computeWallMask(layer, x, y);
+        if (mask < 0 || mask >= wallMaskTiles.length) {
+          mask = 15;
+        }
+
+        StaticTiledMapTile tile = wallMaskTiles[mask];
+        if (tile == null) {
+          tile = wallMaskTiles[15];
+        }
+        setTile(layer, x, y, tile);
+      }
+    }
+  }
+
+  private int computeWallMask(TiledMapTileLayer layer, int x, int y) {
+    int mask = 0;
+
+    if (isWall(layer, x, y + 1)) mask |= 1; // up
+    if (isWall(layer, x + 1, y)) mask |= 2; // right
+    if (isWall(layer, x, y - 1)) mask |= 4; // down
+    if (isWall(layer, x - 1, y)) mask |= 8; // left
+
+    return mask;
+  }
+
   private void setTile(TiledMapTileLayer layer, int x, int y, StaticTiledMapTile tile) {
     if (layer.getCell(x, y) == null) {
       layer.setCell(x, y, new TiledMapTileLayer.Cell());
@@ -274,14 +318,18 @@ public record NoiseMapStrategy(
   }
 
   private boolean isFloor(TiledMapTileLayer layer, int x, int y) {
-    return layer.getCell(x, y) != null
-        && layer.getCell(x, y).getTile() != null
-        && "floor".equals(layer.getCell(x, y).getTile().getProperties().get("type"));
+    if (x < 0 || x >= width || y < 0 || y >= height) return false;
+    var cell = layer.getCell(x, y);
+    return cell != null
+        && cell.getTile() != null
+        && "floor".equals(cell.getTile().getProperties().get("type"));
   }
 
   private boolean isWall(TiledMapTileLayer layer, int x, int y) {
-    return layer.getCell(x, y) != null
-        && layer.getCell(x, y).getTile() != null
-        && "wall".equals(layer.getCell(x, y).getTile().getProperties().get("type"));
+    if (x < 0 || x >= width || y < 0 || y >= height) return false;
+    var cell = layer.getCell(x, y);
+    return cell != null
+        && cell.getTile() != null
+        && "wall".equals(cell.getTile().getProperties().get("type"));
   }
 }
