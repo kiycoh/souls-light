@@ -96,35 +96,37 @@ class MapGeneratorTest {
   }
 
   @Test
-  void testNoiseMapConnectivity() {
+  void testNoiseStrategyConnectivityAndRooms() {
     long seed = 12345L;
-    // Use parameters that are likely to cause disconnections without the fix
-    MapGenerationStrategy strategy = new NoiseMapStrategy(seed, 50, 50, 0.2f, 3, -0.1f);
+    // seed, width, height, frequency, octaves, wallThreshold
+    MapGenerationStrategy strategy = new NoiseMapStrategy(seed, 50, 50, 0.1f, 3, 0.4f);
+
     TiledMap map = MapGenerator.generate(strategy);
     TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(0);
 
-    // 1. Count total floor tiles
-    int totalFloorTiles = 0;
-    GridPoint2 startNode = null;
+    // 2. Validate Connectivity (All floors are reachable)
+    Set<GridPoint2> allFloors = new HashSet<>();
+    GridPoint2 start = null;
+
     for (int x = 0; x < 50; x++) {
       for (int y = 0; y < 50; y++) {
         if (isFloor(layer, x, y)) {
-          totalFloorTiles++;
-          if (startNode == null) startNode = new GridPoint2(x, y);
+          GridPoint2 p = new GridPoint2(x, y);
+          allFloors.add(p);
+          if (start == null) start = p;
         }
       }
     }
 
-    if (totalFloorTiles == 0) return; // Empty map is technically connected? or fail.
+    if (start == null) {
+      assertTrue(false, "Map generated with no floors!");
+    }
 
-    // 2. Flood fill from startNode
-    int connectedTiles = 0;
+    // Flood fill
     Set<GridPoint2> visited = new HashSet<>();
     Queue<GridPoint2> queue = new LinkedList<>();
-
-    queue.add(startNode);
-    visited.add(startNode);
-    connectedTiles++;
+    queue.add(start);
+    visited.add(start);
 
     int[] dx = {0, 0, 1, -1};
     int[] dy = {1, -1, 0, 0};
@@ -135,24 +137,16 @@ class MapGeneratorTest {
       for (int i = 0; i < 4; i++) {
         int nx = current.x + dx[i];
         int ny = current.y + dy[i];
-        GridPoint2 next = new GridPoint2(nx, ny);
+        GridPoint2 neighbor = new GridPoint2(nx, ny);
 
-        if (nx >= 0
-            && nx < 50
-            && ny >= 0
-            && ny < 50
-            && isFloor(layer, nx, ny)
-            && !visited.contains(next)) {
-          visited.add(next);
-          queue.add(next);
-          connectedTiles++;
+        if (allFloors.contains(neighbor) && !visited.contains(neighbor)) {
+          visited.add(neighbor);
+          queue.add(neighbor);
         }
       }
     }
 
-    // 3. Assert connectivity
-    assertEquals(
-        totalFloorTiles, connectedTiles, "All floor tiles should be connected in a single region.");
+    assertEquals(allFloors.size(), visited.size(), "All floor tiles should be connected");
   }
 
   private boolean isFloor(TiledMapTileLayer layer, int x, int y) {

@@ -8,8 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
 import io.github.soulslight.model.combat.*;
+import io.github.soulslight.model.entities.Entity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.utils.GdxTestExtension;
+import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,19 +21,44 @@ public class CombatTest {
   // Strategy Pattern (GoF)
 
   @BeforeAll
-  public static void setUp() {
-    // HeadlessNativesLoader.load(); // Handled by GdxTestExtension
-  }
+  public static void setUp() {}
 
   @Test
   public void testWarriorStats() {
     AttackStrategy strategy = new WarriorAttack(45);
-    // SINTASSI JUNIT 5: assertEquals(atteso, attuale, delta, "Messaggio Opzionale")
+    // assertEquals(atteso, attuale, delta, "Messaggio Opzionale")
     assertEquals(45.0f, strategy.getRange(), 0.01f, "Il guerriero attacca a corto raggio");
     assertEquals(45.0f, strategy.getDamage(), 0.06f, "Il danno deve essere alto");
     assertEquals(1.0f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere media");
     assertEquals(
         "sword_swing", strategy.getSoundID(), "Il suono riprodotto deve essere quello della spada");
+  }
+
+  @Test
+  public void testArcherAttackLogic() {
+    // Arrange
+    float damage = 25f;
+    AttackStrategy strategy = new ArcherAttack(damage);
+    TestEntity attacker = new TestEntity(0, 0, 100);
+
+    // In Range (Distance 50 < 100)
+    TestEntity targetInRange = new TestEntity(50, 0, 100);
+    // Out of Range (Distance 150 > 100)
+    TestEntity targetOutOfRange = new TestEntity(150, 0, 100);
+    // In Range (Distance 99 < 100)
+    TestEntity targetEdgeCase = new TestEntity(99, 0, 100);
+
+    List<Entity> targets = List.of(targetInRange, targetOutOfRange, targetEdgeCase);
+
+    // Act
+    strategy.executeAttack(attacker, targets);
+
+    // Assert
+    assertEquals(75f, targetInRange.getHealth(), 0.01f, "Target in range should take damage");
+    assertEquals(
+        100f, targetOutOfRange.getHealth(), 0.01f, "Target out of range should NOT take damage");
+    assertEquals(
+        75f, targetEdgeCase.getHealth(), 0.01f, "Target within edge of range should take damage");
   }
 
   @Test
@@ -65,6 +92,48 @@ public class CombatTest {
     assertEquals(1.5f, strategy.getAttackSpeed(), 0.01f, "La velocità deve essere medio-alta");
     assertEquals(
         "bow_sound", strategy.getSoundID(), "Il suono riprodotto deve essere quello dell'arco");
+  }
+
+  @Test
+  public void testWarriorAttackLogic() {
+    // Arrange
+    float damage = 50f;
+    AttackStrategy strategy = new WarriorAttack(damage); // Range 45
+    TestEntity attacker = new TestEntity(0, 0, 100);
+
+    // Target 1: In Range (Distance 30 < 45)
+    TestEntity targetInRange = new TestEntity(30, 0, 100);
+    // Target 2: Out of Range (Distance 50 > 45)
+    TestEntity targetOutOfRange = new TestEntity(50, 0, 100);
+
+    List<Entity> targets = List.of(targetInRange, targetOutOfRange);
+
+    // Act
+    strategy.executeAttack(attacker, targets);
+
+    // Assert
+    assertEquals(50f, targetInRange.getHealth(), 0.01f, "Warrior should hit target in short range");
+    assertEquals(
+        100f, targetOutOfRange.getHealth(), 0.01f, "Warrior should miss target out of range");
+  }
+
+  @Test
+  public void testThiefInitialization() {
+    Player thief = new Player(Player.PlayerClass.THIEF, new World(new Vector2(0, 0), true), 0, 0);
+
+    // Controllo il TIPO di strategia (InstanceOf)
+    // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
+    assertInstanceOf(
+        ThiefAttack.class,
+        thief.getAttackStrategy(),
+        "Il player deve avere istanza di ThiefAttack");
+
+    // Controllo i VALORI (AssertEquals)
+    assertEquals(
+        20.0f,
+        thief.getAttackStrategy().getDamage(),
+        0.01f,
+        "Il player deve fare i danni del ladro");
   }
 
   @Test
@@ -105,29 +174,12 @@ public class CombatTest {
   }
 
   @Test
-  public void testThiefInitialization() {
-    Player thief = new Player(Player.PlayerClass.THIEF, new World(new Vector2(0, 0), true), 0, 0);
-
-    // Controllo il TIPO di strategia (InstanceOf)
-    assertInstanceOf(
-        ThiefAttack.class,
-        thief.getAttackStrategy(),
-        "Il player deve avere istanza di ThiefAttack");
-
-    // Controllo i VALORI (AssertEquals)
-    assertEquals(
-        20.0f,
-        thief.getAttackStrategy().getDamage(),
-        0.01f,
-        "Il player deve fare i danni del ladro");
-  }
-
-  @Test
   public void testArcherInitialization() {
 
     Player archer = new Player(Player.PlayerClass.ARCHER, new World(new Vector2(0, 0), true), 0, 0);
 
     // Controllo il TIPO di strategia (InstanceOf)
+    // Sintassi: (ClasseAttesa.class, OggettoDaTestare, "Messaggio opzionale")
     assertInstanceOf(
         ArcherAttack.class,
         archer.getAttackStrategy(),
@@ -139,6 +191,13 @@ public class CombatTest {
         archer.getAttackStrategy().getDamage(),
         0.01f,
         "Il player deve fare i danni dell'arciere");
+  }
+
+  // Stub Entity for testing combat logic without physics/Box2D overhead
+  private static class TestEntity extends Entity {
+    public TestEntity(float x, float y, float health) {
+      super(new Vector2(x, y), health);
+    }
   }
 
   @Test

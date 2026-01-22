@@ -1,7 +1,6 @@
 package io.github.soulslight.model.combat;
 
 import com.badlogic.gdx.Gdx;
-import io.github.soulslight.model.Constants;
 import io.github.soulslight.model.entities.Entity;
 import java.util.List;
 
@@ -21,7 +20,7 @@ public class ArcherAttack extends AbstractAttack {
 
   @Override
   public float getRange() {
-    return 250.0f / Constants.PPM;
+    return 100.0f;
   }
 
   @Override
