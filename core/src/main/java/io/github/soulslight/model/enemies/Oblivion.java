@@ -83,15 +83,14 @@ public class Oblivion extends AbstractEnemy {
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players.isEmpty()) return;
-
     if (isPhaseTwo && this.health <= 0) return;
-
     if (!isPhaseTwo && this.health <= 0) {
       startPhaseTwo();
       return;
     }
 
-    Player target = getNearestPlayer(players);
+    Player target = getNearestTarget(players);
+    if (target == null) return;
     Vector2 myPos = (body != null) ? body.getPosition() : this.position;
     float distance = myPos.dst(target.getPosition());
 
@@ -213,11 +212,6 @@ public class Oblivion extends AbstractEnemy {
       body.setLinearVelocity(direction.scl(speed));
       this.position.set(body.getPosition());
     }
-  }
-
-  private Player getNearestPlayer(List<Player> players) {
-    if (players.isEmpty()) return null;
-    return players.get(0);
   }
 
   // Spara attacchi a distanza in tre direzioni

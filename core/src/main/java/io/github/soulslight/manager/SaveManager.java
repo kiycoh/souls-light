@@ -2,55 +2,91 @@ package io.github.soulslight.manager;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.utils.Base64Coder;
 import com.badlogic.gdx.utils.Json;
+import com.badlogic.gdx.utils.SerializationException;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.GameStateMemento;
 
 public class SaveManager {
 
-  private static final String SAVE_FILE = "savegame.json";
+  private static final String SAVE_FILE = "savegame.sav"; // Renamed to .sav to imply binary/encoded
+  private static final String BACKUP_FILE = "savegame.bak";
   private final Json json;
 
   public SaveManager() {
     this.json = new Json();
+    this.json.setIgnoreUnknownFields(true);
   }
 
-  // Salva il gioco
   public void saveGame(GameModel model) {
-
-    float currentHealth = 0;
-    if (model.getPlayer() != null) {
-      currentHealth = model.getPlayer().getHealth();
-    }
-
-    // 1. Crea il memento con la VITA (Health)
-    GameStateMemento memento =
-        new GameStateMemento(currentHealth, model.getPlayer().getPosition(), 1);
-
-    // Converte in file di testo
-    String text = json.toJson(memento);
     FileHandle file = Gdx.files.local(SAVE_FILE);
-    file.writeString(text, false);
+    FileHandle backup = Gdx.files.local(BACKUP_FILE);
 
-    Gdx.app.log("SaveManager", "Partita salvata (HP: " + currentHealth + ") su: " + file.path());
+    try {
+      // Create Memento
+      GameStateMemento memento = model.createMemento();
+      String jsonString = json.toJson(memento);
+
+      // Encode to Base64 (Obfuscation + prevent encoding issues)
+      String encodedString = Base64Coder.encodeString(jsonString);
+
+      // Backup existing save if it exists
+      if (file.exists()) {
+        file.copyTo(backup);
+      }
+
+      // Write new save
+      file.writeString(encodedString, false);
+      Gdx.app.log("SaveManager", "Game saved successfully.");
+
+    } catch (Exception e) {
+      Gdx.app.error("SaveManager", "Failed to save game!", e);
+    }
   }
 
-  // Ricarica il salvataggio
   public void loadGame(GameModel model) {
     FileHandle file = Gdx.files.local(SAVE_FILE);
 
-    if (!file.exists()) {
-      Gdx.app.log("SaveManager", "Nessun salvataggio trovato.");
+    // Try loading primary file
+    if (loadFromFile(file, model)) {
       return;
     }
 
-    try {
-      GameStateMemento memento = json.fromJson(GameStateMemento.class, file.readString());
-      model.restoreMemento(memento); // Deleghiamo al model
-      Gdx.app.log("SaveManager", "Partita caricata con successo!");
-    } catch (Exception e) {
-      Gdx.app.error("SaveManager", "Errore nel caricamento del salvataggio", e);
+    // If primary failed, try backup
+    Gdx.app.log("SaveManager", "Primary save failed. Attempting backup...");
+    FileHandle backup = Gdx.files.local(BACKUP_FILE);
+    if (loadFromFile(backup, model)) {
+      Gdx.app.log("SaveManager", "Backup loaded successfully.");
+    } else {
+      Gdx.app.error("SaveManager", "Backup failed or does not exist.");
     }
+  }
+
+  private boolean loadFromFile(FileHandle file, GameModel model) {
+    if (!file.exists()) return false;
+
+    try {
+      String encodedContent = file.readString();
+      if (encodedContent == null || encodedContent.trim().isEmpty()) {
+        return false;
+      }
+
+      // Decode Base64
+      String jsonString = Base64Coder.decodeString(encodedContent);
+
+      GameStateMemento memento = json.fromJson(GameStateMemento.class, jsonString);
+
+      if (memento != null && memento.players != null && !memento.players.isEmpty()) {
+        model.restoreMemento(memento);
+        return true;
+      }
+    } catch (SerializationException | IllegalArgumentException e) {
+      Gdx.app.error("SaveManager", "Corrupted save file: " + file.name(), e);
+    } catch (Exception e) {
+      Gdx.app.error("SaveManager", "Error loading file: " + file.name(), e);
+    }
+    return false;
   }
 
   public boolean hasSaveFile() {

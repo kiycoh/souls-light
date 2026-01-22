@@ -1,20 +1,29 @@
 package io.github.soulslight.model;
 
-import com.badlogic.gdx.math.Vector2;
+import java.util.ArrayList;
+import java.util.List;
 
-// Classe per il salvataggio
 public class GameStateMemento {
-  public float health;
-  public float playerX;
-  public float playerY;
-  public int currentLevelIndex; // Utile per il futuro
+  // list supports 1, 2 or N players
+  public List<PlayerMemento> players = new ArrayList<>();
+  public List<EnemyMemento> enemies = new ArrayList<>();
+  public List<ProjectileMemento> projectiles = new ArrayList<>();
+  public long seed;
+  public int currentLevelIndex;
 
+  // No-arg constructor
   public GameStateMemento() {}
 
-  public GameStateMemento(float health, Vector2 position, int levelIndex) {
-    this.health = health;
-    this.playerX = position.x;
-    this.playerY = position.y;
-    this.currentLevelIndex = levelIndex;
+  public GameStateMemento(
+      List<PlayerMemento> players,
+      List<EnemyMemento> enemies,
+      List<ProjectileMemento> projectiles,
+      long seed,
+      int currentLevelIndex) {
+    this.players = players;
+    this.enemies = enemies;
+    this.projectiles = projectiles;
+    this.seed = seed;
+    this.currentLevelIndex = currentLevelIndex;
   }
 }

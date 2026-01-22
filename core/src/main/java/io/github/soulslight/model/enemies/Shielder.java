@@ -41,7 +41,8 @@ public class Shielder extends AbstractEnemy {
     }
 
     if (players == null || players.isEmpty()) return;
-    Player player = players.get(0);
+    Player player = getNearestTarget(players);
+    if (player == null) return;
 
     syncBody();
 

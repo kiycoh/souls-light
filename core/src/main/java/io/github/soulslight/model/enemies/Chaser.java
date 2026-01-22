@@ -56,8 +56,9 @@ public class Chaser extends AbstractEnemy {
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players == null || players.isEmpty() || this.health <= 0) return;
 
-    // Default to first player
-    Player target = players.get(0);
+    // CHANGED: Use nearest target instead of players.get(0)
+    Player target = getNearestTarget(players);
+    if (target == null) return; // Stop if everyone is dead
 
     syncBody();
 

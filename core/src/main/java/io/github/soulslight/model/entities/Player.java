@@ -166,4 +166,8 @@ public class Player extends Entity {
   public boolean isInvincible() {
     return invincibilityTimer > 0;
   }
+
+  public PlayerClass getType() {
+    return type;
+  }
 }

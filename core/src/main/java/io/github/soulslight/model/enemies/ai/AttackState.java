@@ -18,7 +18,11 @@ public final class AttackState implements EnemyState {
       enemy.setAIState(new PatrolState());
       return;
     }
-    Player target = players.get(0);
+    Player target = enemy.getNearestTarget(players);
+    if (target == null) {
+      enemy.setAIState(new PatrolState());
+      return;
+    }
     float dist = enemy.getBody().getPosition().dst(target.getPosition());
 
     if (isRetreating) {
