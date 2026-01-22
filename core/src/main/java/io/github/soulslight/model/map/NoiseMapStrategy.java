@@ -36,8 +36,10 @@ public record NoiseMapStrategy(
     noise.setFrequency(frequency);
     noise.setFractalOctaves(octaves);
 
-    // --- FLOOR TILES ---
-    TextureRegion[] floorRegions = ResourceManager.getInstance().getFloorTextureRegions();
+    ResourceManager rm = ResourceManager.getInstance();
+
+    // --- FLOOR TILES  ---
+    TextureRegion[] floorRegions = rm.getFloorTextureRegions();
     StaticTiledMapTile[] floorTiles;
 
     if (floorRegions != null && floorRegions.length > 0) {
@@ -49,17 +51,16 @@ public record NoiseMapStrategy(
       }
     } else {
       // fallback: if for some reason no variants are available, use the old single floor tile
-      StaticTiledMapTile singleFloor =
-          new StaticTiledMapTile(ResourceManager.getInstance().getFloorTextureRegion());
+      StaticTiledMapTile singleFloor = new StaticTiledMapTile(rm.getFloorTextureRegion());
       singleFloor.getProperties().put("type", "floor");
       floorTiles = new StaticTiledMapTile[] {singleFloor};
     }
 
     // --- WALL TILES ---
-    TextureRegion[] wallRegions = ResourceManager.getInstance().getWallMaskRegions();
+    TextureRegion[] wallRegions = rm.getWallMaskRegions();
     StaticTiledMapTile[] wallMaskTiles = new StaticTiledMapTile[16];
 
-    TextureRegion fallbackWallRegion = ResourceManager.getInstance().getWallTextureRegion();
+    TextureRegion fallbackWallRegion = rm.getWallTextureRegion();
 
     for (int i = 0; i < 16; i++) {
       TextureRegion region = null;
@@ -77,6 +78,18 @@ public record NoiseMapStrategy(
     // generic wall used during generation
     StaticTiledMapTile genericWallTile = wallMaskTiles[15];
 
+    StaticTiledMapTile innerNeTile = new StaticTiledMapTile(rm.getInnerCornerWallNE());
+    innerNeTile.getProperties().put("type", "wall");
+
+    StaticTiledMapTile innerNwTile = new StaticTiledMapTile(rm.getInnerCornerWallNW());
+    innerNwTile.getProperties().put("type", "wall");
+
+    StaticTiledMapTile innerSeTile = new StaticTiledMapTile(rm.getInnerCornerWallSE());
+    innerSeTile.getProperties().put("type", "wall");
+
+    StaticTiledMapTile innerSwTile = new StaticTiledMapTile(rm.getInnerCornerWallSW());
+    innerSwTile.getProperties().put("type", "wall");
+
     Random rnd = new Random(seed);
 
     for (int x = 0; x < width; x++) {
@@ -91,7 +104,6 @@ public record NoiseMapStrategy(
         }
       }
     }
-
     for (int i = 0; i < SMOOTHING_ITERATIONS; i++) {
       smoothMap(layer, genericWallTile, floorTiles, rnd);
     }
@@ -108,7 +120,7 @@ public record NoiseMapStrategy(
       connectRegions(regions, layer, floorTiles, rnd);
     }
 
-    applyWallAutotiling(layer, wallMaskTiles);
+    applyWallAutotiling(layer, wallMaskTiles, innerNeTile, innerNwTile, innerSeTile, innerSwTile);
 
     map.getLayers().add(layer);
     return map;
@@ -157,7 +169,7 @@ public record NoiseMapStrategy(
       for (int y = cy - 1; y <= cy + 1; y++) {
         if (x == cx && y == cy) continue;
 
-        // Out of bounds counts as wall (forces closed caves)
+        // out of bounds counts as wall (forces closed caves)
         if (x < 0 || x >= width || y < 0 || y >= height) {
           count++;
         } else if (isWall(layer, x, y)) {
@@ -279,21 +291,57 @@ public record NoiseMapStrategy(
     setTile(layer, end.x, end.y, selectedTile);
   }
 
-  private void applyWallAutotiling(TiledMapTileLayer layer, StaticTiledMapTile[] wallMaskTiles) {
+  private void applyWallAutotiling(
+      TiledMapTileLayer layer,
+      StaticTiledMapTile[] wallMaskTiles,
+      StaticTiledMapTile innerNeTile,
+      StaticTiledMapTile innerNwTile,
+      StaticTiledMapTile innerSeTile,
+      StaticTiledMapTile innerSwTile) {
 
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
         if (!isWall(layer, x, y)) continue;
 
         int mask = computeWallMask(layer, x, y);
-        if (mask < 0 || mask >= wallMaskTiles.length) {
-          mask = 15;
+        StaticTiledMapTile tile;
+
+        if (mask == 15) {
+          boolean neWall = isWall(layer, x + 1, y + 1);
+          boolean nwWall = isWall(layer, x - 1, y + 1);
+          boolean seWall = isWall(layer, x + 1, y - 1);
+          boolean swWall = isWall(layer, x - 1, y - 1);
+
+          boolean neHole = !neWall;
+          boolean nwHole = !nwWall;
+          boolean seHole = !seWall;
+          boolean swHole = !swWall;
+
+          int holes = (neHole ? 1 : 0) + (nwHole ? 1 : 0) + (seHole ? 1 : 0) + (swHole ? 1 : 0);
+
+          if (holes == 1) {
+            if (neHole) {
+              tile = innerNeTile;
+            } else if (nwHole) {
+              tile = innerNwTile;
+            } else if (seHole) {
+              tile = innerSeTile;
+            } else {
+              tile = innerSwTile;
+            }
+          } else {
+            tile = wallMaskTiles[15];
+          }
+        } else {
+          if (mask < 0 || mask >= wallMaskTiles.length) {
+            mask = 15;
+          }
+          tile = wallMaskTiles[mask];
+          if (tile == null) {
+            tile = wallMaskTiles[15];
+          }
         }
 
-        StaticTiledMapTile tile = wallMaskTiles[mask];
-        if (tile == null) {
-          tile = wallMaskTiles[15];
-        }
         setTile(layer, x, y, tile);
       }
     }

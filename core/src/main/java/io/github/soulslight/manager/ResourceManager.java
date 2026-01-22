@@ -24,6 +24,16 @@ public class ResourceManager implements Disposable {
   private Texture[] wallMaskTextures;
   private TextureRegion[] wallMaskRegions;
 
+  private Texture innerNeWallTexture;
+  private Texture innerNwWallTexture;
+  private Texture innerSeWallTexture;
+  private Texture innerSwWallTexture;
+
+  private TextureRegion innerNeWallRegion;
+  private TextureRegion innerNwWallRegion;
+  private TextureRegion innerSeWallRegion;
+  private TextureRegion innerSwWallRegion;
+
   private ResourceManager() {}
 
   public static synchronized ResourceManager getInstance() {
@@ -142,6 +152,75 @@ public class ResourceManager implements Disposable {
     return wallMaskRegions;
   }
 
+  private TextureRegion loadInnerCornerRegion(String path, Texture fallbackTexture) {
+    if (!Gdx.files.internal(path).exists()) {
+      return new TextureRegion(fallbackTexture);
+    }
+
+    Pixmap src = new Pixmap(Gdx.files.internal(path));
+    Pixmap dst = new Pixmap(32, 32, Pixmap.Format.RGBA8888);
+    dst.setBlending(Pixmap.Blending.None);
+
+    // 2x scale
+    dst.drawPixmap(src, 0, 0, src.getWidth(), src.getHeight(), 0, 0, 32, 32);
+
+    Texture t = new Texture(dst);
+    t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+
+    src.dispose();
+    dst.dispose();
+
+    return new TextureRegion(t);
+  }
+
+  public TextureRegion getInnerCornerWallNE() {
+    if (innerNeWallRegion == null) {
+      String path = "tiles/wall_inner_ne.png";
+      if (Gdx.files.internal(path).exists()) {
+        innerNeWallRegion = loadInnerCornerRegion(path, getWallTextureRegion().getTexture());
+      } else {
+        innerNeWallRegion = getWallTextureRegion();
+      }
+    }
+    return innerNeWallRegion;
+  }
+
+  public TextureRegion getInnerCornerWallNW() {
+    if (innerNwWallRegion == null) {
+      String path = "tiles/wall_inner_nw.png";
+      if (Gdx.files.internal(path).exists()) {
+        innerNwWallRegion = loadInnerCornerRegion(path, getWallTextureRegion().getTexture());
+      } else {
+        innerNwWallRegion = getWallTextureRegion();
+      }
+    }
+    return innerNwWallRegion;
+  }
+
+  public TextureRegion getInnerCornerWallSE() {
+    if (innerSeWallRegion == null) {
+      String path = "tiles/wall_inner_se.png";
+      if (Gdx.files.internal(path).exists()) {
+        innerSeWallRegion = loadInnerCornerRegion(path, getWallTextureRegion().getTexture());
+      } else {
+        innerSeWallRegion = getWallTextureRegion();
+      }
+    }
+    return innerSeWallRegion;
+  }
+
+  public TextureRegion getInnerCornerWallSW() {
+    if (innerSwWallRegion == null) {
+      String path = "tiles/wall_inner_sw.png";
+      if (Gdx.files.internal(path).exists()) {
+        innerSwWallRegion = loadInnerCornerRegion(path, getWallTextureRegion().getTexture());
+      } else {
+        innerSwWallRegion = getWallTextureRegion();
+      }
+    }
+    return innerSwWallRegion;
+  }
+
   @Override
   public void dispose() {
     if (playerTexture != null) playerTexture.dispose();
@@ -162,9 +241,25 @@ public class ResourceManager implements Disposable {
       }
     }
 
+    // Dispose inner wall textures
+    if (innerNeWallTexture != null) innerNeWallTexture.dispose();
+    if (innerNwWallTexture != null) innerNwWallTexture.dispose();
+    if (innerSeWallTexture != null) innerSeWallTexture.dispose();
+    if (innerSwWallTexture != null) innerSwWallTexture.dispose();
+
     floorVariantTextures = null;
     floorVariantRegions = null;
     wallMaskTextures = null;
     wallMaskRegions = null;
+
+    innerNeWallTexture = null;
+    innerNwWallTexture = null;
+    innerSeWallTexture = null;
+    innerSwWallTexture = null;
+
+    innerNeWallRegion = null;
+    innerNwWallRegion = null;
+    innerSeWallRegion = null;
+    innerSwWallRegion = null;
   }
 }
