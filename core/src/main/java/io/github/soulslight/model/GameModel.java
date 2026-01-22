@@ -26,6 +26,7 @@ public class GameModel implements Disposable {
   private boolean isPaused;
   private java.util.List<Player> players;
   private Level level;
+  private long currentSeed;
 
   // Accumulator for fixed timestep
   private float physicsAccumulator = 0;
@@ -42,12 +43,12 @@ public class GameModel implements Disposable {
     this.players = new java.util.ArrayList<>();
 
     // ---- PROCEDURALLY GENERATED MAP ----
-    long seed = System.currentTimeMillis();
-    TiledMap myMap = MapGenerator.generateProceduralMap(seed);
+    this.currentSeed = System.currentTimeMillis();
+    TiledMap myMap = MapGenerator.generateProceduralMap(currentSeed);
 
     // ---- PLAYERS: spawn on valid flood tile ----
     Vector2 spawn = findFirstFloorSpawn(myMap);
-    
+
     // Player 1
     Player p1 = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, spawn.x, spawn.y);
     players.add(p1);
@@ -246,29 +247,103 @@ public class GameModel implements Disposable {
       playerStates.add(
           new PlayerMemento(p.getType(), p.getHealth(), p.getPosition().x, p.getPosition().y));
     }
-    // Level index hardcoded for now
-    return new GameStateMemento(playerStates, 1);
+
+    java.util.List<EnemyMemento> enemyStates = new java.util.ArrayList<>();
+    if (level != null && level.getEnemies() != null) {
+      for (AbstractEnemy e : level.getEnemies()) {
+        if (!e.isDead()) {
+             enemyStates.add(new EnemyMemento(getEnemyType(e), e.getPosition().x, e.getPosition().y, e.getHealth()));
+        }
+      }
+    }
+
+    java.util.List<ProjectileMemento> projectileStates = new java.util.ArrayList<>();
+    for (Projectile p : projectileManager.getProjectiles()) {
+       if (!p.shouldDestroy()) {
+           Vector2 vel = p.getBody().getLinearVelocity();
+           projectileStates.add(new ProjectileMemento(p.getPosition().x, p.getPosition().y, vel.x, vel.y));
+       }
+    }
+
+    return new GameStateMemento(playerStates, enemyStates, projectileStates, this.currentSeed, 1);
+  }
+
+  private String getEnemyType(AbstractEnemy e) {
+      if (e instanceof Chaser) return "Chaser";
+      if (e instanceof Ranger) return "Ranger";
+      if (e instanceof Shielder) return "Shielder";
+      if (e instanceof SpikedBall) return "SpikedBall";
+      if (e instanceof Oblivion) return "Oblivion";
+      return "Chaser"; // Fallback
   }
 
   public void restoreMemento(GameStateMemento memento) {
     if (memento == null || memento.players == null) return;
 
-    // 1. Clear existing players (physics body + list)
-    for (Player p : players) {
-      if (p.getBody() != null) {
-        physicsWorld.destroyBody(p.getBody());
-      }
+    // Clear EVERYTHING from physics world
+    com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies = new com.badlogic.gdx.utils.Array<>();
+    physicsWorld.getBodies(bodies);
+    for (com.badlogic.gdx.physics.box2d.Body b : bodies) {
+        physicsWorld.destroyBody(b);
     }
+
+    // Clear lists
     players.clear();
     GameManager.getInstance().clearPlayers();
+
+    // Restore Seed
+    this.currentSeed = memento.seed;
+
+    // Rebuild Map
+    TiledMap newMap = MapGenerator.generateProceduralMap(currentSeed);
+    if (level != null) level.dispose();
+
+    // Rebuild Level (No random spawn)
+    this.level = new LevelBuilder()
+            .buildMap(newMap)
+            .buildPhysicsFromMap(this.physicsWorld)
+            .setEnvironment("dungeon_theme.mp3", 0.3f)
+            .build();
+    GameManager.getInstance().setCurrentLevel(this.level);
 
     // 2. Recreate players from Memento
     for (PlayerMemento pm : memento.players) {
       Player newPlayer = new Player(pm.type, physicsWorld, pm.x, pm.y);
       newPlayer.setHealth(pm.health);
-      
+
       players.add(newPlayer);
       GameManager.getInstance().addPlayer(newPlayer);
+    }
+
+    // Recreate Enemies
+    if (memento.enemies != null) {
+        for (EnemyMemento em : memento.enemies) {
+            AbstractEnemy enemy = EnemyRegistry.getEnemy(em.type);
+            if (enemy != null) {
+                enemy.createBody(physicsWorld, em.x, em.y);
+                enemy.setHealth(em.health);
+                this.level.addEnemy(enemy);
+            }
+        }
+        // Restore Shielder links
+        for (AbstractEnemy e : this.level.getEnemies()) {
+            if (e instanceof Shielder) {
+              ((Shielder) e).setAllies(this.level.getEnemies());
+            }
+        }
+    }
+
+    // Recreate Projectiles
+    this.projectileManager.getProjectiles().clear();
+
+    if (memento.projectiles != null) {
+        for (ProjectileMemento pm : memento.projectiles) {
+            // Workaround: Create with dummy target, then override velocity.
+            Vector2 dummyTarget = new Vector2(pm.x + pm.vx, pm.y + pm.vy);
+            Projectile p = new Projectile(physicsWorld, pm.x, pm.y, dummyTarget);
+            p.getBody().setLinearVelocity(pm.vx, pm.vy);
+            this.projectileManager.addProjectile(p);
+        }
     }
   }
 
@@ -283,7 +358,7 @@ public class GameModel implements Disposable {
   public java.util.List<Player> getPlayers() {
     return players;
   }
-  
+
   // Backward compatibility
   public Player getPlayer() {
     return players.isEmpty() ? null : players.get(0);
