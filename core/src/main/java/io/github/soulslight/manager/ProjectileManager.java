@@ -66,26 +66,26 @@ public class ProjectileManager {
 
   // Controlla se la freccia ha colpito un player
   private void checkPlayersCollision(Projectile p, List<Player> players) {
-      if (players == null) return;
-      float hitRadiusSq = 14f * 14f;
-      
-      for (Player player : players) {
-          if (player.isDead()) continue;
+    if (players == null) return;
+    float hitRadiusSq = 14f * 14f;
 
-          boolean closeEnough = p.getPosition().dst2(player.getPosition()) < hitRadiusSq;
-          boolean intersect =
-              Intersector.intersectSegmentCircle(
-                  p.getLastPosition(), p.getPosition(), player.getPosition(), hitRadiusSq);
-    
-          if ((closeEnough || intersect) && !player.isInvincible()) {
-            player.takeDamage(p.getDamage());
-            if (player.getBody() != null && p.getBody() != null) {
-              player.applyKnockback(p.getBody().getLinearVelocity().cpy().nor(), 800f, 0.15f);
-            }
-            p.markDestroy();
-            return; // Destroy projectile after first hit
-          }
+    for (Player player : players) {
+      if (player.isDead()) continue;
+
+      boolean closeEnough = p.getPosition().dst2(player.getPosition()) < hitRadiusSq;
+      boolean intersect =
+          Intersector.intersectSegmentCircle(
+              p.getLastPosition(), p.getPosition(), player.getPosition(), hitRadiusSq);
+
+      if ((closeEnough || intersect) && !player.isInvincible()) {
+        player.takeDamage(p.getDamage());
+        if (player.getBody() != null && p.getBody() != null) {
+          player.applyKnockback(p.getBody().getLinearVelocity().cpy().nor(), 800f, 0.15f);
+        }
+        p.markDestroy();
+        return; // Destroy projectile after first hit
       }
+    }
   }
 
   public List<Projectile> getProjectiles() {

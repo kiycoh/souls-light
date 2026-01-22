@@ -25,162 +25,168 @@ import io.github.soulslight.model.GameModel;
 
 public final class MainMenuScreen implements GameState {
 
-    private final SoulsLightGame game;
-    private final SpriteBatch batch;
-    private final Stage stage;
-    private final BitmapFont font;
-    private Texture backgroundTexture;
-    private Music menuMusic;
+  private final SoulsLightGame game;
+  private final SpriteBatch batch;
+  private final Stage stage;
+  private final BitmapFont font;
+  private Texture backgroundTexture;
+  private Music menuMusic;
 
-    public MainMenuScreen(SoulsLightGame game, SpriteBatch batch) {
-        this.game = game;
-        this.batch = batch;
-        this.stage = new Stage(new FitViewport(1280, 720), batch);
-        this.font = new BitmapFont();
-    }
+  public MainMenuScreen(SoulsLightGame game, SpriteBatch batch) {
+    this.game = game;
+    this.batch = batch;
+    this.stage = new Stage(new FitViewport(1280, 720), batch);
+    this.font = new BitmapFont();
+  }
 
-    @Override
-    public void show() {
-        Gdx.input.setInputProcessor(stage);
+  @Override
+  public void show() {
+    Gdx.input.setInputProcessor(stage);
 
-        menuMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/no escape.mp3"));
-        menuMusic.setLooping(true);
-        menuMusic.setVolume(SettingsManager.getInstance().getMusicVolume());
-        menuMusic.play();
+    menuMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/no escape.mp3"));
+    menuMusic.setLooping(true);
+    menuMusic.setVolume(SettingsManager.getInstance().getMusicVolume());
+    menuMusic.play();
 
-        setupBackground();
-        setupUI();
-    }
+    setupBackground();
+    setupUI();
+  }
 
-    private void setupBackground() {
-        backgroundTexture = new Texture(Gdx.files.internal("ui/menubg.png"));
-        Image backgroundImage = new Image(backgroundTexture);
-        backgroundImage.setScaling(Scaling.stretch);
-        backgroundImage.setFillParent(true);
-        stage.addActor(backgroundImage);
-    }
+  private void setupBackground() {
+    backgroundTexture = new Texture(Gdx.files.internal("ui/menubg.png"));
+    Image backgroundImage = new Image(backgroundTexture);
+    backgroundImage.setScaling(Scaling.stretch);
+    backgroundImage.setFillParent(true);
+    stage.addActor(backgroundImage);
+  }
 
-    private void setupUI() {
-        Table table = new Table();
-        table.setFillParent(true);
-        table.bottom().center().padBottom(-220f);
-        stage.addActor(table);
+  private void setupUI() {
+    Table table = new Table();
+    table.setFillParent(true);
+    table.bottom().center().padBottom(-220f);
+    stage.addActor(table);
 
-        font.getData().setScale(1.3f);
+    font.getData().setScale(1.3f);
 
-        TextButtonStyle standardStyle = new TextButtonStyle();
-        standardStyle.font = font;
-        standardStyle.fontColor = Color.WHITE;
-        standardStyle.downFontColor = Color.GRAY;
-        standardStyle.overFontColor = Color.LIGHT_GRAY;
-        // Define a "disabled" color for visual feedback
-        standardStyle.disabledFontColor = new Color(0.3f, 0.3f, 0.3f, 1f);
+    TextButtonStyle standardStyle = new TextButtonStyle();
+    standardStyle.font = font;
+    standardStyle.fontColor = Color.WHITE;
+    standardStyle.downFontColor = Color.GRAY;
+    standardStyle.overFontColor = Color.LIGHT_GRAY;
+    // Define a "disabled" color for visual feedback
+    standardStyle.disabledFontColor = new Color(0.3f, 0.3f, 0.3f, 1f);
 
-        TextButton newGameButton = new TextButton("New Game", standardStyle);
-        TextButton continueButton = new TextButton("Continue", standardStyle);
-        TextButton optionsButton = new TextButton("Options", standardStyle);
-        TextButton exitButton = new TextButton("Exit", standardStyle);
+    TextButton newGameButton = new TextButton("New Game", standardStyle);
+    TextButton continueButton = new TextButton("Continue", standardStyle);
+    TextButton optionsButton = new TextButton("Options", standardStyle);
+    TextButton exitButton = new TextButton("Exit", standardStyle);
 
-        // --- CHECK SAVE FILE ---
-        SaveManager saveManager = new SaveManager();
-        boolean hasSave = saveManager.hasSaveFile();
+    // --- CHECK SAVE FILE ---
+    SaveManager saveManager = new SaveManager();
+    boolean hasSave = saveManager.hasSaveFile();
 
-        // Disable continue button if no save exists
-        continueButton.setDisabled(!hasSave);
+    // Disable continue button if no save exists
+    continueButton.setDisabled(!hasSave);
 
-        // Setup fade-in animations
-        newGameButton.getColor().a = 0f;
-        continueButton.getColor().a = 0f;
-        optionsButton.getColor().a = 0f;
-        exitButton.getColor().a = 0f;
+    // Setup fade-in animations
+    newGameButton.getColor().a = 0f;
+    continueButton.getColor().a = 0f;
+    optionsButton.getColor().a = 0f;
+    exitButton.getColor().a = 0f;
 
-        newGameButton.addAction(Actions.fadeIn(1f));
-        continueButton.addAction(Actions.sequence(Actions.delay(0.2f), Actions.fadeIn(1f)));
-        optionsButton.addAction(Actions.sequence(Actions.delay(0.4f), Actions.fadeIn(1f)));
-        exitButton.addAction(Actions.sequence(Actions.delay(0.6f), Actions.fadeIn(1f)));
+    newGameButton.addAction(Actions.fadeIn(1f));
+    continueButton.addAction(Actions.sequence(Actions.delay(0.2f), Actions.fadeIn(1f)));
+    optionsButton.addAction(Actions.sequence(Actions.delay(0.4f), Actions.fadeIn(1f)));
+    exitButton.addAction(Actions.sequence(Actions.delay(0.6f), Actions.fadeIn(1f)));
 
-        // --- LISTENERS ---
-        newGameButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                GameModel model = new GameModel();
-                GameController controller = new GameController(model);
-                game.setScreen(new GameScreen(batch, model, controller));
-            }
+    // --- LISTENERS ---
+    newGameButton.addListener(
+        new ClickListener() {
+          @Override
+          public void clicked(InputEvent event, float x, float y) {
+            GameModel model = new GameModel();
+            GameController controller = new GameController(model);
+            game.setScreen(new GameScreen(batch, model, controller));
+          }
         });
 
-        // LISTENER FOR CONTINUE
-        continueButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                if (continueButton.isDisabled()) return; // Ignore click if disabled
+    // LISTENER FOR CONTINUE
+    continueButton.addListener(
+        new ClickListener() {
+          @Override
+          public void clicked(InputEvent event, float x, float y) {
+            if (continueButton.isDisabled()) return; // Ignore click if disabled
 
-                GameModel model = new GameModel();
-                SaveManager sm = new SaveManager();
+            GameModel model = new GameModel();
+            SaveManager sm = new SaveManager();
 
-                // Try loading. If successful, switch screens.
-                // Note: Error handling inside SaveManager will delete corrupt files,
-                // so we might technically load an empty state if corruption occurs,
-                // but the Model defaults to a fresh state anyway.
-                sm.loadGame(model);
+            // Try loading. If successful, switch screens.
+            // Note: Error handling inside SaveManager will delete corrupt files,
+            // so we might technically load an empty state if corruption occurs,
+            // but the Model defaults to a fresh state anyway.
+            sm.loadGame(model);
 
-                GameController controller = new GameController(model);
-                game.setScreen(new GameScreen(batch, model, controller));
-            }
+            GameController controller = new GameController(model);
+            game.setScreen(new GameScreen(batch, model, controller));
+          }
         });
 
-        optionsButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new SettingsScreen(game, batch));
-            }
+    optionsButton.addListener(
+        new ClickListener() {
+          @Override
+          public void clicked(InputEvent event, float x, float y) {
+            game.setScreen(new SettingsScreen(game, batch));
+          }
         });
 
-        exitButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                Gdx.app.exit();
-            }
+    exitButton.addListener(
+        new ClickListener() {
+          @Override
+          public void clicked(InputEvent event, float x, float y) {
+            Gdx.app.exit();
+          }
         });
 
-        final float btnWidth = 300f;
-        final float btnHeight = 60f;
-        final float pad = 8f;
+    final float btnWidth = 300f;
+    final float btnHeight = 60f;
+    final float pad = 8f;
 
-        table.add(newGameButton).width(btnWidth).height(btnHeight).pad(pad).row();
-        table.add(continueButton).width(btnWidth).height(btnHeight).pad(pad).row();
-        table.add(optionsButton).width(btnWidth).height(btnHeight).pad(pad).row();
-        table.add(exitButton).width(btnWidth).height(btnHeight).pad(pad).row();
+    table.add(newGameButton).width(btnWidth).height(btnHeight).pad(pad).row();
+    table.add(continueButton).width(btnWidth).height(btnHeight).pad(pad).row();
+    table.add(optionsButton).width(btnWidth).height(btnHeight).pad(pad).row();
+    table.add(exitButton).width(btnWidth).height(btnHeight).pad(pad).row();
+  }
+
+  @Override
+  public void render(float delta) {
+    Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
+    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
+    stage.draw();
+  }
+
+  @Override
+  public void resize(int width, int height) {
+    stage.getViewport().update(width, height, true);
+  }
+
+  @Override
+  public void pause() {}
+
+  @Override
+  public void resume() {}
+
+  @Override
+  public void hide() {}
+
+  @Override
+  public void dispose() {
+    stage.dispose();
+    font.dispose();
+    backgroundTexture.dispose();
+    if (menuMusic != null) {
+      menuMusic.stop();
+      menuMusic.dispose();
     }
-
-    @Override
-    public void render(float delta) {
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
-        stage.draw();
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        stage.getViewport().update(width, height, true);
-    }
-
-    @Override
-    public void pause() {}
-    @Override
-    public void resume() {}
-    @Override
-    public void hide() {}
-
-    @Override
-    public void dispose() {
-        stage.dispose();
-        font.dispose();
-        backgroundTexture.dispose();
-        if (menuMusic != null) {
-            menuMusic.stop();
-            menuMusic.dispose();
-        }
-    }
+  }
 }

@@ -133,7 +133,7 @@ public class GameModel implements Disposable {
     if (isPaused) return;
 
     for (Player p : players) {
-        if (p != null) p.update(deltaTime);
+      if (p != null) p.update(deltaTime);
     }
     updateEnemiesLogic(deltaTime);
 
@@ -143,7 +143,7 @@ public class GameModel implements Disposable {
       physicsWorld.step(1 / 60f, 6, 2);
       // Update projectiles for all players
       if (!players.isEmpty()) {
-         projectileManager.update(1 / 60f, players);
+        projectileManager.update(1 / 60f, players);
       }
       physicsAccumulator -= 1 / 60f;
     }
@@ -166,17 +166,17 @@ public class GameModel implements Disposable {
 
       if (enemy instanceof Ranger ranger) {
         if (ranger.isReadyToShoot()) {
-           // Target nearest player
-           Player target = getNearestPlayer(ranger.getPosition());
-           if (target != null) {
-              projectileManager.addProjectile(
-                  new Projectile(
-                      physicsWorld,
-                      ranger.getPosition().x,
-                      ranger.getPosition().y,
-                      target.getPosition()));
-              ranger.resetShot();
-           }
+          // Target nearest player
+          Player target = getNearestPlayer(ranger.getPosition());
+          if (target != null) {
+            projectileManager.addProjectile(
+                new Projectile(
+                    physicsWorld,
+                    ranger.getPosition().x,
+                    ranger.getPosition().y,
+                    target.getPosition()));
+            ranger.resetShot();
+          }
         }
       } else if (enemy instanceof Oblivion boss) {
         if (boss.isReadyToShoot()) {
@@ -194,37 +194,37 @@ public class GameModel implements Disposable {
   }
 
   private Player getNearestPlayer(Vector2 pos) {
-      Player nearest = null;
-      float minDst = Float.MAX_VALUE;
-      for (Player p : players) {
-          if (p.isDead()) continue;
-          float dst = pos.dst(p.getPosition());
-          if (dst < minDst) {
-              minDst = dst;
-              nearest = p;
-          }
+    Player nearest = null;
+    float minDst = Float.MAX_VALUE;
+    for (Player p : players) {
+      if (p.isDead()) continue;
+      float dst = pos.dst(p.getPosition());
+      if (dst < minDst) {
+        minDst = dst;
+        nearest = p;
       }
-      return nearest != null ? nearest : (players.isEmpty() ? null : players.get(0));
+    }
+    return nearest != null ? nearest : (players.isEmpty() ? null : players.get(0));
   }
 
   private void checkMeleeCollision(AbstractEnemy enemy) {
     if (enemy instanceof Ranger || enemy.isDead()) return;
 
     for (Player player : players) {
-        float dist = player.getPosition().dst(enemy.getPosition());
-        float contactThreshold = (enemy instanceof Oblivion) ? 50f : 32f;
+      float dist = player.getPosition().dst(enemy.getPosition());
+      float contactThreshold = (enemy instanceof Oblivion) ? 50f : 32f;
 
-        if (dist < contactThreshold) {
-          if (enemy instanceof Shielder) {
-            Vector2 bounceDir = player.getPosition().cpy().sub(enemy.getPosition()).nor();
+      if (dist < contactThreshold) {
+        if (enemy instanceof Shielder) {
+          Vector2 bounceDir = player.getPosition().cpy().sub(enemy.getPosition()).nor();
 
-            if (bounceDir.len2() < 0.01f) bounceDir.set(1, 0);
+          if (bounceDir.len2() < 0.01f) bounceDir.set(1, 0);
 
-            if (player.getBody() != null) {
-              player.applyKnockback(bounceDir, 100f, 0.2f);
-            }
+          if (player.getBody() != null) {
+            player.applyKnockback(bounceDir, 100f, 0.2f);
           }
         }
+      }
     }
   }
 
@@ -252,39 +252,43 @@ public class GameModel implements Disposable {
     if (level != null && level.getEnemies() != null) {
       for (AbstractEnemy e : level.getEnemies()) {
         if (!e.isDead()) {
-             enemyStates.add(new EnemyMemento(getEnemyType(e), e.getPosition().x, e.getPosition().y, e.getHealth()));
+          enemyStates.add(
+              new EnemyMemento(
+                  getEnemyType(e), e.getPosition().x, e.getPosition().y, e.getHealth()));
         }
       }
     }
 
     java.util.List<ProjectileMemento> projectileStates = new java.util.ArrayList<>();
     for (Projectile p : projectileManager.getProjectiles()) {
-       if (!p.shouldDestroy()) {
-           Vector2 vel = p.getBody().getLinearVelocity();
-           projectileStates.add(new ProjectileMemento(p.getPosition().x, p.getPosition().y, vel.x, vel.y));
-       }
+      if (!p.shouldDestroy()) {
+        Vector2 vel = p.getBody().getLinearVelocity();
+        projectileStates.add(
+            new ProjectileMemento(p.getPosition().x, p.getPosition().y, vel.x, vel.y));
+      }
     }
 
     return new GameStateMemento(playerStates, enemyStates, projectileStates, this.currentSeed, 1);
   }
 
   private String getEnemyType(AbstractEnemy e) {
-      if (e instanceof Chaser) return "Chaser";
-      if (e instanceof Ranger) return "Ranger";
-      if (e instanceof Shielder) return "Shielder";
-      if (e instanceof SpikedBall) return "SpikedBall";
-      if (e instanceof Oblivion) return "Oblivion";
-      return "Chaser"; // Fallback
+    if (e instanceof Chaser) return "Chaser";
+    if (e instanceof Ranger) return "Ranger";
+    if (e instanceof Shielder) return "Shielder";
+    if (e instanceof SpikedBall) return "SpikedBall";
+    if (e instanceof Oblivion) return "Oblivion";
+    return "Chaser"; // Fallback
   }
 
   public void restoreMemento(GameStateMemento memento) {
     if (memento == null || memento.players == null) return;
 
     // Clear EVERYTHING from physics world
-    com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies = new com.badlogic.gdx.utils.Array<>();
+    com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies =
+        new com.badlogic.gdx.utils.Array<>();
     physicsWorld.getBodies(bodies);
     for (com.badlogic.gdx.physics.box2d.Body b : bodies) {
-        physicsWorld.destroyBody(b);
+      physicsWorld.destroyBody(b);
     }
 
     // Clear lists
@@ -299,7 +303,8 @@ public class GameModel implements Disposable {
     if (level != null) level.dispose();
 
     // Rebuild Level (No random spawn)
-    this.level = new LevelBuilder()
+    this.level =
+        new LevelBuilder()
             .buildMap(newMap)
             .buildPhysicsFromMap(this.physicsWorld)
             .setEnvironment("dungeon_theme.mp3", 0.3f)
@@ -317,33 +322,33 @@ public class GameModel implements Disposable {
 
     // Recreate Enemies
     if (memento.enemies != null) {
-        for (EnemyMemento em : memento.enemies) {
-            AbstractEnemy enemy = EnemyRegistry.getEnemy(em.type);
-            if (enemy != null) {
-                enemy.createBody(physicsWorld, em.x, em.y);
-                enemy.setHealth(em.health);
-                this.level.addEnemy(enemy);
-            }
+      for (EnemyMemento em : memento.enemies) {
+        AbstractEnemy enemy = EnemyRegistry.getEnemy(em.type);
+        if (enemy != null) {
+          enemy.createBody(physicsWorld, em.x, em.y);
+          enemy.setHealth(em.health);
+          this.level.addEnemy(enemy);
         }
-        // Restore Shielder links
-        for (AbstractEnemy e : this.level.getEnemies()) {
-            if (e instanceof Shielder) {
-              ((Shielder) e).setAllies(this.level.getEnemies());
-            }
+      }
+      // Restore Shielder links
+      for (AbstractEnemy e : this.level.getEnemies()) {
+        if (e instanceof Shielder) {
+          ((Shielder) e).setAllies(this.level.getEnemies());
         }
+      }
     }
 
     // Recreate Projectiles
     this.projectileManager.getProjectiles().clear();
 
     if (memento.projectiles != null) {
-        for (ProjectileMemento pm : memento.projectiles) {
-            // Workaround: Create with dummy target, then override velocity.
-            Vector2 dummyTarget = new Vector2(pm.x + pm.vx, pm.y + pm.vy);
-            Projectile p = new Projectile(physicsWorld, pm.x, pm.y, dummyTarget);
-            p.getBody().setLinearVelocity(pm.vx, pm.vy);
-            this.projectileManager.addProjectile(p);
-        }
+      for (ProjectileMemento pm : memento.projectiles) {
+        // Workaround: Create with dummy target, then override velocity.
+        Vector2 dummyTarget = new Vector2(pm.x + pm.vx, pm.y + pm.vy);
+        Projectile p = new Projectile(physicsWorld, pm.x, pm.y, dummyTarget);
+        p.getBody().setLinearVelocity(pm.vx, pm.vy);
+        this.projectileManager.addProjectile(p);
+      }
     }
   }
 

@@ -65,42 +65,42 @@ public class GameHUD {
 
     // --- PLAYER 1 (Top Left) ---
     if (!players.isEmpty()) {
-        Player p1 = players.get(0);
-        float barX = 20;
-        float barY = screenH - 30;
-        float barW = 200;
-        float barH = 20;
+      Player p1 = players.get(0);
+      float barX = 20;
+      float barY = screenH - 30;
+      float barW = 200;
+      float barH = 20;
 
-        // Sfondo
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.rect(barX, barY, barW, barH);
+      // Sfondo
+      shapeRenderer.setColor(Color.RED);
+      shapeRenderer.rect(barX, barY, barW, barH);
 
-        // Vita
-        if (!p1.isDead()) {
-          float hpPercent = p1.getHealth() / p1.getMaxHealth();
-          shapeRenderer.setColor(Color.GREEN);
-          shapeRenderer.rect(barX, barY, barW * Math.max(0, hpPercent), barH);
-        }
+      // Vita
+      if (!p1.isDead()) {
+        float hpPercent = p1.getHealth() / p1.getMaxHealth();
+        shapeRenderer.setColor(Color.GREEN);
+        shapeRenderer.rect(barX, barY, barW * Math.max(0, hpPercent), barH);
+      }
     }
 
     // --- PLAYER 2 (Top Right) ---
     if (players.size() > 1) {
-        Player p2 = players.get(1);
-        float barW = 200;
-        float barH = 20;
-        float barX = screenW - barW - 20;
-        float barY = screenH - 30;
+      Player p2 = players.get(1);
+      float barW = 200;
+      float barH = 20;
+      float barX = screenW - barW - 20;
+      float barY = screenH - 30;
 
-        // Sfondo
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.rect(barX, barY, barW, barH);
+      // Sfondo
+      shapeRenderer.setColor(Color.RED);
+      shapeRenderer.rect(barX, barY, barW, barH);
 
-        // Vita (Blue/Cyan for P2 distinction?)
-        if (!p2.isDead()) {
-          float hpPercent = p2.getHealth() / p2.getMaxHealth();
-          shapeRenderer.setColor(Color.CYAN);
-          shapeRenderer.rect(barX, barY, barW * Math.max(0, hpPercent), barH);
-        }
+      // Vita (Blue/Cyan for P2 distinction?)
+      if (!p2.isDead()) {
+        float hpPercent = p2.getHealth() / p2.getMaxHealth();
+        shapeRenderer.setColor(Color.CYAN);
+        shapeRenderer.rect(barX, barY, barW * Math.max(0, hpPercent), barH);
+      }
     }
 
     shapeRenderer.end();
@@ -110,10 +110,10 @@ public class GameHUD {
 
     boolean allDead = true;
     for (Player p : players) {
-        if (!p.isDead()) {
-            allDead = false;
-            break;
-        }
+      if (!p.isDead()) {
+        allDead = false;
+        break;
+      }
     }
 
     if (allDead && !players.isEmpty()) {
@@ -122,19 +122,19 @@ public class GameHUD {
       layout.setText(font, text1);
       font.draw(batch, text1, (screenW - layout.width) / 2, (screenH / 2) + 50);
     } else {
-        // Show "P1 Dead" or "P2 Dead" small text
-        if (!players.isEmpty() && players.get(0).isDead()) {
-            font.setColor(Color.RED);
-            font.draw(batch, "P1 DEAD", 20, screenH - 40);
-        }
-        if (players.size() > 1 && players.get(1).isDead()) {
-            font.setColor(Color.RED);
-            String txt = "P2 DEAD";
-            layout.setText(font, txt);
-            font.draw(batch, txt, screenW - layout.width - 20, screenH - 40);
-        }
+      // Show "P1 Dead" or "P2 Dead" small text
+      if (!players.isEmpty() && players.get(0).isDead()) {
+        font.setColor(Color.RED);
+        font.draw(batch, "P1 DEAD", 20, screenH - 40);
+      }
+      if (players.size() > 1 && players.get(1).isDead()) {
+        font.setColor(Color.RED);
+        String txt = "P2 DEAD";
+        layout.setText(font, txt);
+        font.draw(batch, txt, screenW - layout.width - 20, screenH - 40);
+      }
     }
-    
+
     batch.end();
   }
 
