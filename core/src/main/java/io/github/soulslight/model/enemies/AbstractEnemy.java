@@ -81,22 +81,22 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     this.position.set(x, y);
   }
 
-    // NEW METHOD: Finds the nearest living player
-    public Player getNearestTarget(List<Player> players) {
-        Player nearest = null;
-        float minDst = Float.MAX_VALUE;
+  // NEW METHOD: Finds the nearest living player
+  public Player getNearestTarget(List<Player> players) {
+    Player nearest = null;
+    float minDst = Float.MAX_VALUE;
 
-        for (Player p : players) {
-            if (p.isDead()) continue;
+    for (Player p : players) {
+      if (p.isDead()) continue;
 
-            float dst = this.getPosition().dst(p.getPosition());
-            if (dst < minDst) {
-                minDst = dst;
-                nearest = p;
-            }
-        }
-        return nearest;
+      float dst = this.getPosition().dst(p.getPosition());
+      if (dst < minDst) {
+        minDst = dst;
+        nearest = p;
+      }
     }
+    return nearest;
+  }
 
   // metodo per vedere se i player sono nel raggio di vista
   public boolean canSeePlayer(Player player, World world) {

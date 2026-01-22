@@ -39,15 +39,15 @@ public class GameManager {
 
   public void addPlayer(Player player) {
     if (this.players == null) {
-        this.players = new java.util.ArrayList<>();
+      this.players = new java.util.ArrayList<>();
     }
     this.players.add(player);
   }
-  
+
   public void clearPlayers() {
-     if (this.players != null) {
-        this.players.clear();
-     }
+    if (this.players != null) {
+      this.players.clear();
+    }
   }
 
   public void cleanUp() {
@@ -71,9 +71,9 @@ public class GameManager {
 
       // Initialize player at starting position
       if (players != null) {
-          for(Player p : players) {
-             p.setPosition(5, 5); // start position
-          }
+        for (Player p : players) {
+          p.setPosition(5, 5); // start position
+        }
       }
 
       Gdx.app.log("GameManager", "Level loaded successfully.");

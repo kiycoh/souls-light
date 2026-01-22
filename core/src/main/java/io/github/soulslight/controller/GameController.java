@@ -40,13 +40,13 @@ public class GameController extends InputAdapter implements ControllerListener {
         return true;
       case Input.Keys.O:
         if (p1 != null) {
-            p1.setAttackStrategy(new FireDamageDecorator(p1.getAttackStrategy()));
-            Gdx.app.log("Controller", "P1 Fire Damage Activated!");
+          p1.setAttackStrategy(new FireDamageDecorator(p1.getAttackStrategy()));
+          Gdx.app.log("Controller", "P1 Fire Damage Activated!");
         }
         return true;
       case Input.Keys.P:
-         if (p1 != null) p1.doAnAttack();
-         return true;
+        if (p1 != null) p1.doAnAttack();
+        return true;
 
       // --- PLAYER 2 (Keyboard) ---
       case Input.Keys.ENTER:
@@ -82,55 +82,55 @@ public class GameController extends InputAdapter implements ControllerListener {
     // --- PLAYER 1 MOVEMENT ---
     Player p1 = players.get(0);
     if (p1 != null && !p1.isDead()) {
-        float velX = 0;
-        float velY = 0;
+      float velX = 0;
+      float velY = 0;
 
-        // Keyboard
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) velY = SPEED;
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) velY = -SPEED;
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) velX = -SPEED;
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) velX = SPEED;
+      // Keyboard
+      if (Gdx.input.isKeyPressed(Input.Keys.W)) velY = SPEED;
+      if (Gdx.input.isKeyPressed(Input.Keys.S)) velY = -SPEED;
+      if (Gdx.input.isKeyPressed(Input.Keys.A)) velX = -SPEED;
+      if (Gdx.input.isKeyPressed(Input.Keys.D)) velX = SPEED;
 
-        // Controller 0 Override
-        if (Controllers.getControllers().size > 0) {
-            Controller c1 = Controllers.getControllers().get(0);
-            float axisX = c1.getAxis(c1.getMapping().axisLeftX);
-            float axisY = c1.getAxis(c1.getMapping().axisLeftY);
-            if (Math.abs(axisX) > 0.2f) velX = axisX * SPEED;
-            if (Math.abs(axisY) > 0.2f) velY = -axisY * SPEED; // Y is usually inverted on controllers
-        }
+      // Controller 0 Override
+      if (Controllers.getControllers().size > 0) {
+        Controller c1 = Controllers.getControllers().get(0);
+        float axisX = c1.getAxis(c1.getMapping().axisLeftX);
+        float axisY = c1.getAxis(c1.getMapping().axisLeftY);
+        if (Math.abs(axisX) > 0.2f) velX = axisX * SPEED;
+        if (Math.abs(axisY) > 0.2f) velY = -axisY * SPEED; // Y is usually inverted on controllers
+      }
 
-        p1.move(velX, velY);
+      p1.move(velX, velY);
     } else if (p1 != null && p1.getBody() != null) {
-        p1.getBody().setLinearVelocity(0, 0);
+      p1.getBody().setLinearVelocity(0, 0);
     }
 
     // --- PLAYER 2 MOVEMENT ---
     if (players.size() > 1) {
-        Player p2 = players.get(1);
-        if (p2 != null && !p2.isDead()) {
-            float velX = 0;
-            float velY = 0;
+      Player p2 = players.get(1);
+      if (p2 != null && !p2.isDead()) {
+        float velX = 0;
+        float velY = 0;
 
-            // Keyboard
-            if (Gdx.input.isKeyPressed(Input.Keys.UP)) velY = SPEED;
-            if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) velY = -SPEED;
-            if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) velX = -SPEED;
-            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) velX = SPEED;
+        // Keyboard
+        if (Gdx.input.isKeyPressed(Input.Keys.UP)) velY = SPEED;
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) velY = -SPEED;
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) velX = -SPEED;
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) velX = SPEED;
 
-            // Controller 1 Override
-            if (Controllers.getControllers().size > 1) {
-                Controller c2 = Controllers.getControllers().get(1);
-                float axisX = c2.getAxis(c2.getMapping().axisLeftX);
-                float axisY = c2.getAxis(c2.getMapping().axisLeftY);
-                if (Math.abs(axisX) > 0.2f) velX = axisX * SPEED;
-                if (Math.abs(axisY) > 0.2f) velY = -axisY * SPEED;
-            }
-
-            p2.move(velX, velY);
-        } else if (p2 != null && p2.getBody() != null) {
-            p2.getBody().setLinearVelocity(0, 0);
+        // Controller 1 Override
+        if (Controllers.getControllers().size > 1) {
+          Controller c2 = Controllers.getControllers().get(1);
+          float axisX = c2.getAxis(c2.getMapping().axisLeftX);
+          float axisY = c2.getAxis(c2.getMapping().axisLeftY);
+          if (Math.abs(axisX) > 0.2f) velX = axisX * SPEED;
+          if (Math.abs(axisY) > 0.2f) velY = -axisY * SPEED;
         }
+
+        p2.move(velX, velY);
+      } else if (p2 != null && p2.getBody() != null) {
+        p2.getBody().setLinearVelocity(0, 0);
+      }
     }
   }
 
@@ -140,22 +140,22 @@ public class GameController extends InputAdapter implements ControllerListener {
   public boolean buttonDown(Controller controller, int buttonCode) {
     List<Player> players = model.getPlayers();
     int controllerIndex = Controllers.getControllers().indexOf(controller, true);
-    
+
     // Check mapping. Usually 0 is A (Xbox).
     // Let's assume button 0 (A) is attack.
     // Use controller.getMapping().buttonA if available (gdx-controllers 2.x)
-    
+
     int attackBtn = controller.getMapping().buttonA;
 
     if (buttonCode == attackBtn) {
-        if (controllerIndex == 0 && !players.isEmpty()) {
-            Player p1 = players.get(0);
-            if (p1 != null && !p1.isDead()) p1.attack(model.getActiveEnemies());
-        } else if (controllerIndex == 1 && players.size() > 1) {
-            Player p2 = players.get(1);
-            if (p2 != null && !p2.isDead()) p2.attack(model.getActiveEnemies());
-        }
-        return true;
+      if (controllerIndex == 0 && !players.isEmpty()) {
+        Player p1 = players.get(0);
+        if (p1 != null && !p1.isDead()) p1.attack(model.getActiveEnemies());
+      } else if (controllerIndex == 1 && players.size() > 1) {
+        Player p2 = players.get(1);
+        if (p2 != null && !p2.isDead()) p2.attack(model.getActiveEnemies());
+      }
+      return true;
     }
     return false;
   }
@@ -172,11 +172,11 @@ public class GameController extends InputAdapter implements ControllerListener {
 
   @Override
   public void connected(Controller controller) {
-      Gdx.app.log("Controller", "Controller connected: " + controller.getName());
+    Gdx.app.log("Controller", "Controller connected: " + controller.getName());
   }
 
   @Override
   public void disconnected(Controller controller) {
-      Gdx.app.log("Controller", "Controller disconnected: " + controller.getName());
+    Gdx.app.log("Controller", "Controller disconnected: " + controller.getName());
   }
 }

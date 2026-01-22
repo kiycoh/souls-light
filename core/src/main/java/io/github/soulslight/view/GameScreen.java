@@ -84,20 +84,25 @@ public final class GameScreen implements GameState {
     batch.begin();
 
     for (Player player : model.getPlayers()) {
-        if (player.isDead()) {
-             batch.setColor(Color.RED);
-        } else {
-             batch.setColor(Color.WHITE);
-        }
-        
-        String texName = "player";
-        switch (player.getType()) {
-            case ARCHER: texName = "archer"; break;
-            case WARRIOR: default: texName = "player"; break;
-        }
-        
-        drawEntity(TextureManager.get(texName), player.getPosition(), 32, 32);
+      if (player.isDead()) {
+        batch.setColor(Color.RED);
+      } else {
         batch.setColor(Color.WHITE);
+      }
+
+      String texName = "player";
+      switch (player.getType()) {
+        case ARCHER:
+          texName = "archer";
+          break;
+        case WARRIOR:
+        default:
+          texName = "player";
+          break;
+      }
+
+      drawEntity(TextureManager.get(texName), player.getPosition(), 32, 32);
+      batch.setColor(Color.WHITE);
     }
 
     for (AbstractEnemy enemy : model.getActiveEnemies()) {
@@ -152,18 +157,18 @@ public final class GameScreen implements GameState {
     int aliveCount = 0;
 
     for (Player p : players) {
-        // Option: Follow dead players too? Usually yes until game over.
-        Vector2 pos = p.getPosition();
-        if (pos.x < minX) minX = pos.x;
-        if (pos.y < minY) minY = pos.y;
-        if (pos.x > maxX) maxX = pos.x;
-        if (pos.y > maxY) maxY = pos.y;
-        aliveCount++;
+      // Option: Follow dead players too? Usually yes until game over.
+      Vector2 pos = p.getPosition();
+      if (pos.x < minX) minX = pos.x;
+      if (pos.y < minY) minY = pos.y;
+      if (pos.x > maxX) maxX = pos.x;
+      if (pos.y > maxY) maxY = pos.y;
+      aliveCount++;
     }
-    
+
     if (aliveCount == 0) {
-        camera.update();
-        return; 
+      camera.update();
+      return;
     }
 
     float targetX = (minX + maxX) / 2f;
@@ -178,7 +183,7 @@ public final class GameScreen implements GameState {
       targetX = MathUtils.clamp(targetX, halfW, Math.max(halfW, mapPixelWidth - halfW));
       targetY = MathUtils.clamp(targetY, halfH, Math.max(halfH, mapPixelHeight - halfH));
     }
-    
+
     // Smooth camera could be added here (lerp), but instant is fine for now
     camera.position.set(targetX, targetY, 0);
     camera.update();
