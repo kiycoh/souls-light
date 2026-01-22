@@ -93,9 +93,20 @@ public class ResourceManager implements Disposable {
 
       for (int i = 0; i < 8; i++) {
         String path = "tiles/floor" + (i + 1) + ".png";
+        Pixmap src;
 
-        // Loads the original 16x16 PNG as a Pixmap
-        Pixmap src = new Pixmap(Gdx.files.internal(path));
+        if (Gdx.files.internal(path).exists()) {
+          // Loads the original 16x16 PNG as a Pixmap
+          src = new Pixmap(Gdx.files.internal(path));
+        } else {
+          // Fallback: Generate a placeholder 16x16 pixmap if file is missing (e.g. in tests)
+          src = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+          src.setColor(Color.LIGHT_GRAY);
+          src.fill();
+          // Add some variation based on index so they aren't all identical
+          src.setColor(new Color(0.7f + (i * 0.02f), 0.7f + (i * 0.02f), 0.7f + (i * 0.02f), 1f));
+          src.fillRectangle(1, 1, 14, 14);
+        }
 
         // Create a 32x32 Pixmap to upscale the tile
         Pixmap dst = new Pixmap(32, 32, Pixmap.Format.RGBA8888);
