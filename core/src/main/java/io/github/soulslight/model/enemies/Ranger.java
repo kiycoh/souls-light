@@ -36,9 +36,11 @@ public class Ranger extends AbstractEnemy {
     this.health = health;
     this.maxHealth = health;
     this.speed = 130.0f; // Feature branch overrides speed to 130.0f
-    // If we want to respect constructor argument, we should use 'speed', but feature branch had 130
+    // If we want to respect constructor argument, we should use 'speed', but
+    // feature branch had 130
     // hardcoded.
-    // I will use 130.0f to match feature branch behavior but keep the method generic if needed
+    // I will use 130.0f to match feature branch behavior but keep the method
+    // generic if needed
     // later.
     this.speed = 130.0f;
   }
@@ -55,15 +57,18 @@ public class Ranger extends AbstractEnemy {
 
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players == null || players.isEmpty() || this.health <= 0) return;
+    if (players == null || players.isEmpty() || this.health <= 0)
+      return;
 
     Player target = getNearestTarget(players);
-    if (target == null) return;
+    if (target == null)
+      return;
 
     syncBody();
 
-    //  gestione timer
-    if (attackTimer > 0) attackTimer -= deltaTime;
+    // gestione timer
+    if (attackTimer > 0)
+      attackTimer -= deltaTime;
 
     // controlla se vede il nemico
     boolean canSee = canSeePlayer(target, body.getWorld());
@@ -100,18 +105,20 @@ public class Ranger extends AbstractEnemy {
       moveTowards(target.getPosition(), deltaTime);
     } else {
       // Distanza perfetta:si ferma
-      if (body != null) body.setLinearVelocity(0, 0);
+      if (body != null)
+        body.setLinearVelocity(0, 0);
     }
 
     // Se i giocatori sono entro il range attacca
     if (distance <= ATTACK_RANGE) {
       if (attackTimer <= 0) {
-        readyToShoot = true;
+        // readyToShoot = true; // Removed flag
         attackTimer = 2.0f; // Cooldown
         System.out.println("RANGER: Fire!");
-        // Note: feature branch didn't call attack() here, but set readyToShoot = true.
-        // If the system expects immediate attack, I might need: this.attack(List.of(target));
-        // But adhering to feature branch strict logic for now.
+
+        if (target != null) {
+          notifyProjectileRequest(getPosition(), target.getPosition(), "arrow");
+        }
       }
     }
   }
@@ -123,7 +130,8 @@ public class Ranger extends AbstractEnemy {
       // Si muove per ricercare
       moveTowards(lastKnownPlayerPos, deltaTime);
     } else {
-      if (body != null) body.setLinearVelocity(0, 0);
+      if (body != null)
+        body.setLinearVelocity(0, 0);
     }
   }
 

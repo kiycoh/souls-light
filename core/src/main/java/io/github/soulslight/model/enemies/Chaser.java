@@ -54,16 +54,20 @@ public class Chaser extends AbstractEnemy {
 
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players == null || players.isEmpty() || this.health <= 0) return;
+    if (players == null || players.isEmpty() || this.health <= 0)
+      return;
 
     // CHANGED: Use nearest target instead of players.get(0)
     Player target = getNearestTarget(players);
-    if (target == null) return; // Stop if everyone is dead
+    if (target == null)
+      return; // Stop if everyone is dead
 
     syncBody();
 
-    if (attackCooldown > 0) attackCooldown -= deltaTime;
-    if (retreatTimer > 0) retreatTimer -= deltaTime;
+    if (attackCooldown > 0)
+      attackCooldown -= deltaTime;
+    if (retreatTimer > 0)
+      retreatTimer -= deltaTime;
 
     Vector2 myPos = (body != null) ? body.getPosition() : this.position;
 
@@ -79,7 +83,8 @@ public class Chaser extends AbstractEnemy {
       switch (currentState) {
         case CHASING:
           if (distance <= STOP_DISTANCE) {
-            if (body != null) body.setLinearVelocity(0, 0);
+            if (body != null)
+              body.setLinearVelocity(0, 0);
             currentState = State.ATTACKING;
           } else {
             moveTowards(target.getPosition(), deltaTime);
@@ -87,7 +92,8 @@ public class Chaser extends AbstractEnemy {
           break;
 
         case ATTACKING:
-          if (body != null) body.setLinearVelocity(0, 0);
+          if (body != null)
+            body.setLinearVelocity(0, 0);
           if (attackCooldown <= 0) {
             this.attack(players);
             currentState = State.RETREATING;
@@ -100,7 +106,10 @@ public class Chaser extends AbstractEnemy {
 
         case RETREATING:
           moveAway(target.getPosition());
-          if (retreatTimer <= 0) currentState = State.CHASING;
+          if (retreatTimer <= 0)
+            currentState = State.CHASING;
+          break;
+        default:
           break;
       }
     } else {
@@ -117,7 +126,8 @@ public class Chaser extends AbstractEnemy {
         if (distToLastPos > 15f) {
           moveTowards(lastKnownPlayerPos, deltaTime);
         } else {
-          if (body != null) body.setLinearVelocity(0, 0);
+          if (body != null)
+            body.setLinearVelocity(0, 0);
         }
       } else {
         currentState = State.PATROLLING;
@@ -126,9 +136,11 @@ public class Chaser extends AbstractEnemy {
     }
   }
 
-  // Method to sync body position back to Entity state (from Enemy.java, moved here or rely on
+  // Method to sync body position back to Entity state (from Enemy.java, moved
+  // here or rely on
   // AbstractEnemy?)
-  // AbstractEnemy doesn't seem to have syncBody(), but it updates position in moveTowards/moveAway.
+  // AbstractEnemy doesn't seem to have syncBody(), but it updates position in
+  // moveTowards/moveAway.
   // However, Chaser.updateBehavior calls syncBody().
   // Enemy.java had syncBody(). AbstractEnemy.java did not.
   // I should add syncBody() to Chaser or AbstractEnemy.

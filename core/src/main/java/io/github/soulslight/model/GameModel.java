@@ -18,7 +18,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class GameModel implements Disposable {
+import io.github.soulslight.model.combat.ProjectileListener;
+
+public class GameModel implements Disposable, ProjectileListener {
 
   public static final float MAX_WILL = 100f;
   private final World physicsWorld;
@@ -80,9 +82,10 @@ public class GameModel implements Disposable {
         .setEnvironment("dungeon_theme.mp3", 0.3f)
         .build();
 
-    // Shielder 'target' setup
+    // Shielder 'target' setup and Listener registration
     if (this.level.getEnemies() != null) {
       for (AbstractEnemy e : this.level.getEnemies()) {
+        e.addProjectileListener(this); // Register listener
         if (e instanceof Shielder) {
           ((Shielder) e).setAllies(this.level.getEnemies());
         }
@@ -168,48 +171,18 @@ public class GameModel implements Disposable {
       enemy.update(deltaTime);
       enemy.updateBehavior(players, deltaTime);
 
-      if (enemy instanceof Ranger ranger) {
-        if (ranger.isReadyToShoot()) {
-          // Target nearest player
-          Player target = getNearestPlayer(ranger.getPosition());
-          if (target != null) {
-            projectileManager.addProjectile(
-                new Projectile(
-                    physicsWorld,
-                    ranger.getPosition().x,
-                    ranger.getPosition().y,
-                    target.getPosition()));
-            ranger.resetShot();
-          }
-        }
-      } else if (enemy instanceof Oblivion boss) {
-        if (boss.isReadyToShoot()) {
-          for (Vector2 targetPos : boss.getShotTargets()) {
-            projectileManager.addProjectile(
-                new Projectile(
-                    physicsWorld, boss.getPosition().x, boss.getPosition().y, targetPos));
-          }
-          boss.resetShot();
-        }
-      }
-
       checkMeleeCollision(enemy);
     }
   }
 
-  private Player getNearestPlayer(Vector2 pos) {
-    Player nearest = null;
-    float minDst = Float.MAX_VALUE;
-    for (Player p : players) {
-      if (p.isDead())
-        continue;
-      float dst = pos.dst(p.getPosition());
-      if (dst < minDst) {
-        minDst = dst;
-        nearest = p;
-      }
-    }
-    return nearest != null ? nearest : (players.isEmpty() ? null : players.get(0));
+  @Override
+  public void onProjectileRequest(Vector2 origin, Vector2 target, String type) {
+    projectileManager.addProjectile(
+        new Projectile(
+            physicsWorld,
+            origin.x,
+            origin.y,
+            target));
   }
 
   private void checkMeleeCollision(AbstractEnemy enemy) {
@@ -343,8 +316,9 @@ public class GameModel implements Disposable {
           this.level.addEnemy(enemy);
         }
       }
-      // Restore Shielder links
+      // Restore Shielder links and Listener registration
       for (AbstractEnemy e : this.level.getEnemies()) {
+        e.addProjectileListener(this); // Register listener
         if (e instanceof Shielder) {
           ((Shielder) e).setAllies(this.level.getEnemies());
         }

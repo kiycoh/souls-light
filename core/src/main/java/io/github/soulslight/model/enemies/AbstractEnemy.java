@@ -7,10 +7,14 @@ import io.github.soulslight.model.enemies.ai.EnemyState;
 import io.github.soulslight.model.entities.Entity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.room.EnemyDeathListener;
+
+import io.github.soulslight.model.combat.ProjectileListener;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class AbstractEnemy extends Entity implements Cloneable {
+
+  protected List<ProjectileListener> projectileListeners = new ArrayList<>();
 
   protected Vector2 lastKnownPlayerPos = new Vector2(); // serve oer ricordare l'ultima posizione del player per
                                                         // cercarlo qualora lo
@@ -310,5 +314,21 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     if (this.attackStrategy == null)
       return;
     this.attackStrategy.executeAttack(this, new ArrayList<>(players));
+  }
+
+  public void addProjectileListener(ProjectileListener listener) {
+    if (!projectileListeners.contains(listener)) {
+      projectileListeners.add(listener);
+    }
+  }
+
+  public void removeProjectileListener(ProjectileListener listener) {
+    projectileListeners.remove(listener);
+  }
+
+  protected void notifyProjectileRequest(Vector2 origin, Vector2 target, String type) {
+    for (ProjectileListener listener : projectileListeners) {
+      listener.onProjectileRequest(origin, target, type);
+    }
   }
 }

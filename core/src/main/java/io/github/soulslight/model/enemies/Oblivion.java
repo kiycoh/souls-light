@@ -24,9 +24,9 @@ public class Oblivion extends AbstractEnemy {
   private float teleportTimer = 0f;
   private float shootTimer = 0f;
   private float retreatTimer = 0f;
+
   private float attackCooldown = 0f;
 
-  private boolean readyToShoot = false;
   private final List<Vector2> shotTargets = new ArrayList<>();
 
   // Servono per non far teletrasportare il boss fuori dalla mappa
@@ -64,7 +64,7 @@ public class Oblivion extends AbstractEnemy {
     this.isPhaseTwo = target.isPhaseTwo;
     this.teleportTimer = target.teleportTimer;
     this.meleeStrategy = target.meleeStrategy;
-    //  Copia i confini nel clone
+    // Copia i confini nel clone
     this.mapWidthBoundary = target.mapWidthBoundary;
     this.mapHeightBoundary = target.mapHeightBoundary;
   }
@@ -82,22 +82,28 @@ public class Oblivion extends AbstractEnemy {
 
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players.isEmpty()) return;
-    if (isPhaseTwo && this.health <= 0) return;
+    if (players.isEmpty())
+      return;
+    if (isPhaseTwo && this.health <= 0)
+      return;
     if (!isPhaseTwo && this.health <= 0) {
       startPhaseTwo();
       return;
     }
 
     Player target = getNearestTarget(players);
-    if (target == null) return;
+    if (target == null)
+      return;
     Vector2 myPos = (body != null) ? body.getPosition() : this.position;
     float distance = myPos.dst(target.getPosition());
 
     teleportTimer += deltaTime;
-    if (attackCooldown > 0) attackCooldown -= deltaTime;
-    if (retreatTimer > 0) retreatTimer -= deltaTime;
-    if (shootTimer > 0) shootTimer -= deltaTime;
+    if (attackCooldown > 0)
+      attackCooldown -= deltaTime;
+    if (retreatTimer > 0)
+      retreatTimer -= deltaTime;
+    if (shootTimer > 0)
+      shootTimer -= deltaTime;
 
     if (teleportTimer >= TELEPORT_COOLDOWN) {
       teleportToPlayer(target);
@@ -120,10 +126,14 @@ public class Oblivion extends AbstractEnemy {
 
     switch (currentState) {
       case CASTING:
-        if (body != null) body.setLinearVelocity(0, 0);
+        if (body != null)
+          body.setLinearVelocity(0, 0);
         if (shootTimer <= 0) {
           prepareTripleShot(target.getPosition());
-          readyToShoot = true;
+          // readyToShoot = true; // Removed
+          for (Vector2 t : shotTargets) {
+            notifyProjectileRequest(getPosition(), t, "fireball"); // Assuming fireball or default
+          }
           shootTimer = SHOOT_COOLDOWN;
         }
         break;
@@ -132,14 +142,16 @@ public class Oblivion extends AbstractEnemy {
         if (distance > STOP_DISTANCE) {
           moveTowards(target.getPosition(), deltaTime);
         } else {
-          if (body != null) body.setLinearVelocity(0, 0);
+          if (body != null)
+            body.setLinearVelocity(0, 0);
           currentState = State.ATTACKING;
           attackCooldown = 0.3f;
         }
         break;
 
       case ATTACKING:
-        if (body != null) body.setLinearVelocity(0, 0);
+        if (body != null)
+          body.setLinearVelocity(0, 0);
         if (attackCooldown <= 0) {
           performBossMeleeAttack(target);
           currentState = State.RETREATING;
@@ -152,7 +164,8 @@ public class Oblivion extends AbstractEnemy {
 
       case RETREATING:
         moveAway(target.getPosition());
-        if (retreatTimer <= 0) currentState = State.CHASING;
+        if (retreatTimer <= 0)
+          currentState = State.CHASING;
         break;
     }
   }
@@ -224,19 +237,6 @@ public class Oblivion extends AbstractEnemy {
     shotTargets.add(myPos.cpy().add(leftDir));
     Vector2 rightDir = mainDir.cpy().rotateDeg(-20);
     shotTargets.add(myPos.cpy().add(rightDir));
-  }
-
-  public List<Vector2> getShotTargets() {
-    return shotTargets;
-  }
-
-  public void resetShot() {
-    this.readyToShoot = false;
-    this.shotTargets.clear();
-  }
-
-  public boolean isReadyToShoot() {
-    return readyToShoot;
   }
 
   public boolean isPhaseTwo() {

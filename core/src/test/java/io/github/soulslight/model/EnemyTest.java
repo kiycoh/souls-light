@@ -32,7 +32,7 @@ public class EnemyTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"Chaser", "Ranger", "SpikedBall", "Shielder", "Oblivion"})
+  @ValueSource(strings = { "Chaser", "Ranger", "SpikedBall", "Shielder", "Oblivion" })
   public void testCloneIndependenceForAll(String enemyType) {
     AbstractEnemy original = EnemyRegistry.getEnemy(enemyType);
     AbstractEnemy clone = EnemyRegistry.getEnemy(enemyType);
@@ -148,6 +148,18 @@ public class EnemyTest {
     assertTrue(ranger.getY() > 10, "Il Ranger deve salire");
   }
 
+  // --- Helper Class ---
+  private static class TestProjectileListener implements io.github.soulslight.model.combat.ProjectileListener {
+    public int callCount = 0;
+    public List<Vector2> targets = new ArrayList<>();
+
+    @Override
+    public void onProjectileRequest(Vector2 origin, Vector2 target, String type) {
+      callCount++;
+      targets.add(target);
+    }
+  }
+
   @Test
   public void testRangerShootingLogic() {
     Ranger ranger = (Ranger) EnemyRegistry.getEnemy("Ranger");
@@ -156,14 +168,12 @@ public class EnemyTest {
     Player player = new Player(Player.PlayerClass.ARCHER, world, 300, 0);
     List<Player> players = Collections.singletonList(player);
 
+    TestProjectileListener listener = new TestProjectileListener();
+    ranger.addProjectileListener(listener);
+
     ranger.updateBehavior(players, 0.1f);
 
-    assertTrue(
-        ranger.isReadyToShoot(),
-        "Il Ranger deve essere pronto a sparare se è nel range e cooldown è 0");
-
-    ranger.resetShot();
-    assertFalse(ranger.isReadyToShoot());
+    assertTrue(listener.callCount > 0, "Il Ranger deve aver notificato il listener per sparare");
   }
 
   @Test
@@ -174,10 +184,8 @@ public class EnemyTest {
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 0);
     List<Player> players = Collections.singletonList(player);
 
-    // 1. Consuma Cooldown
     ball.updateBehavior(players, 2.0f);
 
-    // 2. Inizio Carica
     float delta = 0.1f;
     ball.updateBehavior(players, delta);
     world.step(delta, 6, 2);
@@ -185,10 +193,8 @@ public class EnemyTest {
 
     assertTrue(ball.getX() > 0, "La palla deve muoversi");
 
-    // 3. Timeout Carica
     ball.updateBehavior(players, 4.0f);
 
-    // Verifica stop
     float stopPosition = ball.getX();
     ball.updateBehavior(players, 0.1f);
     world.step(0.1f, 6, 2);
@@ -205,7 +211,6 @@ public class EnemyTest {
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 100, 0);
     List<Player> players = Collections.singletonList(player);
 
-    // Start Carica
     ball.updateBehavior(players, 2.0f);
 
     float delta = 0.1f;
@@ -213,18 +218,15 @@ public class EnemyTest {
     world.step(delta, 6, 2);
     ball.update(delta);
 
-    // La palla si è mossa a destra
     assertTrue(ball.getX() > 0);
     float positionBeforeHit = ball.getX();
 
-    // Simuliamo un muro verticale a destra
     ball.onWallHit(new Vector2(-1, 0));
 
     ball.updateBehavior(players, 0.1f);
     world.step(0.1f, 6, 2);
     ball.update(0.1f);
 
-    // La X deve essere minore della posizione prima dell'urto.
     assertTrue(
         ball.getX() < positionBeforeHit,
         "La palla deve rimbalzare indietro (X diminuire) dopo l'urto");
@@ -235,17 +237,12 @@ public class EnemyTest {
     SpikedBall ball = (SpikedBall) EnemyRegistry.getEnemy("SpikedBall");
     ball.createBody(world, 0, 0);
 
-    Player player = new Player(Player.PlayerClass.WARRIOR, world, 30, 0); // Vicino
+    Player player = new Player(Player.PlayerClass.WARRIOR, world, 30, 0);
     List<Player> players = Collections.singletonList(player);
 
-    // Prepariamo la carica
     ball.updateBehavior(players, 2.0f);
-
-    // Inizia la carica. Il player è dentro il raggio di collisione
     ball.updateBehavior(players, 0.1f);
-
     world.step(0.1f, 6, 2);
-
     ball.updateBehavior(players, 0.1f);
 
     assertTrue(
@@ -270,7 +267,6 @@ public class EnemyTest {
     allies.add(shielder);
     shielder.setAllies(allies);
 
-    // Usiamo un delta piccolo per simulare un frame fisico realistico
     float delta = 0.1f;
 
     shielder.updateBehavior(Collections.singletonList(player), delta);
@@ -297,25 +293,21 @@ public class EnemyTest {
   @Test
   public void testShielderInterceptionPosition() {
     Shielder shielder = new Shielder();
-    shielder.createBody(world, 50, 50); // Posizione a caso
+    shielder.createBody(world, 50, 50);
 
-    // Player a Sinistra (0,0)
     Player player = new Player(Player.PlayerClass.WARRIOR, world, 0, 0);
 
-    // Ranger a Destra (100,0)
     Ranger ally = new Ranger();
     ally.setHealth(100);
     ally.createBody(world, 100, 0);
 
     shielder.setAllies(Collections.singletonList(ally));
 
-    // Lo shielder vede il player
     shielder.updateBehavior(Collections.singletonList(player), 0.1f);
 
     world.step(0.1f, 6, 2);
     shielder.update(0.1f);
 
-    // Verifica che si stia avvicinando alla linea Y=0 (scende) e X=60 (avanza)
     assertTrue(shielder.getY() < 50, "Shielder deve scendere per mettersi in linea");
     assertTrue(shielder.getX() > 50, "Shielder deve avanzare verso il punto di protezione (60)");
   }
@@ -336,7 +328,7 @@ public class EnemyTest {
     assertEquals(500, oblivion.getY(), 1.0f);
 
     float distanceX = Math.abs(oblivion.getX() - player.getX());
-    assertEquals(120f, distanceX, 1.0f); // Changed 150 to 120 (TELEPORT_OFFSET)
+    assertEquals(120f, distanceX, 1.0f);
   }
 
   @Test
@@ -389,17 +381,15 @@ public class EnemyTest {
     oblivion.takeDamage(oblivion.getHealth() + 100);
     oblivion.updateBehavior(players, 0.1f);
 
-    oblivion.updateBehavior(players, 0.1f);
+    TestProjectileListener listener = new TestProjectileListener();
+    oblivion.addProjectileListener(listener);
 
+    oblivion.updateBehavior(players, 0.1f);
     oblivion.updateBehavior(players, 0.6f);
 
-    assertTrue(oblivion.isReadyToShoot(), "Oblivion deve essere pronto a sparare");
-    assertEquals(
-        3,
-        oblivion.getShotTargets().size(),
-        "Oblivion deve generare esattamente 3 target per il colpo triplo");
+    assertEquals(3, listener.callCount, "Oblivion deve generare esattamente 3 eventi projectile");
 
-    Vector2 centerShot = oblivion.getShotTargets().get(0);
+    Vector2 centerShot = listener.targets.get(0);
     assertTrue(centerShot.x > 0, "Il colpo centrale deve andare verso il player");
   }
 
@@ -412,7 +402,6 @@ public class EnemyTest {
     float initialHp = player.getHealth();
 
     oblivion.updateBehavior(Collections.singletonList(player), 0.1f);
-
     oblivion.updateBehavior(Collections.singletonList(player), 0.5f);
 
     assertTrue(
