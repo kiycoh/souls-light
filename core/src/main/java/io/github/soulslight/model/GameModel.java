@@ -65,21 +65,20 @@ public class GameModel implements Disposable {
     EnemyFactory factory = new DungeonEnemyFactory();
 
     // ---- LEVEL BUILDER (random spawn) ----
-    this.level =
-        new LevelBuilder()
-            .buildMap(myMap)
-            .buildPhysicsFromMap(this.physicsWorld)
-            .spawnRandom(
-                factory,
-                this.physicsWorld,
-                8, // melee
-                4, // ranged
-                3, // tank / shielder
-                2, // ball / trap
-                true // boss
-                )
-            .setEnvironment("dungeon_theme.mp3", 0.3f)
-            .build();
+    this.level = new LevelBuilder()
+        .buildMap(myMap)
+        .buildPhysicsFromMap(this.physicsWorld)
+        .spawnRandom(
+            factory,
+            this.physicsWorld,
+            8, // melee
+            4, // ranged
+            3, // tank / shielder
+            2, // ball / trap
+            true // boss
+        )
+        .setEnvironment("dungeon_theme.mp3", 0.3f)
+        .build();
 
     // Shielder 'target' setup
     if (this.level.getEnemies() != null) {
@@ -107,7 +106,8 @@ public class GameModel implements Disposable {
     for (int y = 0; y < h; y++) {
       for (int x = 0; x < w; x++) {
         TiledMapTileLayer.Cell cell = layer.getCell(x, y);
-        if (cell == null || cell.getTile() == null) continue;
+        if (cell == null || cell.getTile() == null)
+          continue;
 
         var props = cell.getTile().getProperties();
 
@@ -130,10 +130,12 @@ public class GameModel implements Disposable {
   }
 
   public void update(float deltaTime) {
-    if (isPaused) return;
+    if (isPaused)
+      return;
 
     for (Player p : players) {
-      if (p != null) p.update(deltaTime);
+      if (p != null)
+        p.update(deltaTime);
     }
     updateEnemiesLogic(deltaTime);
 
@@ -152,14 +154,16 @@ public class GameModel implements Disposable {
   }
 
   private void updateEnemiesLogic(float deltaTime) {
-    if (level == null || level.getEnemies() == null) return;
+    if (level == null || level.getEnemies() == null)
+      return;
 
     // List<Player> targets = Collections.singletonList(player);
 
     for (AbstractEnemy enemy : level.getEnemies()) {
       // AbstractEnemy doesn't have update(delta) but Entity does.
       // However AbstractEnemy extends Entity.
-      // We should check if update(delta) is enough or if we need to call something else.
+      // We should check if update(delta) is enough or if we need to call something
+      // else.
       // Entity.update(delta) syncs graphics from physics.
       enemy.update(deltaTime);
       enemy.updateBehavior(players, deltaTime);
@@ -197,7 +201,8 @@ public class GameModel implements Disposable {
     Player nearest = null;
     float minDst = Float.MAX_VALUE;
     for (Player p : players) {
-      if (p.isDead()) continue;
+      if (p.isDead())
+        continue;
       float dst = pos.dst(p.getPosition());
       if (dst < minDst) {
         minDst = dst;
@@ -208,7 +213,8 @@ public class GameModel implements Disposable {
   }
 
   private void checkMeleeCollision(AbstractEnemy enemy) {
-    if (enemy instanceof Ranger || enemy.isDead()) return;
+    if (enemy instanceof Ranger || enemy.isDead())
+      return;
 
     for (Player player : players) {
       float dist = player.getPosition().dst(enemy.getPosition());
@@ -218,7 +224,8 @@ public class GameModel implements Disposable {
         if (enemy instanceof Shielder) {
           Vector2 bounceDir = player.getPosition().cpy().sub(enemy.getPosition()).nor();
 
-          if (bounceDir.len2() < 0.01f) bounceDir.set(1, 0);
+          if (bounceDir.len2() < 0.01f)
+            bounceDir.set(1, 0);
 
           if (player.getBody() != null) {
             player.applyKnockback(bounceDir, 100f, 0.2f);
@@ -229,7 +236,8 @@ public class GameModel implements Disposable {
   }
 
   private void cleanDeadEnemies() {
-    if (level == null || level.getEnemies() == null) return;
+    if (level == null || level.getEnemies() == null)
+      return;
 
     Iterator<AbstractEnemy> it = level.getEnemies().iterator();
     while (it.hasNext()) {
@@ -272,20 +280,25 @@ public class GameModel implements Disposable {
   }
 
   private String getEnemyType(AbstractEnemy e) {
-    if (e instanceof Chaser) return "Chaser";
-    if (e instanceof Ranger) return "Ranger";
-    if (e instanceof Shielder) return "Shielder";
-    if (e instanceof SpikedBall) return "SpikedBall";
-    if (e instanceof Oblivion) return "Oblivion";
+    if (e instanceof Chaser)
+      return "Chaser";
+    if (e instanceof Ranger)
+      return "Ranger";
+    if (e instanceof Shielder)
+      return "Shielder";
+    if (e instanceof SpikedBall)
+      return "SpikedBall";
+    if (e instanceof Oblivion)
+      return "Oblivion";
     return "Chaser"; // Fallback
   }
 
   public void restoreMemento(GameStateMemento memento) {
-    if (memento == null || memento.players == null) return;
+    if (memento == null || memento.players == null)
+      return;
 
     // Clear EVERYTHING from physics world
-    com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies =
-        new com.badlogic.gdx.utils.Array<>();
+    com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies = new com.badlogic.gdx.utils.Array<>();
     physicsWorld.getBodies(bodies);
     for (com.badlogic.gdx.physics.box2d.Body b : bodies) {
       physicsWorld.destroyBody(b);
@@ -300,15 +313,15 @@ public class GameModel implements Disposable {
 
     // Rebuild Map
     TiledMap newMap = MapGenerator.generateProceduralMap(currentSeed);
-    if (level != null) level.dispose();
+    if (level != null)
+      level.dispose();
 
     // Rebuild Level (No random spawn)
-    this.level =
-        new LevelBuilder()
-            .buildMap(newMap)
-            .buildPhysicsFromMap(this.physicsWorld)
-            .setEnvironment("dungeon_theme.mp3", 0.3f)
-            .build();
+    this.level = new LevelBuilder()
+        .buildMap(newMap)
+        .buildPhysicsFromMap(this.physicsWorld)
+        .setEnvironment("dungeon_theme.mp3", 0.3f)
+        .build();
     GameManager.getInstance().setCurrentLevel(this.level);
 
     // 2. Recreate players from Memento
@@ -399,8 +412,10 @@ public class GameModel implements Disposable {
 
   @Override
   public void dispose() {
-    if (physicsWorld != null) physicsWorld.dispose();
-    if (level != null) level.dispose();
+    if (physicsWorld != null)
+      physicsWorld.dispose();
+    if (level != null)
+      level.dispose();
     GameManager.getInstance().cleanUp();
   }
 }

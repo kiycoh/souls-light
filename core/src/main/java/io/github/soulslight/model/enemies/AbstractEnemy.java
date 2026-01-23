@@ -6,13 +6,14 @@ import com.badlogic.gdx.physics.box2d.*;
 import io.github.soulslight.model.enemies.ai.EnemyState;
 import io.github.soulslight.model.entities.Entity;
 import io.github.soulslight.model.entities.Player;
+import io.github.soulslight.model.room.EnemyDeathListener;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class AbstractEnemy extends Entity implements Cloneable {
 
-  protected Vector2 lastKnownPlayerPos =
-      new Vector2(); // serve oer ricordare l'ultima posizione del player per cercarlo qualora lo
+  protected Vector2 lastKnownPlayerPos = new Vector2(); // serve oer ricordare l'ultima posizione del player per
+                                                        // cercarlo qualora lo
   // perdesse
   protected float searchTimer = 0;
   protected final float SEARCH_DURATION = 2.0f;
@@ -25,6 +26,7 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
   protected float speed;
 
   private EnemyState aiState;
+  private EnemyDeathListener deathListener;
 
   public AbstractEnemy() {
     super();
@@ -87,7 +89,8 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     float minDst = Float.MAX_VALUE;
 
     for (Player p : players) {
-      if (p.isDead()) continue;
+      if (p.isDead())
+        continue;
 
       float dst = this.getPosition().dst(p.getPosition());
       if (dst < minDst) {
@@ -100,13 +103,15 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
 
   // metodo per vedere se i player sono nel raggio di vista
   public boolean canSeePlayer(Player player, World world) {
-    if (player == null || player.isDead() || body == null) return false;
+    if (player == null || player.isDead() || body == null)
+      return false;
 
     float aggroRange = 300f;
     float dist = this.getPosition().dst(player.getPosition());
-    if (dist > aggroRange) return false;
+    if (dist > aggroRange)
+      return false;
 
-    final boolean[] hitWall = {false};
+    final boolean[] hitWall = { false };
     world.rayCast(
         (fixture, point, normal, fraction) -> {
           if (fixture.getBody().getType() == BodyDef.BodyType.StaticBody) {
@@ -127,7 +132,8 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
 
   // movimento
   public void moveTowards(Vector2 targetPos, float deltaTime) {
-    if (body == null) return;
+    if (body == null)
+      return;
     Vector2 direction = targetPos.cpy().sub(body.getPosition());
     if (direction.len() > 5f) { // Deadzone per evitare tremolii
       direction.nor();
@@ -140,19 +146,21 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
 
   // metodo per scappare
   public void moveAway(Vector2 targetPos) {
-    if (body == null) return;
+    if (body == null)
+      return;
     Vector2 direction = body.getPosition().cpy().sub(targetPos).nor();
     body.setLinearVelocity(direction.scl(speed));
     this.position.set(body.getPosition());
   }
 
-  //  Metodo per il pattugliamento
+  // Metodo per il pattugliamento
   protected void updateWanderPatrol(float deltaTime) {
-    if (body == null) return;
+    if (body == null)
+      return;
 
     wanderTimer -= deltaTime;
 
-    //  serve per non farli allontanare troppo dallo spawn
+    // serve per non farli allontanare troppo dallo spawn
     if (getPosition().dst(spawnPoint) > MAX_WANDER_DIST) {
       patrolAngle = new Vector2(spawnPoint).sub(getPosition()).angleDeg();
       wanderTimer = 2.0f;
@@ -181,30 +189,29 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     }
 
     Vector2 dir = new Vector2(1, 0).setAngleDeg(patrolAngle);
-    float patrolSpeed =
-        speed * 0.3f; // i nemici sono più lenti durante la fase di pattuglia e accelerano quando
+    float patrolSpeed = speed * 0.3f; // i nemici sono più lenti durante la fase di pattuglia e accelerano quando
     // vedono igiocatori
 
     body.setLinearVelocity(dir.scl(patrolSpeed));
     this.position.set(body.getPosition());
   }
 
-  // metodo che testa effettivamente la presenza di una parete lungo il cammino dei nemici
+  // metodo che testa effettivamente la presenza di una parete lungo il cammino
+  // dei nemici
   private boolean checkObstacle(float angleOffset) {
-    final boolean[] hit = {false};
+    final boolean[] hit = { false };
 
     // distanza da cui verifica
     float dynamicSensorDist = 60f;
 
     Vector2 rayStart = body.getPosition();
 
-    Vector2 rayEnd =
-        new Vector2(1, 0) // crea un vettore unitario
-            .setAngleDeg(
-                patrolAngle
-                    + angleOffset) // indirizza il vettore nella direzione giusta grazie all'offset
-            .scl(dynamicSensorDist) // lo moltiplica per la lunghezza del sensore
-            .add(rayStart); // in questo modo parte dal centro del nemico
+    Vector2 rayEnd = new Vector2(1, 0) // crea un vettore unitario
+        .setAngleDeg(
+            patrolAngle
+                + angleOffset) // indirizza il vettore nella direzione giusta grazie all'offset
+        .scl(dynamicSensorDist) // lo moltiplica per la lunghezza del sensore
+        .add(rayStart); // in questo modo parte dal centro del nemico
 
     body.getWorld()
         .rayCast(
@@ -226,7 +233,8 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     this.spawnPoint.set(x, y);
   }
 
-  // metodo che toglie il corpo fisico dal mondo una volta morto in modo da non avere sovraccarico
+  // metodo che toglie il corpo fisico dal mondo una volta morto in modo da non
+  // avere sovraccarico
   // in memoria
   public void destroyBody(World world) {
     if (body != null) {
@@ -273,13 +281,34 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     this.searchTimer = searchTimer;
   }
 
+  /**
+   * Sets the death listener for this enemy (Observer pattern).
+   *
+   * @param listener The listener to notify on death
+   */
+  public void setDeathListener(EnemyDeathListener listener) {
+    this.deathListener = listener;
+  }
+
+  /**
+   * Override to notify death listener when enemy dies.
+   */
+  @Override
+  public void takeDamage(float amount) {
+    super.takeDamage(amount);
+    if (isDead() && deathListener != null) {
+      deathListener.onEnemyDied(this);
+    }
+  }
+
   public abstract void updateBehavior(List<Player> players, float deltaTime);
 
   @Override
   public abstract AbstractEnemy clone();
 
   public void attack(List<Player> players) {
-    if (this.attackStrategy == null) return;
+    if (this.attackStrategy == null)
+      return;
     this.attackStrategy.executeAttack(this, new ArrayList<>(players));
   }
 }

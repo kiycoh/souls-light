@@ -19,6 +19,8 @@ import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
+import io.github.soulslight.manager.GameManager;
+import io.github.soulslight.manager.GameMode;
 import io.github.soulslight.manager.SaveManager;
 import io.github.soulslight.manager.SettingsManager;
 import io.github.soulslight.model.GameModel;
@@ -104,9 +106,7 @@ public final class MainMenuScreen implements GameState {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            GameModel model = new GameModel();
-            GameController controller = new GameController(model);
-            game.setScreen(new GameScreen(batch, model, controller));
+            showModeSelectionDialog(standardStyle);
           }
         });
 
@@ -115,7 +115,8 @@ public final class MainMenuScreen implements GameState {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            if (continueButton.isDisabled()) return; // Ignore click if disabled
+            if (continueButton.isDisabled())
+              return; // Ignore click if disabled
 
             GameModel model = new GameModel();
             SaveManager sm = new SaveManager();
@@ -157,6 +158,91 @@ public final class MainMenuScreen implements GameState {
     table.add(exitButton).width(btnWidth).height(btnHeight).pad(pad).row();
   }
 
+  /**
+   * Shows a dialog for selecting between Story Mode and Custom Mode.
+   * Integrates with GameManager.startCampaign() to initialize the campaign.
+   */
+  private void showModeSelectionDialog(TextButtonStyle buttonStyle) {
+    // Create a semi-transparent overlay table
+    Table dialogTable = new Table();
+    dialogTable.setFillParent(true);
+    dialogTable.center();
+
+    // Dialog background styling
+    dialogTable.setBackground(new com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable() {
+      @Override
+      public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float x, float y, float width, float height) {
+        batch.setColor(0f, 0f, 0f, 0.7f);
+        batch.draw(backgroundTexture, x, y, width, height);
+        batch.setColor(Color.WHITE);
+      }
+    });
+
+    // Title label
+    com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle labelStyle = new com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle(
+        font, Color.WHITE);
+    com.badlogic.gdx.scenes.scene2d.ui.Label titleLabel = new com.badlogic.gdx.scenes.scene2d.ui.Label(
+        "Select Game Mode", labelStyle);
+    titleLabel.setFontScale(1.5f);
+
+    // Mode buttons
+    TextButton storyButton = new TextButton("Story Mode", buttonStyle);
+    TextButton customButton = new TextButton("Custom Mode", buttonStyle);
+    TextButton backButton = new TextButton("Back", buttonStyle);
+
+    // Story Mode listener
+    storyButton.addListener(new ClickListener() {
+      @Override
+      public void clicked(InputEvent event, float x, float y) {
+        GameManager.getInstance().startCampaign(GameMode.STORY);
+        startGame();
+        dialogTable.remove();
+      }
+    });
+
+    // Custom Mode listener
+    customButton.addListener(new ClickListener() {
+      @Override
+      public void clicked(InputEvent event, float x, float y) {
+        GameManager.getInstance().startCampaign(GameMode.CUSTOM);
+        startGame();
+        dialogTable.remove();
+      }
+    });
+
+    // Back button listener
+    backButton.addListener(new ClickListener() {
+      @Override
+      public void clicked(InputEvent event, float x, float y) {
+        dialogTable.remove();
+      }
+    });
+
+    final float btnWidth = 250f;
+    final float btnHeight = 50f;
+    final float pad = 12f;
+
+    dialogTable.add(titleLabel).padBottom(30f).row();
+    dialogTable.add(storyButton).width(btnWidth).height(btnHeight).pad(pad).row();
+    dialogTable.add(customButton).width(btnWidth).height(btnHeight).pad(pad).row();
+    dialogTable.add(backButton).width(btnWidth).height(btnHeight).pad(pad).padTop(20f).row();
+
+    // Add fade-in animation
+    dialogTable.getColor().a = 0f;
+    dialogTable.addAction(Actions.fadeIn(0.3f));
+
+    stage.addActor(dialogTable);
+  }
+
+  /**
+   * Starts the game with the current GameManager configuration.
+   */
+  private void startGame() {
+    GameModel model = new GameModel();
+    GameController controller = new GameController(model);
+    game.setScreen(new GameScreen(batch, model, controller));
+  }
+
   @Override
   public void render(float delta) {
     Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
@@ -171,13 +257,16 @@ public final class MainMenuScreen implements GameState {
   }
 
   @Override
-  public void pause() {}
+  public void pause() {
+  }
 
   @Override
-  public void resume() {}
+  public void resume() {
+  }
 
   @Override
-  public void hide() {}
+  public void hide() {
+  }
 
   @Override
   public void dispose() {

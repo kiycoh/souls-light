@@ -66,8 +66,10 @@ public record DungeonMapStrategy(long seed, int width, int height)
       int maxRoomH = maxY - minY;
 
       // Safety clamp
-      if (maxRoomW < 6) maxRoomW = 6;
-      if (maxRoomH < 6) maxRoomH = 6;
+      if (maxRoomW < 6)
+        maxRoomW = 6;
+      if (maxRoomH < 6)
+        maxRoomH = 6;
 
       int w = rng.nextInt(6, Math.min(15, maxRoomW));
       int h = rng.nextInt(6, Math.min(15, maxRoomH));
@@ -93,14 +95,16 @@ public record DungeonMapStrategy(long seed, int width, int height)
   }
 
   /**
-   * Generates a simple path through the grid. Implementation: Start at random edge, move to
+   * Generates a simple path through the grid. Implementation: Start at random
+   * edge, move to
    * unvisited neighbor until stuck or long enough.
    */
   private List<GridPoint> generateGridPath(Random rng) {
     List<GridPoint> path = new ArrayList<>();
     boolean[][] visited = new boolean[GRID_COLS][GRID_ROWS];
 
-    // Start at (0,0) or (0, random) or random. Let's start at bottom-left for simplicity (0,0)
+    // Start at (0,0) or (0, random) or random. Let's start at bottom-left for
+    // simplicity (0,0)
     int cx = 0;
     int cy = 0;
 
@@ -111,8 +115,8 @@ public record DungeonMapStrategy(long seed, int width, int height)
     while (!stuck) {
       List<GridPoint> neighbors = new ArrayList<>();
       // Check neighbors (Up, Down, Left, Right)
-      int[] dx = {0, 0, -1, 1};
-      int[] dy = {1, -1, 0, 0};
+      int[] dx = { 0, 0, -1, 1 };
+      int[] dy = { 1, -1, 0, 0 };
 
       for (int i = 0; i < 4; i++) {
         int nx = cx + dx[i];
@@ -200,7 +204,9 @@ public record DungeonMapStrategy(long seed, int width, int height)
     }
   }
 
-  private record Room(int x, int y, int w, int h) {}
+  private record Room(int x, int y, int w, int h) {
+  }
 
-  private record GridPoint(int x, int y) {}
+  private record GridPoint(int x, int y) {
+  }
 }

@@ -12,6 +12,9 @@ import com.badlogic.gdx.physics.box2d.*;
 import io.github.soulslight.model.enemies.AbstractEnemy;
 import io.github.soulslight.model.enemies.EnemyFactory;
 import io.github.soulslight.model.enemies.Oblivion;
+import io.github.soulslight.model.room.PortalRoom;
+import io.github.soulslight.model.room.Room;
+import io.github.soulslight.model.room.RoomData;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +31,8 @@ public class LevelBuilder {
     return this;
   }
 
-  // --- 1A. Enemy generation from tmx file (legacy method from InGameEnemies branch) ---
+  // --- 1A. Enemy generation from tmx file (legacy method from InGameEnemies
+  // branch) ---
   public LevelBuilder spawnFromTiled(EnemyFactory factory, World world) {
 
     // Boss room size calculations
@@ -186,7 +190,8 @@ public class LevelBuilder {
   // Centralized helper for single spawn
   private void spawnEnemy(
       AbstractEnemy enemy, Vector2 pos, World world, float totalMapWidth, float totalMapHeight) {
-    if (enemy == null) return;
+    if (enemy == null)
+      return;
 
     enemy.createBody(world, pos.x, pos.y);
     enemy.setSpawnPoint(pos.x, pos.y);
@@ -257,6 +262,52 @@ public class LevelBuilder {
     return this;
   }
 
+  // --- 4. Room building from generation data ---
+  /**
+   * Builds Room objects from room metadata.
+   * 
+   * @param roomDataList List of room metadata from map generation
+   * @return this builder for chaining
+   */
+  public LevelBuilder buildRooms(List<RoomData> roomDataList) {
+    if (roomDataList == null)
+      return this;
+
+    for (RoomData data : roomDataList) {
+      Room room;
+      if (data.isPortalRoom()) {
+        room = new PortalRoom(
+            data.id(),
+            data.bounds().x,
+            data.bounds().y,
+            data.bounds().width,
+            data.bounds().height);
+      } else {
+        room = new Room(
+            data.id(),
+            data.bounds().x,
+            data.bounds().y,
+            data.bounds().width,
+            data.bounds().height);
+      }
+      level.getRoomManager().addRoom(room);
+    }
+    return this;
+  }
+
+  /**
+   * Initializes the room manager with the physics world.
+   * Creates sensors and initializes doors for all rooms.
+   * 
+   * @param world The Box2D physics world
+   * @return this builder for chaining
+   */
+  public LevelBuilder initializeRoomManager(World world) {
+    level.getRoomManager().initialize(world);
+    level.getRoomManager().initializeDoors();
+    return this;
+  }
+
   public Level build() {
     return level;
   }
@@ -273,7 +324,8 @@ public class LevelBuilder {
       return "floor".equals(props.get("type", String.class));
     }
 
-    // legacy maps fallback: if it's not marked as wall, is considered as a floor tile
+    // legacy maps fallback: if it's not marked as wall, is considered as a floor
+    // tile
     return !props.get("isWall", false, Boolean.class);
   }
 }

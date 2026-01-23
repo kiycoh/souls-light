@@ -11,14 +11,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
-import make.some.noise.Noise;
 
 public record NoiseMapStrategy(
     long seed, int width, int height, float frequency, int octaves, float wallThreshold)
     implements MapGenerationStrategy {
 
   private static final int TILE_SIZE = 32;
-  private static final int SMOOTHING_ITERATIONS = 3;
+  // Increased iterations for better cave formation
+  private static final int SMOOTHING_ITERATIONS = 5;
+  // Border padding to ensure closed caves
+  private static final int BORDER_SIZE = 2;
 
   @Override
   public TiledMap generate() {
@@ -30,15 +32,9 @@ public record NoiseMapStrategy(
 
     var layer = new TiledMapTileLayer(width, height, TILE_SIZE, TILE_SIZE);
 
-    var noise = new Noise();
-    noise.setSeed((int) seed);
-    noise.setNoiseType(Noise.VALUE);
-    noise.setFrequency(frequency);
-    noise.setFractalOctaves(octaves);
-
     ResourceManager rm = ResourceManager.getInstance();
 
-    // --- FLOOR TILES  ---
+    // --- FLOOR TILES ---
     TextureRegion[] floorRegions = rm.getFloorTextureRegions();
     StaticTiledMapTile[] floorTiles;
 
@@ -50,10 +46,11 @@ public record NoiseMapStrategy(
         floorTiles[i] = t;
       }
     } else {
-      // fallback: if for some reason no variants are available, use the old single floor tile
+      // fallback: if for some reason no variants are available, use the old single
+      // floor tile
       StaticTiledMapTile singleFloor = new StaticTiledMapTile(rm.getFloorTextureRegion());
       singleFloor.getProperties().put("type", "floor");
-      floorTiles = new StaticTiledMapTile[] {singleFloor};
+      floorTiles = new StaticTiledMapTile[] { singleFloor };
     }
 
     // --- WALL TILES ---
@@ -92,25 +89,37 @@ public record NoiseMapStrategy(
 
     Random rnd = new Random(seed);
 
+    // === CAVE GENERATION: White Noise Initialization ===
+    // Use wallThreshold as initial wall fill percentage (e.g., 0.45 = 45% walls)
+    // This replaces the coherent noise approach for proper cave formation
+    float initialFillPercent = wallThreshold > 0 && wallThreshold < 1 ? wallThreshold : 0.45f;
+
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        float n = noise.getConfiguredNoise(x, y);
-
-        if (n > wallThreshold) {
+        // Force walls at borders to ensure closed caves
+        if (x < BORDER_SIZE || x >= width - BORDER_SIZE
+            || y < BORDER_SIZE || y >= height - BORDER_SIZE) {
           setTile(layer, x, y, genericWallTile);
         } else {
-          StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
-          setTile(layer, x, y, selectedTile);
+          // Random fill: white noise seed for cellular automata
+          if (rnd.nextFloat() < initialFillPercent) {
+            setTile(layer, x, y, genericWallTile);
+          } else {
+            StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
+            setTile(layer, x, y, selectedTile);
+          }
         }
       }
     }
+
+    // Apply cellular automata smoothing (4-5 rule)
     for (int i = 0; i < SMOOTHING_ITERATIONS; i++) {
       smoothMap(layer, genericWallTile, floorTiles, rnd);
     }
 
     List<List<GridPoint2>> regions = getRegions(layer);
 
-    System.out.println("Map Generation Log:");
+    System.out.println("Cave Generation Log:");
     System.out.println("Found " + regions.size() + " disconnected regions.");
     for (int i = 0; i < regions.size(); i++) {
       System.out.println("Region " + i + " Size: " + regions.get(i).size() + " tiles.");
@@ -167,7 +176,8 @@ public record NoiseMapStrategy(
     int count = 0;
     for (int x = cx - 1; x <= cx + 1; x++) {
       for (int y = cy - 1; y <= cy + 1; y++) {
-        if (x == cx && y == cy) continue;
+        if (x == cx && y == cy)
+          continue;
 
         // out of bounds counts as wall (forces closed caves)
         if (x < 0 || x >= width || y < 0 || y >= height) {
@@ -210,8 +220,8 @@ public record NoiseMapStrategy(
     queue.add(start);
     visited[startX][startY] = true;
 
-    int[] dx = {0, 0, 1, -1};
-    int[] dy = {1, -1, 0, 0};
+    int[] dx = { 0, 0, 1, -1 };
+    int[] dy = { 1, -1, 0, 0 };
 
     while (!queue.isEmpty()) {
       GridPoint2 current = queue.poll();
@@ -301,7 +311,8 @@ public record NoiseMapStrategy(
 
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        if (!isWall(layer, x, y)) continue;
+        if (!isWall(layer, x, y))
+          continue;
 
         int mask = computeWallMask(layer, x, y);
         StaticTiledMapTile tile;
@@ -350,10 +361,14 @@ public record NoiseMapStrategy(
   private int computeWallMask(TiledMapTileLayer layer, int x, int y) {
     int mask = 0;
 
-    if (isWall(layer, x, y + 1)) mask |= 1; // up
-    if (isWall(layer, x + 1, y)) mask |= 2; // right
-    if (isWall(layer, x, y - 1)) mask |= 4; // down
-    if (isWall(layer, x - 1, y)) mask |= 8; // left
+    if (isWall(layer, x, y + 1))
+      mask |= 1; // up
+    if (isWall(layer, x + 1, y))
+      mask |= 2; // right
+    if (isWall(layer, x, y - 1))
+      mask |= 4; // down
+    if (isWall(layer, x - 1, y))
+      mask |= 8; // left
 
     return mask;
   }
@@ -366,7 +381,8 @@ public record NoiseMapStrategy(
   }
 
   private boolean isFloor(TiledMapTileLayer layer, int x, int y) {
-    if (x < 0 || x >= width || y < 0 || y >= height) return false;
+    if (x < 0 || x >= width || y < 0 || y >= height)
+      return false;
     var cell = layer.getCell(x, y);
     return cell != null
         && cell.getTile() != null
@@ -374,7 +390,8 @@ public record NoiseMapStrategy(
   }
 
   private boolean isWall(TiledMapTileLayer layer, int x, int y) {
-    if (x < 0 || x >= width || y < 0 || y >= height) return false;
+    if (x < 0 || x >= width || y < 0 || y >= height)
+      return false;
     var cell = layer.getCell(x, y);
     return cell != null
         && cell.getTile() != null
