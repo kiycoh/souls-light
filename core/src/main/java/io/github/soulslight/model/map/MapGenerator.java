@@ -19,13 +19,11 @@ public class MapGenerator {
     return strategy.generate();
   }
 
-  /**
-   * Procedural map creation method (Using NoiseMapStrategy with default
-   * parameters).
-   */
+  /** Procedural map creation method (Using NoiseMapStrategy with default parameters). */
   public static TiledMap generateProceduralMap(long seed) {
-    MapGenerationStrategy strategy = new NoiseMapStrategy(
-        seed, MAP_WIDTH, MAP_HEIGHT, NOISE_FREQUENCY, NOISE_OCTAVES, WALL_THRESHOLD);
+    MapGenerationStrategy strategy =
+        new NoiseMapStrategy(
+            seed, MAP_WIDTH, MAP_HEIGHT, NOISE_FREQUENCY, NOISE_OCTAVES, WALL_THRESHOLD);
     return generate(strategy);
   }
 }

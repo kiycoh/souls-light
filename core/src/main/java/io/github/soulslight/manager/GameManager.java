@@ -8,8 +8,7 @@ import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.map.MapGenerationStrategy;
 
 /**
- * Pattern: Singleton
- * Central coordinator for game state, campaign progression, and player
+ * Pattern: Singleton Central coordinator for game state, campaign progression, and player
  * management.
  */
 public class GameManager {
@@ -60,8 +59,12 @@ public class GameManager {
     if (gameMode == GameMode.STORY) {
       if (currentLevelIndex < LevelFactory.getStoryModeLevelCount()) {
         currentLevelIndex++;
-        Gdx.app.log("GameManager", "Advancing to level " + currentLevelIndex
-            + ": " + LevelFactory.getLevelName(currentLevelIndex));
+        Gdx.app.log(
+            "GameManager",
+            "Advancing to level "
+                + currentLevelIndex
+                + ": "
+                + LevelFactory.getLevelName(currentLevelIndex));
         return true;
       } else {
         Gdx.app.log("GameManager", "Campaign complete!");
@@ -135,8 +138,7 @@ public class GameManager {
   }
 
   public boolean isFinalLevel() {
-    return gameMode == GameMode.STORY
-        && currentLevelIndex >= LevelFactory.getStoryModeLevelCount();
+    return gameMode == GameMode.STORY && currentLevelIndex >= LevelFactory.getStoryModeLevelCount();
   }
 
   // --- Cleanup ---
@@ -146,9 +148,7 @@ public class GameManager {
     clearPlayers();
   }
 
-  /**
-   * Loads the current level using the appropriate strategy.
-   */
+  /** Loads the current level using the appropriate strategy. */
   public void loadLevel() {
     try {
       // Get strategy for current level
@@ -171,8 +171,8 @@ public class GameManager {
         }
       }
 
-      Gdx.app.log("GameManager", "Level " + currentLevelIndex + " loaded: "
-          + getCurrentLevelName());
+      Gdx.app.log(
+          "GameManager", "Level " + currentLevelIndex + " loaded: " + getCurrentLevelName());
 
     } catch (Exception e) {
       Gdx.app.error("GameManager", "Failed to load level", e);

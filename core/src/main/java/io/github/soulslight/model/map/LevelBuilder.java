@@ -190,8 +190,7 @@ public class LevelBuilder {
   // Centralized helper for single spawn
   private void spawnEnemy(
       AbstractEnemy enemy, Vector2 pos, World world, float totalMapWidth, float totalMapHeight) {
-    if (enemy == null)
-      return;
+    if (enemy == null) return;
 
     enemy.createBody(world, pos.x, pos.y);
     enemy.setSpawnPoint(pos.x, pos.y);
@@ -265,30 +264,31 @@ public class LevelBuilder {
   // --- 4. Room building from generation data ---
   /**
    * Builds Room objects from room metadata.
-   * 
+   *
    * @param roomDataList List of room metadata from map generation
    * @return this builder for chaining
    */
   public LevelBuilder buildRooms(List<RoomData> roomDataList) {
-    if (roomDataList == null)
-      return this;
+    if (roomDataList == null) return this;
 
     for (RoomData data : roomDataList) {
       Room room;
       if (data.isPortalRoom()) {
-        room = new PortalRoom(
-            data.id(),
-            data.bounds().x,
-            data.bounds().y,
-            data.bounds().width,
-            data.bounds().height);
+        room =
+            new PortalRoom(
+                data.id(),
+                data.bounds().x,
+                data.bounds().y,
+                data.bounds().width,
+                data.bounds().height);
       } else {
-        room = new Room(
-            data.id(),
-            data.bounds().x,
-            data.bounds().y,
-            data.bounds().width,
-            data.bounds().height);
+        room =
+            new Room(
+                data.id(),
+                data.bounds().x,
+                data.bounds().y,
+                data.bounds().width,
+                data.bounds().height);
       }
       level.getRoomManager().addRoom(room);
     }
@@ -296,9 +296,9 @@ public class LevelBuilder {
   }
 
   /**
-   * Initializes the room manager with the physics world.
-   * Creates sensors and initializes doors for all rooms.
-   * 
+   * Initializes the room manager with the physics world. Creates sensors and initializes doors for
+   * all rooms.
+   *
    * @param world The Box2D physics world
    * @return this builder for chaining
    */

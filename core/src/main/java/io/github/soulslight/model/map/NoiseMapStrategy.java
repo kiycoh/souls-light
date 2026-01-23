@@ -50,7 +50,7 @@ public record NoiseMapStrategy(
       // floor tile
       StaticTiledMapTile singleFloor = new StaticTiledMapTile(rm.getFloorTextureRegion());
       singleFloor.getProperties().put("type", "floor");
-      floorTiles = new StaticTiledMapTile[] { singleFloor };
+      floorTiles = new StaticTiledMapTile[] {singleFloor};
     }
 
     // --- WALL TILES ---
@@ -97,8 +97,10 @@ public record NoiseMapStrategy(
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
         // Force walls at borders to ensure closed caves
-        if (x < BORDER_SIZE || x >= width - BORDER_SIZE
-            || y < BORDER_SIZE || y >= height - BORDER_SIZE) {
+        if (x < BORDER_SIZE
+            || x >= width - BORDER_SIZE
+            || y < BORDER_SIZE
+            || y >= height - BORDER_SIZE) {
           setTile(layer, x, y, genericWallTile);
         } else {
           // Random fill: white noise seed for cellular automata
@@ -176,8 +178,7 @@ public record NoiseMapStrategy(
     int count = 0;
     for (int x = cx - 1; x <= cx + 1; x++) {
       for (int y = cy - 1; y <= cy + 1; y++) {
-        if (x == cx && y == cy)
-          continue;
+        if (x == cx && y == cy) continue;
 
         // out of bounds counts as wall (forces closed caves)
         if (x < 0 || x >= width || y < 0 || y >= height) {
@@ -220,8 +221,8 @@ public record NoiseMapStrategy(
     queue.add(start);
     visited[startX][startY] = true;
 
-    int[] dx = { 0, 0, 1, -1 };
-    int[] dy = { 1, -1, 0, 0 };
+    int[] dx = {0, 0, 1, -1};
+    int[] dy = {1, -1, 0, 0};
 
     while (!queue.isEmpty()) {
       GridPoint2 current = queue.poll();
@@ -311,8 +312,7 @@ public record NoiseMapStrategy(
 
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        if (!isWall(layer, x, y))
-          continue;
+        if (!isWall(layer, x, y)) continue;
 
         int mask = computeWallMask(layer, x, y);
         StaticTiledMapTile tile;
@@ -361,14 +361,10 @@ public record NoiseMapStrategy(
   private int computeWallMask(TiledMapTileLayer layer, int x, int y) {
     int mask = 0;
 
-    if (isWall(layer, x, y + 1))
-      mask |= 1; // up
-    if (isWall(layer, x + 1, y))
-      mask |= 2; // right
-    if (isWall(layer, x, y - 1))
-      mask |= 4; // down
-    if (isWall(layer, x - 1, y))
-      mask |= 8; // left
+    if (isWall(layer, x, y + 1)) mask |= 1; // up
+    if (isWall(layer, x + 1, y)) mask |= 2; // right
+    if (isWall(layer, x, y - 1)) mask |= 4; // down
+    if (isWall(layer, x - 1, y)) mask |= 8; // left
 
     return mask;
   }
@@ -381,8 +377,7 @@ public record NoiseMapStrategy(
   }
 
   private boolean isFloor(TiledMapTileLayer layer, int x, int y) {
-    if (x < 0 || x >= width || y < 0 || y >= height)
-      return false;
+    if (x < 0 || x >= width || y < 0 || y >= height) return false;
     var cell = layer.getCell(x, y);
     return cell != null
         && cell.getTile() != null
@@ -390,8 +385,7 @@ public record NoiseMapStrategy(
   }
 
   private boolean isWall(TiledMapTileLayer layer, int x, int y) {
-    if (x < 0 || x >= width || y < 0 || y >= height)
-      return false;
+    if (x < 0 || x >= width || y < 0 || y >= height) return false;
     var cell = layer.getCell(x, y);
     return cell != null
         && cell.getTile() != null

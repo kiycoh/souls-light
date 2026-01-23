@@ -7,145 +7,136 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Pattern: Mediator
- * Coordinates room lifecycle and acts as central event dispatcher.
- * Manages room updates, sensor creation, and level completion checks.
+ * Pattern: Mediator Coordinates room lifecycle and acts as central event dispatcher. Manages room
+ * updates, sensor creation, and level completion checks.
  */
 public class RoomManager {
 
-    private final List<Room> rooms;
-    private final List<RoomSensor> sensors;
-    private World world;
+  private final List<Room> rooms;
+  private final List<RoomSensor> sensors;
+  private World world;
 
-    public RoomManager() {
-        this.rooms = new ArrayList<>();
-        this.sensors = new ArrayList<>();
+  public RoomManager() {
+    this.rooms = new ArrayList<>();
+    this.sensors = new ArrayList<>();
+  }
+
+  /**
+   * Initializes the room manager with a physics world.
+   *
+   * @param world The Box2D physics world
+   */
+  public void initialize(World world) {
+    this.world = world;
+    createSensors();
+  }
+
+  /**
+   * Adds a room to the manager.
+   *
+   * @param room The room to add
+   */
+  public void addRoom(Room room) {
+    rooms.add(room);
+  }
+
+  /** Creates sensors for all rooms that don't have them yet. */
+  private void createSensors() {
+    if (world == null) return;
+
+    for (Room room : rooms) {
+      RoomSensor sensor = new RoomSensor(room);
+      sensor.createSensor(world);
+      sensors.add(sensor);
     }
+  }
 
-    /**
-     * Initializes the room manager with a physics world.
-     *
-     * @param world The Box2D physics world
-     */
-    public void initialize(World world) {
-        this.world = world;
-        createSensors();
+  /** Initializes doors for all rooms. */
+  public void initializeDoors() {
+    if (world == null) return;
+
+    for (Room room : rooms) {
+      for (Door door : room.getDoors()) {
+        door.initialize(world);
+      }
     }
+  }
 
-    /**
-     * Adds a room to the manager.
-     *
-     * @param room The room to add
-     */
-    public void addRoom(Room room) {
-        rooms.add(room);
+  /**
+   * Updates all rooms.
+   *
+   * @param deltaTime Time since last update
+   */
+  public void update(float deltaTime) {
+    for (Room room : rooms) {
+      room.update(deltaTime);
     }
+  }
 
-    /**
-     * Creates sensors for all rooms that don't have them yet.
-     */
-    private void createSensors() {
-        if (world == null)
-            return;
-
-        for (Room room : rooms) {
-            RoomSensor sensor = new RoomSensor(room);
-            sensor.createSensor(world);
-            sensors.add(sensor);
-        }
+  /**
+   * Finds the room containing the specified position.
+   *
+   * @param position The position to check
+   * @return The room containing the position, or null if none
+   */
+  public Room findRoomContaining(Vector2 position) {
+    for (Room room : rooms) {
+      if (room.contains(position.x, position.y)) {
+        return room;
+      }
     }
+    return null;
+  }
 
-    /**
-     * Initializes doors for all rooms.
-     */
-    public void initializeDoors() {
-        if (world == null)
-            return;
-
-        for (Room room : rooms) {
-            for (Door door : room.getDoors()) {
-                door.initialize(world);
-            }
-        }
+  /**
+   * Checks if all rooms in the level are cleared.
+   *
+   * @return True if all rooms are cleared
+   */
+  public boolean allRoomsCleared() {
+    for (Room room : rooms) {
+      if (!room.isCleared()) {
+        return false;
+      }
     }
+    return !rooms.isEmpty();
+  }
 
-    /**
-     * Updates all rooms.
-     *
-     * @param deltaTime Time since last update
-     */
-    public void update(float deltaTime) {
-        for (Room room : rooms) {
-            room.update(deltaTime);
-        }
-    }
+  /**
+   * Gets the number of rooms in the manager.
+   *
+   * @return The room count
+   */
+  public int getRoomCount() {
+    return rooms.size();
+  }
 
-    /**
-     * Finds the room containing the specified position.
-     *
-     * @param position The position to check
-     * @return The room containing the position, or null if none
-     */
-    public Room findRoomContaining(Vector2 position) {
-        for (Room room : rooms) {
-            if (room.contains(position.x, position.y)) {
-                return room;
-            }
-        }
-        return null;
-    }
+  /**
+   * Gets the number of cleared rooms.
+   *
+   * @return The cleared room count
+   */
+  public int getClearedRoomCount() {
+    return (int) rooms.stream().filter(Room::isCleared).count();
+  }
 
-    /**
-     * Checks if all rooms in the level are cleared.
-     *
-     * @return True if all rooms are cleared
-     */
-    public boolean allRoomsCleared() {
-        for (Room room : rooms) {
-            if (!room.isCleared()) {
-                return false;
-            }
-        }
-        return !rooms.isEmpty();
-    }
+  /**
+   * Returns an unmodifiable view of all rooms.
+   *
+   * @return Unmodifiable list of rooms
+   */
+  public List<Room> getRooms() {
+    return Collections.unmodifiableList(rooms);
+  }
 
-    /**
-     * Gets the number of rooms in the manager.
-     *
-     * @return The room count
-     */
-    public int getRoomCount() {
-        return rooms.size();
+  /** Cleans up all sensors and clears rooms. */
+  public void dispose() {
+    if (world != null) {
+      for (RoomSensor sensor : sensors) {
+        sensor.destroySensor(world);
+      }
     }
-
-    /**
-     * Gets the number of cleared rooms.
-     *
-     * @return The cleared room count
-     */
-    public int getClearedRoomCount() {
-        return (int) rooms.stream().filter(Room::isCleared).count();
-    }
-
-    /**
-     * Returns an unmodifiable view of all rooms.
-     *
-     * @return Unmodifiable list of rooms
-     */
-    public List<Room> getRooms() {
-        return Collections.unmodifiableList(rooms);
-    }
-
-    /**
-     * Cleans up all sensors and clears rooms.
-     */
-    public void dispose() {
-        if (world != null) {
-            for (RoomSensor sensor : sensors) {
-                sensor.destroySensor(world);
-            }
-        }
-        sensors.clear();
-        rooms.clear();
-    }
+    sensors.clear();
+    rooms.clear();
+  }
 }

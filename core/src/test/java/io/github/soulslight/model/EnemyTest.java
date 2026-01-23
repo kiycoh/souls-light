@@ -32,7 +32,7 @@ public class EnemyTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = { "Chaser", "Ranger", "SpikedBall", "Shielder", "Oblivion" })
+  @ValueSource(strings = {"Chaser", "Ranger", "SpikedBall", "Shielder", "Oblivion"})
   public void testCloneIndependenceForAll(String enemyType) {
     AbstractEnemy original = EnemyRegistry.getEnemy(enemyType);
     AbstractEnemy clone = EnemyRegistry.getEnemy(enemyType);
@@ -149,7 +149,8 @@ public class EnemyTest {
   }
 
   // --- Helper Class ---
-  private static class TestProjectileListener implements io.github.soulslight.model.combat.ProjectileListener {
+  private static class TestProjectileListener
+      implements io.github.soulslight.model.combat.ProjectileListener {
     public int callCount = 0;
     public List<Vector2> targets = new ArrayList<>();
 

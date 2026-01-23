@@ -82,28 +82,22 @@ public class Oblivion extends AbstractEnemy {
 
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players.isEmpty())
-      return;
-    if (isPhaseTwo && this.health <= 0)
-      return;
+    if (players.isEmpty()) return;
+    if (isPhaseTwo && this.health <= 0) return;
     if (!isPhaseTwo && this.health <= 0) {
       startPhaseTwo();
       return;
     }
 
     Player target = getNearestTarget(players);
-    if (target == null)
-      return;
+    if (target == null) return;
     Vector2 myPos = (body != null) ? body.getPosition() : this.position;
     float distance = myPos.dst(target.getPosition());
 
     teleportTimer += deltaTime;
-    if (attackCooldown > 0)
-      attackCooldown -= deltaTime;
-    if (retreatTimer > 0)
-      retreatTimer -= deltaTime;
-    if (shootTimer > 0)
-      shootTimer -= deltaTime;
+    if (attackCooldown > 0) attackCooldown -= deltaTime;
+    if (retreatTimer > 0) retreatTimer -= deltaTime;
+    if (shootTimer > 0) shootTimer -= deltaTime;
 
     if (teleportTimer >= TELEPORT_COOLDOWN) {
       teleportToPlayer(target);
@@ -126,8 +120,7 @@ public class Oblivion extends AbstractEnemy {
 
     switch (currentState) {
       case CASTING:
-        if (body != null)
-          body.setLinearVelocity(0, 0);
+        if (body != null) body.setLinearVelocity(0, 0);
         if (shootTimer <= 0) {
           prepareTripleShot(target.getPosition());
           // readyToShoot = true; // Removed
@@ -142,16 +135,14 @@ public class Oblivion extends AbstractEnemy {
         if (distance > STOP_DISTANCE) {
           moveTowards(target.getPosition(), deltaTime);
         } else {
-          if (body != null)
-            body.setLinearVelocity(0, 0);
+          if (body != null) body.setLinearVelocity(0, 0);
           currentState = State.ATTACKING;
           attackCooldown = 0.3f;
         }
         break;
 
       case ATTACKING:
-        if (body != null)
-          body.setLinearVelocity(0, 0);
+        if (body != null) body.setLinearVelocity(0, 0);
         if (attackCooldown <= 0) {
           performBossMeleeAttack(target);
           currentState = State.RETREATING;
@@ -164,8 +155,7 @@ public class Oblivion extends AbstractEnemy {
 
       case RETREATING:
         moveAway(target.getPosition());
-        if (retreatTimer <= 0)
-          currentState = State.CHASING;
+        if (retreatTimer <= 0) currentState = State.CHASING;
         break;
     }
   }
