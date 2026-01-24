@@ -8,9 +8,7 @@ public sealed interface EnemyState
     permits PatrolState, ChaseState, SearchState, AttackState, IdleState, RoomIdleState {
   void update(AbstractEnemy enemy, List<Player> players, float deltaTime);
 
-  default void enter(AbstractEnemy enemy) {
-  }
+  default void enter(AbstractEnemy enemy) {}
 
-  default void exit(AbstractEnemy enemy) {
-  }
+  default void exit(AbstractEnemy enemy) {}
 }

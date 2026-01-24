@@ -8,8 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Represents a gameplay room with state management. Implements the Context role
- * in the State
+ * Represents a gameplay room with state management. Implements the Context role in the State
  * pattern. Rooms transition between Passive, ActiveCombat, and Cleared states.
  */
 public class Room implements EnemyDeathListener {
@@ -27,10 +26,10 @@ public class Room implements EnemyDeathListener {
   /**
    * Creates a new room with the specified bounds.
    *
-   * @param id     Unique identifier for this room
-   * @param x      X position of the room in world units
-   * @param y      Y position of the room in world units
-   * @param width  Width of the room in world units
+   * @param id Unique identifier for this room
+   * @param x X position of the room in world units
+   * @param y Y position of the room in world units
+   * @param width Width of the room in world units
    * @param height Height of the room in world units
    */
   public Room(String id, float x, float y, float width, float height) {
@@ -72,8 +71,8 @@ public class Room implements EnemyDeathListener {
   }
 
   /**
-   * Called when the player enters this room's sensor zone.
-   * Defers actual processing to update() to avoid modifying physics during step.
+   * Called when the player enters this room's sensor zone. Defers actual processing to update() to
+   * avoid modifying physics during step.
    */
   public void onPlayerEntered() {
     pendingPlayerEntry = true;
@@ -106,9 +105,8 @@ public class Room implements EnemyDeathListener {
   }
 
   /**
-   * Activates all enemies in this room by switching them from RoomIdleState to
-   * ChaseState.
-   * Called when combat begins.
+   * Activates all enemies in this room by switching them from RoomIdleState to ChaseState. Called
+   * when combat begins.
    */
   public void activateEnemies() {
     for (AbstractEnemy enemy : enemies) {

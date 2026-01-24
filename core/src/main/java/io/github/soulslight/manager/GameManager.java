@@ -8,8 +8,7 @@ import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.map.MapGenerationStrategy;
 
 /**
- * Pattern: Singleton Central coordinator for game state, campaign progression,
- * and player
+ * Pattern: Singleton Central coordinator for game state, campaign progression, and player
  * management.
  */
 public class GameManager {
