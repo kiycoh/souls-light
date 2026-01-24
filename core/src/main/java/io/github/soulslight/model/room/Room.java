@@ -146,6 +146,29 @@ public class Room implements EnemyDeathListener {
     this.cleared = true;
   }
 
+  /**
+   * Debug method: Forces the room to be cleared, killing all enemies and transitioning to the
+   * cleared state.
+   */
+  public void forceCleared() {
+    // Create a copy to avoid ConcurrentModificationException
+    // (takeDamage triggers onEnemyDied which modifies the original list)
+    java.util.List<AbstractEnemy> enemiesCopy = new java.util.ArrayList<>(enemies);
+
+    // Kill all remaining enemies
+    for (AbstractEnemy enemy : enemiesCopy) {
+      if (!enemy.isDead()) {
+        enemy.takeDamage(Float.MAX_VALUE);
+      }
+    }
+    enemies.clear();
+
+    // Mark as cleared and unlock doors
+    markAsCleared();
+    setDoorsLocked(false);
+    transitionTo(ClearedState.INSTANCE);
+  }
+
   // --- Getters ---
 
   public String getId() {

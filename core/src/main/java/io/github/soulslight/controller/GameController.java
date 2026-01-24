@@ -6,6 +6,7 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.ControllerListener;
 import com.badlogic.gdx.controllers.Controllers;
+import io.github.soulslight.debug.DebugMenuController;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.SaveManager;
 import io.github.soulslight.model.GameModel;
@@ -18,6 +19,7 @@ public class GameController extends InputAdapter implements ControllerListener {
 
   private final GameModel model;
   private final SaveManager saveManager;
+  private DebugMenuController debugMenuController;
   private static final float SPEED = 160f;
 
   public GameController(GameModel model) {
@@ -28,6 +30,35 @@ public class GameController extends InputAdapter implements ControllerListener {
 
   @Override
   public boolean keyDown(int keycode) {
+    // --- DEBUG MENU CONTROLS (when menu is visible) ---
+    if (debugMenuController != null && debugMenuController.isVisible()) {
+      switch (keycode) {
+        case Input.Keys.UP:
+          debugMenuController.selectPrevious();
+          return true;
+        case Input.Keys.DOWN:
+          debugMenuController.selectNext();
+          return true;
+        case Input.Keys.ENTER:
+          debugMenuController.executeSelected();
+          return true;
+        case Input.Keys.F1:
+        case Input.Keys.ESCAPE:
+          debugMenuController.closeMenu();
+          return true;
+        default:
+          return true; // Consume all other keys when menu is open
+      }
+    }
+
+    // --- DEBUG MENU TOGGLE ---
+    if (keycode == Input.Keys.F1 && GameManager.DEBUG_MODE) {
+      if (debugMenuController != null) {
+        debugMenuController.toggleMenu();
+      }
+      return true;
+    }
+
     List<Player> players = model.getPlayers();
     if (players.isEmpty()) return false;
 
@@ -205,5 +236,23 @@ public class GameController extends InputAdapter implements ControllerListener {
   @Override
   public void disconnected(Controller controller) {
     Gdx.app.log("Controller", "Controller disconnected: " + controller.getName());
+  }
+
+  /**
+   * Sets the debug menu controller for this controller.
+   *
+   * @param controller The debug menu controller
+   */
+  public void setDebugMenuController(DebugMenuController controller) {
+    this.debugMenuController = controller;
+  }
+
+  /**
+   * Gets the debug menu controller.
+   *
+   * @return The debug menu controller, or null if not set
+   */
+  public DebugMenuController getDebugMenuController() {
+    return debugMenuController;
   }
 }

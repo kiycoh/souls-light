@@ -16,6 +16,9 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.soulslight.controller.GameController;
+import io.github.soulslight.debug.DebugMenuController;
+import io.github.soulslight.debug.DebugMenuOverlay;
+import io.github.soulslight.debug.commands.*;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.TextureManager;
 import io.github.soulslight.model.GameModel;
@@ -58,6 +61,10 @@ public final class GameScreen implements GameState {
   private static final float ENEMY_FLIP_EPS = 0.35f;
   private final Map<AbstractEnemy, Boolean> enemyFacingRight = new IdentityHashMap<>();
 
+  // Debug menu components
+  private DebugMenuController debugMenuController;
+  private DebugMenuOverlay debugMenuOverlay;
+
   public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
     this.batch = batch;
     this.model = model;
@@ -74,8 +81,33 @@ public final class GameScreen implements GameState {
     this.hud = new GameHUD();
     this.debugRenderer = new Box2DDebugRenderer();
 
+    // Debug Menu Setup (only when DEBUG_MODE is enabled)
+    if (GameManager.DEBUG_MODE) {
+      initializeDebugMenu();
+    }
+
     // Assets
     TextureManager.load();
+  }
+
+  /** Initializes the debug menu with all available commands. */
+  private void initializeDebugMenu() {
+    this.debugMenuController = new DebugMenuController();
+    this.debugMenuOverlay = new DebugMenuOverlay(debugMenuController);
+
+    // Register all debug commands
+    debugMenuController.registerCommand(new SkipRoomCommand(model));
+    debugMenuController.registerCommand(new KillNearbyEnemiesCommand(model));
+    debugMenuController.registerCommand(new SkipLevelCommand(model));
+    debugMenuController.registerCommand(new SkipToBossCommand(model));
+    debugMenuController.registerCommand(new ToggleInvincibilityCommand(model));
+    debugMenuController.registerCommand(new HealToFullCommand(model));
+    debugMenuController.registerCommand(new TeleportToPortalCommand(model));
+    debugMenuController.registerCommand(new ToggleHitboxesCommand());
+    debugMenuController.registerCommand(new RegenerateMapCommand(model));
+
+    // Wire to controller
+    controller.setDebugMenuController(debugMenuController);
   }
 
   @Override
@@ -200,8 +232,13 @@ public final class GameScreen implements GameState {
     // Draw portal prompt (on HUD layer)
     drawPortalPrompt();
 
-    if (GameManager.DEBUG_MODE) {
+    if (GameManager.DEBUG_MODE && GameManager.SHOW_HITBOXES) {
       debugRenderer.render(model.getWorld(), camera.combined);
+    }
+
+    // Render debug menu overlay (on top of everything)
+    if (debugMenuOverlay != null && GameManager.DEBUG_MODE) {
+      debugMenuOverlay.render(batch);
     }
 
     // Check for level completion
@@ -464,6 +501,7 @@ public final class GameScreen implements GameState {
     if (mapRenderer != null) mapRenderer.dispose();
     if (debugRenderer != null) debugRenderer.dispose();
     if (hud != null) hud.dispose();
+    if (debugMenuOverlay != null) debugMenuOverlay.dispose();
     enemyAnimOffset.clear();
     enemyFacingRight.clear();
   }

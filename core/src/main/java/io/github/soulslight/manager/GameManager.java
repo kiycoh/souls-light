@@ -17,7 +17,8 @@ public class GameManager {
   private static GameManager instance;
   private Level currentLevel;
   private java.util.List<Player> players;
-  public static boolean DEBUG_MODE = false;
+  public static boolean DEBUG_MODE = true;
+  public static boolean SHOW_HITBOXES = true; // Independent hitbox visibility toggle
 
   // Campaign state
   private GameMode gameMode = GameMode.STORY;
@@ -142,6 +143,16 @@ public class GameManager {
 
   public boolean isFinalLevel() {
     return gameMode == GameMode.STORY && currentLevelIndex >= LevelFactory.getStoryModeLevelCount();
+  }
+
+  /**
+   * Debug: Sets the current level index directly. Used by debug commands to skip to specific
+   * levels.
+   *
+   * @param index The level index to set (1-based)
+   */
+  public void setCurrentLevelIndex(int index) {
+    this.currentLevelIndex = index;
   }
 
   // --- Player Class Selection ---

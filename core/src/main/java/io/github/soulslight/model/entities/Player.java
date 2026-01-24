@@ -25,6 +25,9 @@ public class Player extends Entity {
 
   private Vector2 currentKnockbackVelocity = new Vector2();
 
+  // Debug mode invincibility
+  private boolean debugInvincible = false;
+
   public enum PlayerClass {
     WARRIOR {
       @Override
@@ -223,7 +226,7 @@ public class Player extends Entity {
 
   @Override
   public void takeDamage(float amount) {
-    if (invincibilityTimer > 0) return;
+    if (debugInvincible || invincibilityTimer > 0) return;
     super.takeDamage(amount);
     if (!isDead()) invincibilityTimer = INVINCIBILITY_DURATION;
   }
@@ -238,5 +241,32 @@ public class Player extends Entity {
 
   public PlayerClass getType() {
     return type;
+  }
+
+  /** Debug: Toggles the debug invincibility mode. */
+  public void toggleDebugInvincibility() {
+    this.debugInvincible = !this.debugInvincible;
+  }
+
+  /**
+   * Debug: Checks if debug invincibility is active.
+   *
+   * @return True if debug invincible
+   */
+  public boolean isDebugInvincible() {
+    return debugInvincible;
+  }
+
+  /**
+   * Debug: Sets the player position directly (teleportation).
+   *
+   * @param x New X position
+   * @param y New Y position
+   */
+  public void setPosition(float x, float y) {
+    if (body != null) {
+      body.setTransform(x, y, body.getAngle());
+    }
+    this.position.set(x, y);
   }
 }
