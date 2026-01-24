@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import io.github.soulslight.model.Constants;
 import io.github.soulslight.model.enemies.SpikedBall;
+import io.github.soulslight.model.room.Portal;
 import io.github.soulslight.model.room.RoomSensor;
 import io.github.soulslight.utils.LogHelper;
 
@@ -23,6 +24,10 @@ public class GameContactListener implements ContactListener {
     checkRoomSensorContact(fa, fb);
     checkRoomSensorContact(fb, fa);
 
+    // Feature Logic: Portal detection
+    checkPortalContact(fa, fb, true);
+    checkPortalContact(fb, fa, true);
+
     // Feature Logic: SpikedBall
     Vector2 normal = contact.getWorldManifold().getNormal();
     checkSpikedBallWallHit(fa, fb, normal, false);
@@ -32,17 +37,23 @@ public class GameContactListener implements ContactListener {
   private String getFixtureName(Fixture fixture) {
     short category = fixture.getFilterData().categoryBits;
 
-    if ((category & Constants.BIT_PLAYER) != 0) return "Player";
-    if ((category & Constants.BIT_ENEMY) != 0) return "Enemy";
-    if ((category & Constants.BIT_WALL) != 0) return "Wall";
-    if ((category & Constants.BIT_SENSOR) != 0) return "RoomSensor";
-    if ((category & Constants.BIT_DOOR) != 0) return "Door";
+    if ((category & Constants.BIT_PLAYER) != 0)
+      return "Player";
+    if ((category & Constants.BIT_ENEMY) != 0)
+      return "Enemy";
+    if ((category & Constants.BIT_WALL) != 0)
+      return "Wall";
+    if ((category & Constants.BIT_SENSOR) != 0)
+      return "RoomSensor";
+    if ((category & Constants.BIT_DOOR) != 0)
+      return "Door";
 
     return "Unknown";
   }
 
   /**
-   * Checks if the contact is between a Player and a RoomSensor. If so, triggers the room's
+   * Checks if the contact is between a Player and a RoomSensor. If so, triggers
+   * the room's
    * onPlayerEntered callback.
    */
   private void checkRoomSensorContact(Fixture potentialPlayer, Fixture potentialSensor) {
@@ -58,6 +69,27 @@ public class GameContactListener implements ContactListener {
     }
   }
 
+  /**
+   * Checks if the contact is between a Player and a Portal sensor.
+   * Calls onPlayerEnter/onPlayerExit on the portal accordingly.
+   */
+  private void checkPortalContact(Fixture potentialPlayer, Fixture potentialSensor, boolean entering) {
+    short playerCategory = potentialPlayer.getFilterData().categoryBits;
+    short sensorCategory = potentialSensor.getFilterData().categoryBits;
+
+    if ((playerCategory & Constants.BIT_PLAYER) != 0
+        && (sensorCategory & Constants.BIT_SENSOR) != 0) {
+      Object userData = potentialSensor.getBody().getUserData();
+      if (userData instanceof Portal portal) {
+        if (entering) {
+          portal.onPlayerEnter();
+        } else {
+          portal.onPlayerExit();
+        }
+      }
+    }
+  }
+
   private void checkSpikedBallWallHit(
       Fixture potentialEnemy, Fixture potentialWall, Vector2 normal, boolean invertNormal) {
     Object userData = potentialEnemy.getBody().getUserData();
@@ -69,11 +101,20 @@ public class GameContactListener implements ContactListener {
   }
 
   @Override
-  public void endContact(Contact contact) {}
+  public void endContact(Contact contact) {
+    Fixture fa = contact.getFixtureA();
+    Fixture fb = contact.getFixtureB();
+
+    // Portal exit detection
+    checkPortalContact(fa, fb, false);
+    checkPortalContact(fb, fa, false);
+  }
 
   @Override
-  public void preSolve(Contact contact, Manifold oldManifold) {}
+  public void preSolve(Contact contact, Manifold oldManifold) {
+  }
 
   @Override
-  public void postSolve(Contact contact, ContactImpulse impulse) {}
+  public void postSolve(Contact contact, ContactImpulse impulse) {
+  }
 }

@@ -11,6 +11,7 @@ import io.github.soulslight.manager.SaveManager;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.combat.FireDamageDecorator;
 import io.github.soulslight.model.entities.Player;
+import io.github.soulslight.model.room.PortalRoom;
 import java.util.List;
 
 public class GameController extends InputAdapter implements ControllerListener {
@@ -72,6 +73,16 @@ public class GameController extends InputAdapter implements ControllerListener {
       case Input.Keys.NUM_0: // Debug toggles with 0 (top row)
         GameManager.DEBUG_MODE = !GameManager.DEBUG_MODE;
         Gdx.app.log("Controller", "Debug Mode: " + GameManager.DEBUG_MODE);
+        return true;
+
+      case Input.Keys.E: // Portal activation
+        if (model.getLevel() != null && model.getLevel().getRoomManager() != null) {
+          PortalRoom portalRoom = model.getLevel().getRoomManager().getPortalRoom();
+          if (portalRoom != null && portalRoom.tryActivatePortal()) {
+            Gdx.app.log("Controller", "Portal activated! Advancing to next level.");
+            model.setLevelCompleted(true);
+          }
+        }
         return true;
 
       default:

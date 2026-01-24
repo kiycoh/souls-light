@@ -438,6 +438,13 @@ public class LevelBuilder {
   public LevelBuilder initializeRoomManager(World world) {
     level.getRoomManager().initialize(world);
     level.getRoomManager().initializeDoors();
+
+    // Initialize portals in portal rooms
+    for (Room room : level.getRoomManager().getRooms()) {
+      if (room instanceof PortalRoom portalRoom) {
+        portalRoom.initializePortal(world);
+      }
+    }
     return this;
   }
 

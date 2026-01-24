@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
@@ -21,6 +22,8 @@ import io.github.soulslight.model.enemies.AbstractEnemy;
 import io.github.soulslight.model.enemies.Oblivion;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
+import io.github.soulslight.model.room.Portal;
+import io.github.soulslight.model.room.PortalRoom;
 
 public final class GameScreen implements GameState {
 
@@ -106,7 +109,8 @@ public final class GameScreen implements GameState {
     }
 
     for (AbstractEnemy enemy : model.getActiveEnemies()) {
-      if (enemy.isDead()) continue;
+      if (enemy.isDead())
+        continue;
 
       Texture tex = TextureManager.getEnemyTexture(enemy);
       float size = (enemy instanceof Oblivion) ? 64 : 32;
@@ -114,7 +118,8 @@ public final class GameScreen implements GameState {
     }
 
     Texture tArrow = TextureManager.get("arrow");
-    if (tArrow == null) tArrow = TextureManager.get("player");
+    if (tArrow == null)
+      tArrow = TextureManager.get("player");
 
     for (Projectile p : model.getProjectiles()) {
       batch.draw(
@@ -136,13 +141,87 @@ public final class GameScreen implements GameState {
           false);
     }
 
+    // Draw portal
+    drawPortal();
+
     batch.end();
 
     hud.render(batch, model.getPlayers(), model.getActiveEnemies());
 
+    // Draw portal prompt (on HUD layer)
+    drawPortalPrompt();
+
     if (GameManager.DEBUG_MODE) {
       debugRenderer.render(model.getWorld(), camera.combined);
     }
+
+    // Check for level completion
+    checkLevelTransition();
+  }
+
+  private void drawPortal() {
+    if (model.getLevel() == null || model.getLevel().getRoomManager() == null)
+      return;
+    PortalRoom portalRoom = model.getLevel().getRoomManager().getPortalRoom();
+    if (portalRoom == null || portalRoom.getPortal() == null)
+      return;
+
+    Portal portal = portalRoom.getPortal();
+    Vector2 pos = portal.getPosition();
+
+    // Use a colored circle as mockup (will be replaced by artist)
+    Texture tex = TextureManager.get("player"); // Fallback texture
+    if (portal.isPlayerInRange()) {
+      batch.setColor(Color.CYAN); // Highlight when player is nearby
+    } else {
+      batch.setColor(Color.PURPLE); // Normal portal color
+    }
+    drawEntity(tex, pos, 48, 48);
+    batch.setColor(Color.WHITE);
+  }
+
+  private void drawPortalPrompt() {
+    if (model.getLevel() == null || model.getLevel().getRoomManager() == null)
+      return;
+    if (!model.getLevel().getRoomManager().isPortalReady())
+      return;
+
+    // Simple text prompt at top-center of screen
+    batch.begin();
+    BitmapFont font = new BitmapFont();
+    font.setColor(Color.YELLOW);
+    font.draw(batch, "[E] Enter Portal", viewport.getWorldWidth() / 2 - 60, viewport.getWorldHeight() - 20);
+    batch.end();
+    font.dispose();
+  }
+
+  private void checkLevelTransition() {
+    if (!model.isLevelCompleted())
+      return;
+
+    // Reset flag immediately to prevent multiple triggers
+    model.setLevelCompleted(false);
+
+    // Use postRunnable to defer transition until after render cycle completes
+    // safely
+    Gdx.app.postRunnable(() -> {
+      if (GameManager.getInstance().advanceToNextLevel()) {
+        Gdx.app.log("GameScreen", "Transitioning to level " + GameManager.getInstance().getCurrentLevelIndex());
+        // Create new model and controller for next level
+        GameModel newModel = new GameModel();
+        GameController newController = new GameController(newModel);
+        // Get the Game instance through Gdx.app to switch screens
+        if (Gdx.app.getApplicationListener() instanceof com.badlogic.gdx.Game game) {
+          game.setScreen(new GameScreen(batch, newModel, newController));
+        }
+      } else {
+        Gdx.app.log("GameScreen", "Campaign complete! All levels finished.");
+        // Return to main menu on victory
+        if (Gdx.app.getApplicationListener() instanceof io.github.soulslight.SoulsLightGame game) {
+          game.setScreen(new MainMenuScreen(game, batch));
+        }
+      }
+    });
   }
 
   private void followPlayersCamera() {
@@ -159,10 +238,14 @@ public final class GameScreen implements GameState {
     for (Player p : players) {
       // Option: Follow dead players too? Usually yes until game over.
       Vector2 pos = p.getPosition();
-      if (pos.x < minX) minX = pos.x;
-      if (pos.y < minY) minY = pos.y;
-      if (pos.x > maxX) maxX = pos.x;
-      if (pos.y > maxY) maxY = pos.y;
+      if (pos.x < minX)
+        minX = pos.x;
+      if (pos.y < minY)
+        minY = pos.y;
+      if (pos.x > maxX)
+        maxX = pos.x;
+      if (pos.y > maxY)
+        maxY = pos.y;
       aliveCount++;
     }
 
@@ -191,7 +274,8 @@ public final class GameScreen implements GameState {
 
   private void centerCameraOnPlayer() {
     java.util.List<Player> players = model.getPlayers();
-    if (players.isEmpty()) return;
+    if (players.isEmpty())
+      return;
 
     // Just center on first player for initial spawn or calculate average
     Player p = players.get(0);
@@ -200,7 +284,8 @@ public final class GameScreen implements GameState {
   }
 
   private void cacheMapSizeInPixels() {
-    if (model.getMap() == null) return;
+    if (model.getMap() == null)
+      return;
 
     MapProperties prop = model.getMap().getProperties();
     int mapWidth = prop.get("width", Integer.class);
@@ -225,18 +310,24 @@ public final class GameScreen implements GameState {
   }
 
   @Override
-  public void pause() {}
+  public void pause() {
+  }
 
   @Override
-  public void resume() {}
+  public void resume() {
+  }
 
   @Override
-  public void hide() {}
+  public void hide() {
+  }
 
   @Override
   public void dispose() {
-    if (mapRenderer != null) mapRenderer.dispose();
-    if (debugRenderer != null) debugRenderer.dispose();
-    if (hud != null) hud.dispose();
+    if (mapRenderer != null)
+      mapRenderer.dispose();
+    if (debugRenderer != null)
+      debugRenderer.dispose();
+    if (hud != null)
+      hud.dispose();
   }
 }

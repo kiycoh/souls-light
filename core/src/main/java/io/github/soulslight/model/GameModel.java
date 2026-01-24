@@ -35,6 +35,9 @@ public class GameModel implements Disposable, ProjectileListener {
   // Accumulator for fixed timestep
   private float physicsAccumulator = 0;
 
+  // Level completion flag for portal transition
+  private boolean levelCompleted = false;
+
   private final ProjectileManager projectileManager;
 
   public GameModel() {
@@ -389,6 +392,14 @@ public class GameModel implements Disposable, ProjectileListener {
 
   public void setPaused(boolean paused) {
     this.isPaused = paused;
+  }
+
+  public boolean isLevelCompleted() {
+    return levelCompleted;
+  }
+
+  public void setLevelCompleted(boolean completed) {
+    this.levelCompleted = completed;
   }
 
   @Override
