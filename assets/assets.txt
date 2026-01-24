@@ -8,6 +8,11 @@ images/0x72_DungeonTilesetII_v1.7.png
 images/archer.png
 images/arrow.png
 images/boss.png
+images/class_selection/archer.png
+images/class_selection/default.png
+images/class_selection/mage.png
+images/class_selection/thief.png
+images/class_selection/warrior.png
 images/chaserWalk.png
 images/player.png
 images/rangerWalk.png
