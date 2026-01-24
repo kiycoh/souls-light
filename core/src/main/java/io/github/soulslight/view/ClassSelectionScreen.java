@@ -17,6 +17,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions; // <-- AGGIUNTO
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
@@ -62,6 +63,10 @@ public final class ClassSelectionScreen implements GameState {
         setupUI();
     }
 
+    /**
+     * Creates placeholder textures for mockup purposes. Will be replaced by artist
+     * assets.
+     */
     private void createMockupTextures() {
         // Default background
         defaultBackground = new Texture(
@@ -78,7 +83,6 @@ public final class ClassSelectionScreen implements GameState {
         classBackgrounds[PlayerClass.ARCHER.ordinal()] =
             new Texture(Gdx.files.internal("images/class_selection/archer.png"));
     }
-
 
     private Texture createSolidTexture(Color color) {
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -109,12 +113,12 @@ public final class ClassSelectionScreen implements GameState {
         TextButton backButton = new TextButton("Back", buttonStyle);
         backButton.setPosition(50, 50);
         backButton.addListener(
-                new ClickListener() {
-                    @Override
-                    public void clicked(InputEvent event, float x, float y) {
-                        game.setScreen(new MainMenuScreen(game, batch));
-                    }
-                });
+            new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    game.setScreen(new MainMenuScreen(game, batch));
+                }
+            });
         stage.addActor(backButton);
     }
 
@@ -126,21 +130,23 @@ public final class ClassSelectionScreen implements GameState {
         Label.LabelStyle statStyle = new Label.LabelStyle(font, Color.WHITE);
 
         font.getData().setScale(2.0f);
-        classNameLabel = new Label("Who were you?", titleStyle);
+        classNameLabel = new Label(" Who were you?", titleStyle);
         classNameLabel.setFontScale(2.0f);
         panel.add(classNameLabel).row();
 
-        font.getData().setScale(1.3f);
         hpLabel = new Label("HP: ---", statStyle);
         hpLabel.setFontScale(1.3f);
+        hpLabel.setVisible(false);
         panel.add(hpLabel).row();
 
         willLabel = new Label("Will: ---", statStyle);
         willLabel.setFontScale(1.3f);
+        willLabel.setVisible(false);
         panel.add(willLabel).row();
 
         abilityLabel = new Label("Special: ---", statStyle);
         abilityLabel.setFontScale(1.3f);
+        abilityLabel.setVisible(false);
         panel.add(abilityLabel).row();
 
         return panel;
@@ -205,22 +211,39 @@ public final class ClassSelectionScreen implements GameState {
         willLabel.setText("Will: " + playerClass.getBaseWill());
         abilityLabel.setText("Special: " + playerClass.getSpecialAbility());
 
-        // Update background
+        hpLabel.setVisible(true);
+        willLabel.setVisible(true);
+        abilityLabel.setVisible(true);
+
+
+        // Update background fade-in
+        backgroundImage.clearActions();
         backgroundImage.setDrawable(
-                new TextureRegionDrawable(classBackgrounds[playerClass.ordinal()]));
+            new TextureRegionDrawable(classBackgrounds[playerClass.ordinal()]));
+        Color c = backgroundImage.getColor();
+        backgroundImage.setColor(c.r, c.g, c.b, 0f);
+        backgroundImage.addAction(Actions.fadeIn(0.25f));
     }
 
     private void onClassUnhover() {
         hoveredClass = null;
 
         // Reset stats panel
-        classNameLabel.setText("Who were you?");
+        classNameLabel.setText(" Who were you?");
         hpLabel.setText("HP: ---");
         willLabel.setText("Will: ---");
         abilityLabel.setText("Special: ---");
+        hpLabel.setVisible(false);
+        willLabel.setVisible(false);
+        abilityLabel.setVisible(false);
 
-        // Reset background
+
+        // Reset background fade-in
+        backgroundImage.clearActions();
         backgroundImage.setDrawable(new TextureRegionDrawable(defaultBackground));
+        Color c = backgroundImage.getColor();
+        backgroundImage.setColor(c.r, c.g, c.b, 0f);
+        backgroundImage.addAction(Actions.fadeIn(0.25f));
     }
 
     private void onClassSelected(PlayerClass playerClass) {
