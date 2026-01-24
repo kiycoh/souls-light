@@ -115,8 +115,7 @@ public final class MainMenuScreen implements GameState {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            if (continueButton.isDisabled())
-              return; // Ignore click if disabled
+            if (continueButton.isDisabled()) return; // Ignore click if disabled
 
             GameModel model = new GameModel();
             SaveManager sm = new SaveManager();
@@ -159,8 +158,7 @@ public final class MainMenuScreen implements GameState {
   }
 
   /**
-   * Shows a dialog for selecting between Story Mode and Custom Mode. Integrates
-   * with
+   * Shows a dialog for selecting between Story Mode and Custom Mode. Integrates with
    * GameManager.startCampaign() to initialize the campaign.
    */
   private void showModeSelectionDialog(TextButtonStyle buttonStyle) {
@@ -186,10 +184,10 @@ public final class MainMenuScreen implements GameState {
         });
 
     // Title label
-    com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle labelStyle = new com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle(
-        font, Color.WHITE);
-    com.badlogic.gdx.scenes.scene2d.ui.Label titleLabel = new com.badlogic.gdx.scenes.scene2d.ui.Label(
-        "Select Game Mode", labelStyle);
+    com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle labelStyle =
+        new com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle(font, Color.WHITE);
+    com.badlogic.gdx.scenes.scene2d.ui.Label titleLabel =
+        new com.badlogic.gdx.scenes.scene2d.ui.Label("Select Game Mode", labelStyle);
     titleLabel.setFontScale(1.5f);
 
     // Mode buttons
@@ -265,16 +263,13 @@ public final class MainMenuScreen implements GameState {
   }
 
   @Override
-  public void pause() {
-  }
+  public void pause() {}
 
   @Override
-  public void resume() {
-  }
+  public void resume() {}
 
   @Override
-  public void hide() {
-  }
+  public void hide() {}
 
   @Override
   public void dispose() {

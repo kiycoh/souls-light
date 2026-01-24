@@ -8,8 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Pattern: Mediator Coordinates room lifecycle and acts as central event
- * dispatcher. Manages room
+ * Pattern: Mediator Coordinates room lifecycle and acts as central event dispatcher. Manages room
  * updates, sensor creation, and level completion checks.
  */
 public class RoomManager {
@@ -65,8 +64,7 @@ public class RoomManager {
 
   /** Creates sensors for all rooms that don't have them yet. */
   private void createSensors() {
-    if (world == null)
-      return;
+    if (world == null) return;
 
     for (Room room : rooms) {
       RoomSensor sensor = new RoomSensor(room);
@@ -77,8 +75,7 @@ public class RoomManager {
 
   /** Initializes doors for all rooms. */
   public void initializeDoors() {
-    if (world == null)
-      return;
+    if (world == null) return;
 
     for (Room room : rooms) {
       for (Door door : room.getDoors()) {

@@ -109,8 +109,7 @@ public final class GameScreen implements GameState {
     }
 
     for (AbstractEnemy enemy : model.getActiveEnemies()) {
-      if (enemy.isDead())
-        continue;
+      if (enemy.isDead()) continue;
 
       Texture tex = TextureManager.getEnemyTexture(enemy);
       float size = (enemy instanceof Oblivion) ? 64 : 32;
@@ -118,8 +117,7 @@ public final class GameScreen implements GameState {
     }
 
     Texture tArrow = TextureManager.get("arrow");
-    if (tArrow == null)
-      tArrow = TextureManager.get("player");
+    if (tArrow == null) tArrow = TextureManager.get("player");
 
     for (Projectile p : model.getProjectiles()) {
       batch.draw(
@@ -160,8 +158,7 @@ public final class GameScreen implements GameState {
   }
 
   private void drawPortal() {
-    if (model.getLevel() == null)
-      return;
+    if (model.getLevel() == null) return;
 
     Portal portal = null;
 
@@ -178,8 +175,7 @@ public final class GameScreen implements GameState {
       portal = model.getLevel().getCavePortal();
     }
 
-    if (portal == null)
-      return;
+    if (portal == null) return;
 
     Vector2 pos = portal.getPosition();
 
@@ -195,61 +191,68 @@ public final class GameScreen implements GameState {
   }
 
   private void drawPortalPrompt() {
-    if (model.getLevel() == null)
-      return;
+    if (model.getLevel() == null) return;
 
     boolean playerNearPortal = false;
 
     // Check dungeon-style PortalRoom first
-    if (model.getLevel().getRoomManager() != null && model.getLevel().getRoomManager().isPortalReady()) {
+    if (model.getLevel().getRoomManager() != null
+        && model.getLevel().getRoomManager().isPortalReady()) {
       playerNearPortal = true;
     }
 
     // Check cave-style direct portal
-    if (!playerNearPortal && model.getLevel().getCavePortal() != null
+    if (!playerNearPortal
+        && model.getLevel().getCavePortal() != null
         && model.getLevel().getCavePortal().isPlayerInRange()) {
       playerNearPortal = true;
     }
 
-    if (!playerNearPortal)
-      return;
+    if (!playerNearPortal) return;
 
     // Simple text prompt at top-center of screen
     batch.begin();
     BitmapFont font = new BitmapFont();
     font.setColor(Color.YELLOW);
-    font.draw(batch, "[E] Enter Portal", viewport.getWorldWidth() / 2 - 60, viewport.getWorldHeight() - 20);
+    font.draw(
+        batch,
+        "[E] Enter Portal",
+        viewport.getWorldWidth() / 2 - 60,
+        viewport.getWorldHeight() - 20);
     batch.end();
     font.dispose();
   }
 
   private void checkLevelTransition() {
-    if (!model.isLevelCompleted())
-      return;
+    if (!model.isLevelCompleted()) return;
 
     // Reset flag immediately to prevent multiple triggers
     model.setLevelCompleted(false);
 
     // Use postRunnable to defer transition until after render cycle completes
     // safely
-    Gdx.app.postRunnable(() -> {
-      if (GameManager.getInstance().advanceToNextLevel()) {
-        Gdx.app.log("GameScreen", "Transitioning to level " + GameManager.getInstance().getCurrentLevelIndex());
-        // Create new model and controller for next level
-        GameModel newModel = new GameModel();
-        GameController newController = new GameController(newModel);
-        // Get the Game instance through Gdx.app to switch screens
-        if (Gdx.app.getApplicationListener() instanceof com.badlogic.gdx.Game game) {
-          game.setScreen(new GameScreen(batch, newModel, newController));
-        }
-      } else {
-        Gdx.app.log("GameScreen", "Campaign complete! All levels finished.");
-        // Return to main menu on victory
-        if (Gdx.app.getApplicationListener() instanceof io.github.soulslight.SoulsLightGame game) {
-          game.setScreen(new MainMenuScreen(game, batch));
-        }
-      }
-    });
+    Gdx.app.postRunnable(
+        () -> {
+          if (GameManager.getInstance().advanceToNextLevel()) {
+            Gdx.app.log(
+                "GameScreen",
+                "Transitioning to level " + GameManager.getInstance().getCurrentLevelIndex());
+            // Create new model and controller for next level
+            GameModel newModel = new GameModel();
+            GameController newController = new GameController(newModel);
+            // Get the Game instance through Gdx.app to switch screens
+            if (Gdx.app.getApplicationListener() instanceof com.badlogic.gdx.Game game) {
+              game.setScreen(new GameScreen(batch, newModel, newController));
+            }
+          } else {
+            Gdx.app.log("GameScreen", "Campaign complete! All levels finished.");
+            // Return to main menu on victory
+            if (Gdx.app.getApplicationListener()
+                instanceof io.github.soulslight.SoulsLightGame game) {
+              game.setScreen(new MainMenuScreen(game, batch));
+            }
+          }
+        });
   }
 
   private void followPlayersCamera() {
@@ -266,14 +269,10 @@ public final class GameScreen implements GameState {
     for (Player p : players) {
       // Option: Follow dead players too? Usually yes until game over.
       Vector2 pos = p.getPosition();
-      if (pos.x < minX)
-        minX = pos.x;
-      if (pos.y < minY)
-        minY = pos.y;
-      if (pos.x > maxX)
-        maxX = pos.x;
-      if (pos.y > maxY)
-        maxY = pos.y;
+      if (pos.x < minX) minX = pos.x;
+      if (pos.y < minY) minY = pos.y;
+      if (pos.x > maxX) maxX = pos.x;
+      if (pos.y > maxY) maxY = pos.y;
       aliveCount++;
     }
 
@@ -302,8 +301,7 @@ public final class GameScreen implements GameState {
 
   private void centerCameraOnPlayer() {
     java.util.List<Player> players = model.getPlayers();
-    if (players.isEmpty())
-      return;
+    if (players.isEmpty()) return;
 
     // Just center on first player for initial spawn or calculate average
     Player p = players.get(0);
@@ -312,8 +310,7 @@ public final class GameScreen implements GameState {
   }
 
   private void cacheMapSizeInPixels() {
-    if (model.getMap() == null)
-      return;
+    if (model.getMap() == null) return;
 
     MapProperties prop = model.getMap().getProperties();
     int mapWidth = prop.get("width", Integer.class);
@@ -338,24 +335,18 @@ public final class GameScreen implements GameState {
   }
 
   @Override
-  public void pause() {
-  }
+  public void pause() {}
 
   @Override
-  public void resume() {
-  }
+  public void resume() {}
 
   @Override
-  public void hide() {
-  }
+  public void hide() {}
 
   @Override
   public void dispose() {
-    if (mapRenderer != null)
-      mapRenderer.dispose();
-    if (debugRenderer != null)
-      debugRenderer.dispose();
-    if (hud != null)
-      hud.dispose();
+    if (mapRenderer != null) mapRenderer.dispose();
+    if (debugRenderer != null) debugRenderer.dispose();
+    if (hud != null) hud.dispose();
   }
 }

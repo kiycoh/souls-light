@@ -40,11 +40,9 @@ public class Shielder extends AbstractEnemy {
       return;
     }
 
-    if (players == null || players.isEmpty())
-      return;
+    if (players == null || players.isEmpty()) return;
     Player player = getNearestTarget(players);
-    if (player == null)
-      return;
+    if (player == null) return;
 
     // Feature Logic: RoomIdleState check
     if (getCurrentState() instanceof io.github.soulslight.model.enemies.ai.RoomIdleState) {
@@ -56,8 +54,7 @@ public class Shielder extends AbstractEnemy {
 
     // Trova il ranger piu vicino
     AbstractEnemy vip = findNearestRanger();
-    if (vip == null)
-      return; // Caso limite
+    if (vip == null) return; // Caso limite
 
     boolean canSee = canSeePlayer(player, body.getWorld());
 
@@ -93,8 +90,7 @@ public class Shielder extends AbstractEnemy {
       // Se lontano dal punto di protezione ci va
       moveTowards(protectionPoint, deltaTime);
     } else {
-      if (body != null)
-        body.setLinearVelocity(0, 0);
+      if (body != null) body.setLinearVelocity(0, 0);
     }
   }
 
@@ -109,8 +105,7 @@ public class Shielder extends AbstractEnemy {
       moveAway(vip.getPosition());
     } else {
       // Distanza perfetta
-      if (body != null)
-        body.setLinearVelocity(0, 0);
+      if (body != null) body.setLinearVelocity(0, 0);
     }
   }
 
@@ -122,12 +117,10 @@ public class Shielder extends AbstractEnemy {
   }
 
   private int getRangerToProtect() {
-    if (knownAllies == null)
-      return 0;
+    if (knownAllies == null) return 0;
     int count = 0;
     for (AbstractEnemy ally : knownAllies) {
-      if (ally.getHealth() > 0 && ally instanceof Ranger)
-        count++;
+      if (ally.getHealth() > 0 && ally instanceof Ranger) count++;
     }
     return count;
   }
@@ -136,13 +129,11 @@ public class Shielder extends AbstractEnemy {
     AbstractEnemy nearest = null;
     float minDistance = Float.MAX_VALUE;
 
-    if (knownAllies == null)
-      return null;
+    if (knownAllies == null) return null;
 
     for (AbstractEnemy ally : knownAllies) {
       // Protegge solo i Ranger
-      if (ally.getHealth() <= 0 || !(ally instanceof Ranger))
-        continue;
+      if (ally.getHealth() <= 0 || !(ally instanceof Ranger)) continue;
 
       float dist = getPosition().dst(ally.getPosition());
       if (dist < minDistance) {

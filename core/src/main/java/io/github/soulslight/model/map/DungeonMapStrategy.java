@@ -55,7 +55,7 @@ public record DungeonMapStrategy(long seed, int width, int height)
       // fallback
       StaticTiledMapTile singleFloor = new StaticTiledMapTile(rm.getFloorTextureRegion());
       singleFloor.getProperties().put("type", "floor");
-      floorTiles = new StaticTiledMapTile[] { singleFloor };
+      floorTiles = new StaticTiledMapTile[] {singleFloor};
     }
 
     // --- WALL TILES ---
@@ -118,10 +118,8 @@ public record DungeonMapStrategy(long seed, int width, int height)
       int maxRoomH = Math.max(6, maxY - minY);
 
       // Safety check to ensure bounds are valid
-      if (maxRoomW < 6)
-        maxRoomW = 6;
-      if (maxRoomH < 6)
-        maxRoomH = 6;
+      if (maxRoomW < 6) maxRoomW = 6;
+      if (maxRoomH < 6) maxRoomH = 6;
 
       int w = rng.nextInt(6, Math.min(15, maxRoomW));
       int h = rng.nextInt(6, Math.min(15, maxRoomH));
@@ -196,8 +194,8 @@ public record DungeonMapStrategy(long seed, int width, int height)
     boolean stuck = false;
     while (!stuck) {
       List<GridPoint> neighbors = new ArrayList<>();
-      int[] dx = { 0, 0, -1, 1 };
-      int[] dy = { 1, -1, 0, 0 };
+      int[] dx = {0, 0, -1, 1};
+      int[] dy = {1, -1, 0, 0};
 
       for (int i = 0; i < 4; i++) {
         int nx = cx + dx[i];
@@ -220,7 +218,8 @@ public record DungeonMapStrategy(long seed, int width, int height)
     return path;
   }
 
-  private void createRoom(Room room, TiledMapTileLayer layer, StaticTiledMapTile[] floorTiles, Random rng) {
+  private void createRoom(
+      Room room, TiledMapTileLayer layer, StaticTiledMapTile[] floorTiles, Random rng) {
     for (int x = room.x; x < room.x + room.w; x++) {
       for (int y = room.y; y < room.y + room.h; y++) {
         StaticTiledMapTile tile = floorTiles[rng.nextInt(floorTiles.length)];
@@ -230,8 +229,14 @@ public record DungeonMapStrategy(long seed, int width, int height)
   }
 
   private void connectRoomsWithDoors(
-      Room r1, Room r2, TiledMapTileLayer layer, StaticTiledMapTile[] floorTiles, Random rng,
-      int room1Idx, int room2Idx, Map<Integer, List<DoorPosition>> roomDoors) {
+      Room r1,
+      Room r2,
+      TiledMapTileLayer layer,
+      StaticTiledMapTile[] floorTiles,
+      Random rng,
+      int room1Idx,
+      int room2Idx,
+      Map<Integer, List<DoorPosition>> roomDoors) {
 
     int x1 = r1.x + r1.w / 2;
     int y1 = r1.y + r1.h / 2;
@@ -252,7 +257,12 @@ public record DungeonMapStrategy(long seed, int width, int height)
   }
 
   private DoorPosition calculateDoorForRoom(
-      Room room, int roomCenterX, int roomCenterY, int targetX, int targetY, boolean isHorizontalFirst) {
+      Room room,
+      int roomCenterX,
+      int roomCenterY,
+      int targetX,
+      int targetY,
+      boolean isHorizontalFirst) {
     float centerPixelY = roomCenterY * TILE_SIZE + TILE_SIZE / 2f;
     float centerPixelX = roomCenterX * TILE_SIZE + TILE_SIZE / 2f;
 
@@ -319,8 +329,7 @@ public record DungeonMapStrategy(long seed, int width, int height)
 
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        if (!isWall(layer, x, y))
-          continue;
+        if (!isWall(layer, x, y)) continue;
 
         int mask = computeWallMask(layer, x, y);
         StaticTiledMapTile tile;
@@ -333,23 +342,17 @@ public record DungeonMapStrategy(long seed, int width, int height)
           int holes = (neHole ? 1 : 0) + (nwHole ? 1 : 0) + (seHole ? 1 : 0) + (swHole ? 1 : 0);
 
           if (holes == 1) {
-            if (neHole)
-              tile = innerNeTile;
-            else if (nwHole)
-              tile = innerNwTile;
-            else if (seHole)
-              tile = innerSeTile;
-            else
-              tile = innerSwTile;
+            if (neHole) tile = innerNeTile;
+            else if (nwHole) tile = innerNwTile;
+            else if (seHole) tile = innerSeTile;
+            else tile = innerSwTile;
           } else {
             tile = wallMaskTiles[15];
           }
         } else {
-          if (mask < 0 || mask >= wallMaskTiles.length)
-            mask = 15;
+          if (mask < 0 || mask >= wallMaskTiles.length) mask = 15;
           tile = wallMaskTiles[mask];
-          if (tile == null)
-            tile = wallMaskTiles[15];
+          if (tile == null) tile = wallMaskTiles[15];
         }
 
         setTile(layer, x, y, tile);
@@ -359,14 +362,10 @@ public record DungeonMapStrategy(long seed, int width, int height)
 
   private int computeWallMask(TiledMapTileLayer layer, int x, int y) {
     int mask = 0;
-    if (isWall(layer, x, y + 1))
-      mask |= 1; // up
-    if (isWall(layer, x + 1, y))
-      mask |= 2; // right
-    if (isWall(layer, x, y - 1))
-      mask |= 4; // down
-    if (isWall(layer, x - 1, y))
-      mask |= 8; // left
+    if (isWall(layer, x, y + 1)) mask |= 1; // up
+    if (isWall(layer, x + 1, y)) mask |= 2; // right
+    if (isWall(layer, x, y - 1)) mask |= 4; // down
+    if (isWall(layer, x - 1, y)) mask |= 8; // left
     return mask;
   }
 
@@ -378,17 +377,14 @@ public record DungeonMapStrategy(long seed, int width, int height)
   }
 
   private boolean isWall(TiledMapTileLayer layer, int x, int y) {
-    if (x < 0 || x >= width || y < 0 || y >= height)
-      return true;
+    if (x < 0 || x >= width || y < 0 || y >= height) return true;
     var cell = layer.getCell(x, y);
     return cell != null
         && cell.getTile() != null
         && "wall".equals(cell.getTile().getProperties().get("type"));
   }
 
-  private record Room(int x, int y, int w, int h) {
-  }
+  private record Room(int x, int y, int w, int h) {}
 
-  private record GridPoint(int x, int y) {
-  }
+  private record GridPoint(int x, int y) {}
 }

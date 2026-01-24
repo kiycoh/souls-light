@@ -37,23 +37,17 @@ public class GameContactListener implements ContactListener {
   private String getFixtureName(Fixture fixture) {
     short category = fixture.getFilterData().categoryBits;
 
-    if ((category & Constants.BIT_PLAYER) != 0)
-      return "Player";
-    if ((category & Constants.BIT_ENEMY) != 0)
-      return "Enemy";
-    if ((category & Constants.BIT_WALL) != 0)
-      return "Wall";
-    if ((category & Constants.BIT_SENSOR) != 0)
-      return "RoomSensor";
-    if ((category & Constants.BIT_DOOR) != 0)
-      return "Door";
+    if ((category & Constants.BIT_PLAYER) != 0) return "Player";
+    if ((category & Constants.BIT_ENEMY) != 0) return "Enemy";
+    if ((category & Constants.BIT_WALL) != 0) return "Wall";
+    if ((category & Constants.BIT_SENSOR) != 0) return "RoomSensor";
+    if ((category & Constants.BIT_DOOR) != 0) return "Door";
 
     return "Unknown";
   }
 
   /**
-   * Checks if the contact is between a Player and a RoomSensor. If so, triggers
-   * the room's
+   * Checks if the contact is between a Player and a RoomSensor. If so, triggers the room's
    * onPlayerEntered callback.
    */
   private void checkRoomSensorContact(Fixture potentialPlayer, Fixture potentialSensor) {
@@ -70,10 +64,11 @@ public class GameContactListener implements ContactListener {
   }
 
   /**
-   * Checks if the contact is between a Player and a Portal sensor.
-   * Calls onPlayerEnter/onPlayerExit on the portal accordingly.
+   * Checks if the contact is between a Player and a Portal sensor. Calls onPlayerEnter/onPlayerExit
+   * on the portal accordingly.
    */
-  private void checkPortalContact(Fixture potentialPlayer, Fixture potentialSensor, boolean entering) {
+  private void checkPortalContact(
+      Fixture potentialPlayer, Fixture potentialSensor, boolean entering) {
     short playerCategory = potentialPlayer.getFilterData().categoryBits;
     short sensorCategory = potentialSensor.getFilterData().categoryBits;
 
@@ -111,10 +106,8 @@ public class GameContactListener implements ContactListener {
   }
 
   @Override
-  public void preSolve(Contact contact, Manifold oldManifold) {
-  }
+  public void preSolve(Contact contact, Manifold oldManifold) {}
 
   @Override
-  public void postSolve(Contact contact, ContactImpulse impulse) {
-  }
+  public void postSolve(Contact contact, ContactImpulse impulse) {}
 }

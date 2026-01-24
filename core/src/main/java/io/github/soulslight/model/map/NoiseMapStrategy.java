@@ -22,9 +22,7 @@ public record NoiseMapStrategy(
   // Border padding to ensure closed caves
   private static final int BORDER_SIZE = 2;
 
-  /**
-   * Key for storing portal position in map properties (Vector2 in world units).
-   */
+  /** Key for storing portal position in map properties (Vector2 in world units). */
   public static final String PORTAL_POSITION_KEY = "portalPosition";
 
   @Override
@@ -55,7 +53,7 @@ public record NoiseMapStrategy(
       // floor tile
       StaticTiledMapTile singleFloor = new StaticTiledMapTile(rm.getFloorTextureRegion());
       singleFloor.getProperties().put("type", "floor");
-      floorTiles = new StaticTiledMapTile[] { singleFloor };
+      floorTiles = new StaticTiledMapTile[] {singleFloor};
     }
 
     // --- WALL TILES ---
@@ -142,7 +140,8 @@ public record NoiseMapStrategy(
     if (portalTile != null) {
       float portalX = portalTile.x * TILE_SIZE + TILE_SIZE / 2f;
       float portalY = portalTile.y * TILE_SIZE + TILE_SIZE / 2f;
-      map.getProperties().put(PORTAL_POSITION_KEY, new com.badlogic.gdx.math.Vector2(portalX, portalY));
+      map.getProperties()
+          .put(PORTAL_POSITION_KEY, new com.badlogic.gdx.math.Vector2(portalX, portalY));
       System.out.println("Portal placed at tile (" + portalTile.x + ", " + portalTile.y + ")");
     }
 
@@ -193,8 +192,7 @@ public record NoiseMapStrategy(
     int count = 0;
     for (int x = cx - 1; x <= cx + 1; x++) {
       for (int y = cy - 1; y <= cy + 1; y++) {
-        if (x == cx && y == cy)
-          continue;
+        if (x == cx && y == cy) continue;
 
         // out of bounds counts as wall (forces closed caves)
         if (x < 0 || x >= width || y < 0 || y >= height) {
@@ -237,8 +235,8 @@ public record NoiseMapStrategy(
     queue.add(start);
     visited[startX][startY] = true;
 
-    int[] dx = { 0, 0, 1, -1 };
-    int[] dy = { 1, -1, 0, 0 };
+    int[] dx = {0, 0, 1, -1};
+    int[] dy = {1, -1, 0, 0};
 
     while (!queue.isEmpty()) {
       GridPoint2 current = queue.poll();
@@ -328,8 +326,7 @@ public record NoiseMapStrategy(
 
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        if (!isWall(layer, x, y))
-          continue;
+        if (!isWall(layer, x, y)) continue;
 
         int mask = computeWallMask(layer, x, y);
         StaticTiledMapTile tile;
@@ -378,14 +375,10 @@ public record NoiseMapStrategy(
   private int computeWallMask(TiledMapTileLayer layer, int x, int y) {
     int mask = 0;
 
-    if (isWall(layer, x, y + 1))
-      mask |= 1; // up
-    if (isWall(layer, x + 1, y))
-      mask |= 2; // right
-    if (isWall(layer, x, y - 1))
-      mask |= 4; // down
-    if (isWall(layer, x - 1, y))
-      mask |= 8; // left
+    if (isWall(layer, x, y + 1)) mask |= 1; // up
+    if (isWall(layer, x + 1, y)) mask |= 2; // right
+    if (isWall(layer, x, y - 1)) mask |= 4; // down
+    if (isWall(layer, x - 1, y)) mask |= 8; // left
 
     return mask;
   }
@@ -398,8 +391,7 @@ public record NoiseMapStrategy(
   }
 
   private boolean isFloor(TiledMapTileLayer layer, int x, int y) {
-    if (x < 0 || x >= width || y < 0 || y >= height)
-      return false;
+    if (x < 0 || x >= width || y < 0 || y >= height) return false;
     var cell = layer.getCell(x, y);
     return cell != null
         && cell.getTile() != null
@@ -407,8 +399,7 @@ public record NoiseMapStrategy(
   }
 
   private boolean isWall(TiledMapTileLayer layer, int x, int y) {
-    if (x < 0 || x >= width || y < 0 || y >= height)
-      return false;
+    if (x < 0 || x >= width || y < 0 || y >= height) return false;
     var cell = layer.getCell(x, y);
     return cell != null
         && cell.getTile() != null
@@ -416,8 +407,8 @@ public record NoiseMapStrategy(
   }
 
   /**
-   * Finds the first floor tile in the map (used as spawn reference).
-   * Scans from bottom-left to find the first accessible floor.
+   * Finds the first floor tile in the map (used as spawn reference). Scans from bottom-left to find
+   * the first accessible floor.
    */
   private GridPoint2 findFirstFloorTile(TiledMapTileLayer layer) {
     for (int y = 0; y < height; y++) {
@@ -431,12 +422,11 @@ public record NoiseMapStrategy(
   }
 
   /**
-   * Uses BFS to find the floor tile farthest from the start position.
-   * This ensures the portal is placed at maximum exploration distance.
+   * Uses BFS to find the floor tile farthest from the start position. This ensures the portal is
+   * placed at maximum exploration distance.
    */
   private GridPoint2 findFarthestFloorTile(TiledMapTileLayer layer, GridPoint2 start) {
-    if (start == null)
-      return null;
+    if (start == null) return null;
 
     int[][] distances = new int[width][height];
     for (int x = 0; x < width; x++) {
@@ -452,8 +442,8 @@ public record NoiseMapStrategy(
     GridPoint2 farthest = start;
     int maxDistance = 0;
 
-    int[] dx = { 0, 0, 1, -1 };
-    int[] dy = { 1, -1, 0, 0 };
+    int[] dx = {0, 0, 1, -1};
+    int[] dy = {1, -1, 0, 0};
 
     while (!queue.isEmpty()) {
       GridPoint2 current = queue.poll();
@@ -468,8 +458,12 @@ public record NoiseMapStrategy(
         int nx = current.x + dx[i];
         int ny = current.y + dy[i];
 
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height
-            && distances[nx][ny] == -1 && isFloor(layer, nx, ny)) {
+        if (nx >= 0
+            && nx < width
+            && ny >= 0
+            && ny < height
+            && distances[nx][ny] == -1
+            && isFloor(layer, nx, ny)) {
           distances[nx][ny] = currentDist + 1;
           queue.add(new GridPoint2(nx, ny));
         }

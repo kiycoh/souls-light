@@ -1,8 +1,7 @@
 package io.github.soulslight.model.room;
 
 /**
- * Pattern: State (Concrete State) Initial state before player enters the room.
- * Triggers lockdown
+ * Pattern: State (Concrete State) Initial state before player enters the room. Triggers lockdown
  * transition on player detection.
  */
 public final class PassiveState implements RoomState {
@@ -10,8 +9,7 @@ public final class PassiveState implements RoomState {
   /** Singleton instance for state flyweight optimization. */
   public static final PassiveState INSTANCE = new PassiveState();
 
-  private PassiveState() {
-  }
+  private PassiveState() {}
 
   @Override
   public void onEnter(Room room) {

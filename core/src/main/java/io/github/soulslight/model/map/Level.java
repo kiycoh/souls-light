@@ -78,10 +78,8 @@ public class Level implements Disposable {
 
   @Override
   public void dispose() {
-    if (map != null)
-      map.dispose();
-    if (roomManager != null)
-      roomManager.dispose();
+    if (map != null) map.dispose();
+    if (roomManager != null) roomManager.dispose();
     // Note: cavePortal body should be destroyed via physicsWorld.dispose()
     enemies.clear();
   }

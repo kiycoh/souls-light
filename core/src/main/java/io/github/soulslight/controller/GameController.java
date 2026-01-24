@@ -29,8 +29,7 @@ public class GameController extends InputAdapter implements ControllerListener {
   @Override
   public boolean keyDown(int keycode) {
     List<Player> players = model.getPlayers();
-    if (players.isEmpty())
-      return false;
+    if (players.isEmpty()) return false;
 
     Player p1 = players.get(0);
     Player p2 = players.size() > 1 ? players.get(1) : null;
@@ -38,8 +37,7 @@ public class GameController extends InputAdapter implements ControllerListener {
     switch (keycode) {
       // --- PLAYER 1 (Keyboard) ---
       case Input.Keys.SPACE:
-        if (p1 != null && !p1.isDead())
-          p1.attack(model.getActiveEnemies());
+        if (p1 != null && !p1.isDead()) p1.attack(model.getActiveEnemies());
         return true;
       case Input.Keys.O:
         if (p1 != null) {
@@ -48,15 +46,13 @@ public class GameController extends InputAdapter implements ControllerListener {
         }
         return true;
       case Input.Keys.P:
-        if (p1 != null)
-          p1.doAnAttack();
+        if (p1 != null) p1.doAnAttack();
         return true;
 
       // --- PLAYER 2 (Keyboard) ---
       case Input.Keys.ENTER:
       case Input.Keys.NUMPAD_0:
-        if (p2 != null && !p2.isDead())
-          p2.attack(model.getActiveEnemies());
+        if (p2 != null && !p2.isDead()) p2.attack(model.getActiveEnemies());
         return true;
 
       // --- SYSTEM ---
@@ -88,7 +84,8 @@ public class GameController extends InputAdapter implements ControllerListener {
           }
 
           // Try cave-style direct portal
-          if (!activated && model.getLevel().getCavePortal() != null
+          if (!activated
+              && model.getLevel().getCavePortal() != null
               && model.getLevel().getCavePortal().tryActivate()) {
             activated = true;
           }
@@ -107,8 +104,7 @@ public class GameController extends InputAdapter implements ControllerListener {
 
   public void update(float delta) {
     List<Player> players = model.getPlayers();
-    if (players.isEmpty())
-      return;
+    if (players.isEmpty()) return;
 
     // --- PLAYER 1 MOVEMENT ---
     Player p1 = players.get(0);
@@ -117,24 +113,18 @@ public class GameController extends InputAdapter implements ControllerListener {
       float velY = 0;
 
       // Keyboard
-      if (Gdx.input.isKeyPressed(Input.Keys.W))
-        velY = SPEED;
-      if (Gdx.input.isKeyPressed(Input.Keys.S))
-        velY = -SPEED;
-      if (Gdx.input.isKeyPressed(Input.Keys.A))
-        velX = -SPEED;
-      if (Gdx.input.isKeyPressed(Input.Keys.D))
-        velX = SPEED;
+      if (Gdx.input.isKeyPressed(Input.Keys.W)) velY = SPEED;
+      if (Gdx.input.isKeyPressed(Input.Keys.S)) velY = -SPEED;
+      if (Gdx.input.isKeyPressed(Input.Keys.A)) velX = -SPEED;
+      if (Gdx.input.isKeyPressed(Input.Keys.D)) velX = SPEED;
 
       // Controller 0 Override
       if (Controllers.getControllers().size > 0) {
         Controller c1 = Controllers.getControllers().get(0);
         float axisX = c1.getAxis(c1.getMapping().axisLeftX);
         float axisY = c1.getAxis(c1.getMapping().axisLeftY);
-        if (Math.abs(axisX) > 0.2f)
-          velX = axisX * SPEED;
-        if (Math.abs(axisY) > 0.2f)
-          velY = -axisY * SPEED; // Y is usually inverted on controllers
+        if (Math.abs(axisX) > 0.2f) velX = axisX * SPEED;
+        if (Math.abs(axisY) > 0.2f) velY = -axisY * SPEED; // Y is usually inverted on controllers
       }
 
       p1.move(velX, velY);
@@ -150,24 +140,18 @@ public class GameController extends InputAdapter implements ControllerListener {
         float velY = 0;
 
         // Keyboard
-        if (Gdx.input.isKeyPressed(Input.Keys.UP))
-          velY = SPEED;
-        if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
-          velY = -SPEED;
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-          velX = -SPEED;
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-          velX = SPEED;
+        if (Gdx.input.isKeyPressed(Input.Keys.UP)) velY = SPEED;
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) velY = -SPEED;
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) velX = -SPEED;
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) velX = SPEED;
 
         // Controller 1 Override
         if (Controllers.getControllers().size > 1) {
           Controller c2 = Controllers.getControllers().get(1);
           float axisX = c2.getAxis(c2.getMapping().axisLeftX);
           float axisY = c2.getAxis(c2.getMapping().axisLeftY);
-          if (Math.abs(axisX) > 0.2f)
-            velX = axisX * SPEED;
-          if (Math.abs(axisY) > 0.2f)
-            velY = -axisY * SPEED;
+          if (Math.abs(axisX) > 0.2f) velX = axisX * SPEED;
+          if (Math.abs(axisY) > 0.2f) velY = -axisY * SPEED;
         }
 
         p2.move(velX, velY);
@@ -193,12 +177,10 @@ public class GameController extends InputAdapter implements ControllerListener {
     if (buttonCode == attackBtn) {
       if (controllerIndex == 0 && !players.isEmpty()) {
         Player p1 = players.get(0);
-        if (p1 != null && !p1.isDead())
-          p1.attack(model.getActiveEnemies());
+        if (p1 != null && !p1.isDead()) p1.attack(model.getActiveEnemies());
       } else if (controllerIndex == 1 && players.size() > 1) {
         Player p2 = players.get(1);
-        if (p2 != null && !p2.isDead())
-          p2.attack(model.getActiveEnemies());
+        if (p2 != null && !p2.isDead()) p2.attack(model.getActiveEnemies());
       }
       return true;
     }

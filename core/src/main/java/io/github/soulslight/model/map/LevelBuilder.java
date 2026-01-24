@@ -12,13 +12,13 @@ import com.badlogic.gdx.physics.box2d.*;
 import io.github.soulslight.model.enemies.AbstractEnemy;
 import io.github.soulslight.model.enemies.EnemyFactory;
 import io.github.soulslight.model.enemies.Oblivion;
+import io.github.soulslight.model.enemies.ai.RoomIdleState;
 import io.github.soulslight.model.room.Door;
 import io.github.soulslight.model.room.DoorPosition;
 import io.github.soulslight.model.room.Portal;
 import io.github.soulslight.model.room.PortalRoom;
 import io.github.soulslight.model.room.Room;
 import io.github.soulslight.model.room.RoomData;
-import io.github.soulslight.model.enemies.ai.RoomIdleState;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -195,8 +195,7 @@ public class LevelBuilder {
   // Centralized helper for single spawn
   private void spawnEnemy(
       AbstractEnemy enemy, Vector2 pos, World world, float totalMapWidth, float totalMapHeight) {
-    if (enemy == null)
-      return;
+    if (enemy == null) return;
 
     enemy.createBody(world, pos.x, pos.y);
     enemy.setSpawnPoint(pos.x, pos.y);
@@ -216,11 +215,11 @@ public class LevelBuilder {
 
   // --- 1C. Room-based enemy spawning (4-7 enemies per room) ---
   /**
-   * Spawns enemies in each room. Each room gets 4-7 random enemies.
-   * Enemies start in RoomIdleState and activate when player enters.
+   * Spawns enemies in each room. Each room gets 4-7 random enemies. Enemies start in RoomIdleState
+   * and activate when player enters.
    *
    * @param factory Enemy factory for creating enemies
-   * @param world   Box2D physics world
+   * @param world Box2D physics world
    * @return this builder for chaining
    */
   public LevelBuilder spawnEnemiesInRooms(EnemyFactory factory, World world) {
@@ -277,12 +276,13 @@ public class LevelBuilder {
 
       for (int i = 0; i < enemyCount && i < roomSpawns.size(); i++) {
         // Create random enemy type
-        AbstractEnemy enemy = switch (rng.nextInt(4)) {
-          case 0 -> factory.createMelee();
-          case 1 -> factory.createRanged();
-          case 2 -> factory.createTank();
-          default -> factory.createMelee();
-        };
+        AbstractEnemy enemy =
+            switch (rng.nextInt(4)) {
+              case 0 -> factory.createMelee();
+              case 1 -> factory.createRanged();
+              case 2 -> factory.createTank();
+              default -> factory.createMelee();
+            };
 
         Vector2 pos = roomSpawns.get(i);
         spawnEnemyInRoom(enemy, pos, world, room, totalMapWidth, totalMapHeight);
@@ -293,10 +293,13 @@ public class LevelBuilder {
 
   // Helper for spawning enemy in a specific room with RoomIdleState
   private void spawnEnemyInRoom(
-      AbstractEnemy enemy, Vector2 pos, World world, Room room,
-      float totalMapWidth, float totalMapHeight) {
-    if (enemy == null)
-      return;
+      AbstractEnemy enemy,
+      Vector2 pos,
+      World world,
+      Room room,
+      float totalMapWidth,
+      float totalMapHeight) {
+    if (enemy == null) return;
 
     enemy.createBody(world, pos.x, pos.y);
     enemy.setSpawnPoint(pos.x, pos.y);
@@ -377,25 +380,26 @@ public class LevelBuilder {
    * @return this builder for chaining
    */
   public LevelBuilder buildRooms(List<RoomData> roomDataList) {
-    if (roomDataList == null)
-      return this;
+    if (roomDataList == null) return this;
 
     for (RoomData data : roomDataList) {
       Room room;
       if (data.isPortalRoom()) {
-        room = new PortalRoom(
-            data.id(),
-            data.bounds().x,
-            data.bounds().y,
-            data.bounds().width,
-            data.bounds().height);
+        room =
+            new PortalRoom(
+                data.id(),
+                data.bounds().x,
+                data.bounds().y,
+                data.bounds().width,
+                data.bounds().height);
       } else {
-        room = new Room(
-            data.id(),
-            data.bounds().x,
-            data.bounds().y,
-            data.bounds().width,
-            data.bounds().height);
+        room =
+            new Room(
+                data.id(),
+                data.bounds().x,
+                data.bounds().y,
+                data.bounds().width,
+                data.bounds().height);
       }
 
       // Create doors at actual corridor connection points (from map generation)
@@ -403,24 +407,25 @@ public class LevelBuilder {
       float doorLength = 128f; // Door spans corridor opening (corridor_width + 1 tile)
 
       for (DoorPosition doorPos : data.doorPositions()) {
-        Door.Direction doorDir = switch (doorPos.direction()) {
-          case NORTH -> Door.Direction.NORTH;
-          case SOUTH -> Door.Direction.SOUTH;
-          case EAST -> Door.Direction.EAST;
-          case WEST -> Door.Direction.WEST;
-        };
+        Door.Direction doorDir =
+            switch (doorPos.direction()) {
+              case NORTH -> Door.Direction.NORTH;
+              case SOUTH -> Door.Direction.SOUTH;
+              case EAST -> Door.Direction.EAST;
+              case WEST -> Door.Direction.WEST;
+            };
 
         // Use appropriate dimensions based on direction
-        float w = (doorDir == Door.Direction.NORTH || doorDir == Door.Direction.SOUTH)
-            ? doorLength
-            : doorThickness;
-        float h = (doorDir == Door.Direction.NORTH || doorDir == Door.Direction.SOUTH)
-            ? doorThickness
-            : doorLength;
+        float w =
+            (doorDir == Door.Direction.NORTH || doorDir == Door.Direction.SOUTH)
+                ? doorLength
+                : doorThickness;
+        float h =
+            (doorDir == Door.Direction.NORTH || doorDir == Door.Direction.SOUTH)
+                ? doorThickness
+                : doorLength;
 
-        room.addDoor(new Door(
-            doorPos.position().x, doorPos.position().y,
-            doorDir, w, h));
+        room.addDoor(new Door(doorPos.position().x, doorPos.position().y, doorDir, w, h));
       }
 
       level.getRoomManager().addRoom(room);
@@ -429,8 +434,7 @@ public class LevelBuilder {
   }
 
   /**
-   * Initializes the room manager with the physics world. Creates sensors and
-   * initializes doors for
+   * Initializes the room manager with the physics world. Creates sensors and initializes doors for
    * all rooms.
    *
    * @param world The Box2D physics world
@@ -450,16 +454,15 @@ public class LevelBuilder {
   }
 
   /**
-   * Spawns a portal at the position stored in map properties.
-   * Used for cave-style levels (NoiseMapStrategy) that don't have rooms.
+   * Spawns a portal at the position stored in map properties. Used for cave-style levels
+   * (NoiseMapStrategy) that don't have rooms.
    *
    * @param world The Box2D physics world
    * @return this builder for chaining
    */
   public LevelBuilder spawnCavePortal(World world) {
     TiledMap map = level.getMap();
-    if (map == null)
-      return this;
+    if (map == null) return this;
 
     Object portalPos = map.getProperties().get(NoiseMapStrategy.PORTAL_POSITION_KEY);
     if (portalPos instanceof com.badlogic.gdx.math.Vector2 pos) {
