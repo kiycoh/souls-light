@@ -169,6 +169,30 @@ public class RoomManager {
     return Collections.unmodifiableList(rooms);
   }
 
+  /**
+   * Finds the portal room in this level.
+   *
+   * @return The portal room, or null if none exists
+   */
+  public PortalRoom getPortalRoom() {
+    for (Room room : rooms) {
+      if (room instanceof PortalRoom pr) {
+        return pr;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Checks if a player is near the portal and can activate it.
+   *
+   * @return True if portal exists and player is in range
+   */
+  public boolean isPortalReady() {
+    PortalRoom pr = getPortalRoom();
+    return pr != null && pr.isPlayerNearPortal();
+  }
+
   /** Cleans up all sensors and clears rooms. */
   public void dispose() {
     if (world != null) {

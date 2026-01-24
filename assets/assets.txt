@@ -13,10 +13,15 @@ images/class_selection/default.png
 images/class_selection/mage.png
 images/class_selection/thief.png
 images/class_selection/warrior.png
+images/chaserWalk.png
 images/player.png
+images/rangerWalk.png
 images/shielder.png
+images/shielderWalk.png
 images/skeleton.png
 images/slime.png
+images/spikedBallCharge.png
+images/spikedBallWalk.png
 intro/intro_0001.png
 intro/intro_0002.png
 intro/intro_0003.png

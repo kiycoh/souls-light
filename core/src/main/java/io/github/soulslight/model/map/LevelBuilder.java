@@ -15,6 +15,7 @@ import io.github.soulslight.model.enemies.Oblivion;
 import io.github.soulslight.model.enemies.ai.RoomIdleState;
 import io.github.soulslight.model.room.Door;
 import io.github.soulslight.model.room.DoorPosition;
+import io.github.soulslight.model.room.Portal;
 import io.github.soulslight.model.room.PortalRoom;
 import io.github.soulslight.model.room.Room;
 import io.github.soulslight.model.room.RoomData;
@@ -442,6 +443,34 @@ public class LevelBuilder {
   public LevelBuilder initializeRoomManager(World world) {
     level.getRoomManager().initialize(world);
     level.getRoomManager().initializeDoors();
+
+    // Initialize portals in portal rooms
+    for (Room room : level.getRoomManager().getRooms()) {
+      if (room instanceof PortalRoom portalRoom) {
+        portalRoom.initializePortal(world);
+      }
+    }
+    return this;
+  }
+
+  /**
+   * Spawns a portal at the position stored in map properties. Used for cave-style levels
+   * (NoiseMapStrategy) that don't have rooms.
+   *
+   * @param world The Box2D physics world
+   * @return this builder for chaining
+   */
+  public LevelBuilder spawnCavePortal(World world) {
+    TiledMap map = level.getMap();
+    if (map == null) return this;
+
+    Object portalPos = map.getProperties().get(NoiseMapStrategy.PORTAL_POSITION_KEY);
+    if (portalPos instanceof com.badlogic.gdx.math.Vector2 pos) {
+      Portal portal = new Portal(pos.x, pos.y);
+      portal.createBody(world);
+      level.setCavePortal(portal);
+      System.out.println("Cave portal initialized at (" + pos.x + ", " + pos.y + ")");
+    }
     return this;
   }
 
