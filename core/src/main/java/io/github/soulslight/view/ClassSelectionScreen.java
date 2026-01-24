@@ -245,7 +245,7 @@ public final class ClassSelectionScreen implements GameState {
     // Start the game
     GameModel model = new GameModel();
     GameController controller = new GameController(model);
-    game.setScreen(new GameScreen(batch, model, controller));
+    game.setScreen(new IntroScreen(game, batch, model, controller));
   }
 
   @Override
