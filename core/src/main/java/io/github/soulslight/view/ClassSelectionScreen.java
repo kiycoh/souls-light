@@ -214,7 +214,7 @@ public final class ClassSelectionScreen implements GameState {
         hoveredClass = null;
 
         // Reset stats panel
-        classNameLabel.setText("Select a Class");
+        classNameLabel.setText("Who were you?");
         hpLabel.setText("HP: ---");
         willLabel.setText("Will: ---");
         abilityLabel.setText("Special: ---");
