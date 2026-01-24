@@ -59,17 +59,17 @@ public final class IntroScreen implements GameState {
 
         this.lines =
             new String[] {
-                "Dopo la morte non esistono né paradiso né inferno.",
+                "After death, there is neither heaven nor hell.",
                 "",
-                "Le anime, contrariamente alle credenze umane, vengono trascinate nel Mu,",
-                "una dimensione vuota e instabile.",
+                "Contrary to human belief, souls are drawn into the Mu,",
+                "an empty and unstable dimension.",
                 "",
-                "Nel Mu non è possibile morire di nuovo.",
-                "Condannate a una esistenza eterna, molte anime perdono sé stesse",
-                "e si trasformano in creature prive di senno.",
+                "In the Mu, death is no longer possible.",
+                "Condemned to an eternal existence, many souls lose themselves",
+                "and become mindless creatures.",
                 "",
-                "Tra queste, due anime scelgono di scendere nel punto più oscuro del Mu,",
-                "alla ricerca di una via di fuga."
+                "Among them, two souls choose to descend into the darkest depths of the Mu,",
+                "searching for a way to escape..."
             };
 
         this.lineSpacing = font.getLineHeight() * 1.2f;
