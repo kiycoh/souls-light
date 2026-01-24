@@ -76,9 +76,24 @@ public class GameController extends InputAdapter implements ControllerListener {
         return true;
 
       case Input.Keys.E: // Portal activation
-        if (model.getLevel() != null && model.getLevel().getRoomManager() != null) {
-          PortalRoom portalRoom = model.getLevel().getRoomManager().getPortalRoom();
-          if (portalRoom != null && portalRoom.tryActivatePortal()) {
+        if (model.getLevel() != null) {
+          boolean activated = false;
+
+          // Try dungeon-style PortalRoom first
+          if (model.getLevel().getRoomManager() != null) {
+            PortalRoom portalRoom = model.getLevel().getRoomManager().getPortalRoom();
+            if (portalRoom != null && portalRoom.tryActivatePortal()) {
+              activated = true;
+            }
+          }
+
+          // Try cave-style direct portal
+          if (!activated && model.getLevel().getCavePortal() != null
+              && model.getLevel().getCavePortal().tryActivate()) {
+            activated = true;
+          }
+
+          if (activated) {
             Gdx.app.log("Controller", "Portal activated! Advancing to next level.");
             model.setLevelCompleted(true);
           }

@@ -160,13 +160,27 @@ public final class GameScreen implements GameState {
   }
 
   private void drawPortal() {
-    if (model.getLevel() == null || model.getLevel().getRoomManager() == null)
-      return;
-    PortalRoom portalRoom = model.getLevel().getRoomManager().getPortalRoom();
-    if (portalRoom == null || portalRoom.getPortal() == null)
+    if (model.getLevel() == null)
       return;
 
-    Portal portal = portalRoom.getPortal();
+    Portal portal = null;
+
+    // Check for dungeon-style PortalRoom first
+    if (model.getLevel().getRoomManager() != null) {
+      PortalRoom portalRoom = model.getLevel().getRoomManager().getPortalRoom();
+      if (portalRoom != null && portalRoom.getPortal() != null) {
+        portal = portalRoom.getPortal();
+      }
+    }
+
+    // Fall back to cave-style direct portal
+    if (portal == null) {
+      portal = model.getLevel().getCavePortal();
+    }
+
+    if (portal == null)
+      return;
+
     Vector2 pos = portal.getPosition();
 
     // Use a colored circle as mockup (will be replaced by artist)
@@ -181,9 +195,23 @@ public final class GameScreen implements GameState {
   }
 
   private void drawPortalPrompt() {
-    if (model.getLevel() == null || model.getLevel().getRoomManager() == null)
+    if (model.getLevel() == null)
       return;
-    if (!model.getLevel().getRoomManager().isPortalReady())
+
+    boolean playerNearPortal = false;
+
+    // Check dungeon-style PortalRoom first
+    if (model.getLevel().getRoomManager() != null && model.getLevel().getRoomManager().isPortalReady()) {
+      playerNearPortal = true;
+    }
+
+    // Check cave-style direct portal
+    if (!playerNearPortal && model.getLevel().getCavePortal() != null
+        && model.getLevel().getCavePortal().isPlayerInRange()) {
+      playerNearPortal = true;
+    }
+
+    if (!playerNearPortal)
       return;
 
     // Simple text prompt at top-center of screen

@@ -16,6 +16,7 @@ import io.github.soulslight.model.map.LevelBuilder;
 import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.map.MapGenerationStrategy;
 import io.github.soulslight.model.map.DungeonMapStrategy;
+import io.github.soulslight.model.map.NoiseMapStrategy;
 import io.github.soulslight.model.physics.GameContactListener;
 import io.github.soulslight.model.room.RoomData;
 import java.util.Collections;
@@ -73,18 +74,46 @@ public class GameModel implements Disposable, ProjectileListener {
 
     EnemyFactory factory = new DungeonEnemyFactory();
 
-    // ---- Extract room data from generated map ----
+    // ---- MAP TYPE DETECTION: Dungeon (rooms) vs Cave (roomless) ----
     List<RoomData> roomData = DungeonMapStrategy.extractRoomData(myMap);
+    boolean hasCavePortal = myMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
 
-    // ---- LEVEL BUILDER (with room-based enemy spawning) ----
-    this.level = new LevelBuilder()
-        .buildMap(myMap)
-        .buildRooms(roomData)
-        .initializeRoomManager(this.physicsWorld)
-        .buildPhysicsFromMap(this.physicsWorld)
-        .spawnEnemiesInRooms(factory, this.physicsWorld) // Room-based spawning with idle state
-        .setEnvironment("dungeon_theme.mp3", 0.3f)
-        .build();
+    if (!roomData.isEmpty()) {
+      // ---- DUNGEON-STYLE LEVEL (rooms + doors + portal room) ----
+      this.level = new LevelBuilder()
+          .buildMap(myMap)
+          .buildRooms(roomData)
+          .initializeRoomManager(this.physicsWorld)
+          .buildPhysicsFromMap(this.physicsWorld)
+          .spawnEnemiesInRooms(factory, this.physicsWorld)
+          .setEnvironment("dungeon_theme.mp3", 0.3f)
+          .build();
+    } else if (hasCavePortal) {
+      // ---- CAVE-STYLE LEVEL (random spawn + cave portal) ----
+      LevelFactory.EnemyConfig config = LevelFactory.getEnemyConfig(
+          GameManager.getInstance().getCurrentLevelIndex(),
+          GameManager.getInstance().getGameMode());
+      this.level = new LevelBuilder()
+          .buildMap(myMap)
+          .buildPhysicsFromMap(this.physicsWorld)
+          .spawnRandom(factory, this.physicsWorld,
+              config.melee(), config.ranged(), config.tank(), config.ball(), config.spawnBoss())
+          .spawnCavePortal(this.physicsWorld)
+          .setEnvironment("cave_theme.mp3", 0.2f)
+          .build();
+    } else {
+      // ---- BOSS ARENA OR CUSTOM (minimal setup) ----
+      LevelFactory.EnemyConfig config = LevelFactory.getEnemyConfig(
+          GameManager.getInstance().getCurrentLevelIndex(),
+          GameManager.getInstance().getGameMode());
+      this.level = new LevelBuilder()
+          .buildMap(myMap)
+          .buildPhysicsFromMap(this.physicsWorld)
+          .spawnRandom(factory, this.physicsWorld,
+              config.melee(), config.ranged(), config.tank(), config.ball(), config.spawnBoss())
+          .setEnvironment("boss_theme.mp3", 0.1f)
+          .build();
+    }
 
     // Shielder 'target' setup and Listener registration
     if (this.level.getEnemies() != null) {
