@@ -7,18 +7,23 @@ import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Disposable;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.ProjectileManager;
+import io.github.soulslight.model.combat.ProjectileListener;
 import io.github.soulslight.model.enemies.*;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
+import io.github.soulslight.model.map.DungeonMapStrategy;
 import io.github.soulslight.model.map.Level;
 import io.github.soulslight.model.map.LevelBuilder;
-import io.github.soulslight.model.map.MapGenerator;
+import io.github.soulslight.model.map.LevelFactory;
+import io.github.soulslight.model.map.MapGenerationStrategy;
+import io.github.soulslight.model.map.NoiseMapStrategy;
 import io.github.soulslight.model.physics.GameContactListener;
+import io.github.soulslight.model.room.RoomData;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class GameModel implements Disposable {
+public class GameModel implements Disposable, ProjectileListener {
 
   public static final float MAX_WILL = 100f;
   private final World physicsWorld;
@@ -31,6 +36,9 @@ public class GameModel implements Disposable {
   // Accumulator for fixed timestep
   private float physicsAccumulator = 0;
 
+  // Level completion flag for portal transition
+  private boolean levelCompleted = false;
+
   private final ProjectileManager projectileManager;
 
   public GameModel() {
@@ -42,19 +50,21 @@ public class GameModel implements Disposable {
     this.isPaused = false;
     this.players = new java.util.ArrayList<>();
 
-    // ---- PROCEDURALLY GENERATED MAP ----
+    // ---- PROCEDURALLY GENERATED MAP (Level-Based Strategy) ----
     this.currentSeed = System.currentTimeMillis();
-    TiledMap myMap = MapGenerator.generateProceduralMap(currentSeed);
+    MapGenerationStrategy strategy = GameManager.getInstance().getCurrentLevelStrategy();
+    TiledMap myMap = strategy.generate();
 
     // ---- PLAYERS: spawn on valid flood tile ----
     Vector2 spawn = findFirstFloorSpawn(myMap);
 
-    // Player 1
-    Player p1 = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, spawn.x, spawn.y);
+    // Player 1: Uses class selected in ClassSelectionScreen
+    Player.PlayerClass selectedClass = GameManager.getInstance().getSelectedPlayerClass();
+    Player p1 = new Player(selectedClass, this.physicsWorld, spawn.x, spawn.y);
     players.add(p1);
     GameManager.getInstance().addPlayer(p1);
 
-    // Player 2 (spawn slightly offset)
+    // Player 2 (spawn slightly offset) - for co-op testing
     Player p2 = new Player(Player.PlayerClass.ARCHER, this.physicsWorld, spawn.x + 20, spawn.y);
     players.add(p2);
     GameManager.getInstance().addPlayer(p2);
@@ -64,30 +74,77 @@ public class GameModel implements Disposable {
 
     EnemyFactory factory = new DungeonEnemyFactory();
 
-    // ---- LEVEL BUILDER (random spawn) ----
-    this.level =
-        new LevelBuilder()
-            .buildMap(myMap)
-            .buildPhysicsFromMap(this.physicsWorld)
-            .spawnRandom(
-                factory,
-                this.physicsWorld,
-                8, // melee
-                4, // ranged
-                3, // tank / shielder
-                2, // ball / trap
-                true // boss
-                )
-            .setEnvironment("dungeon_theme.mp3", 0.3f)
-            .build();
+    // ---- MAP TYPE DETECTION: Dungeon (rooms) vs Cave (roomless) ----
+    List<RoomData> roomData = DungeonMapStrategy.extractRoomData(myMap);
+    boolean hasCavePortal = myMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
 
-    // Shielder 'target' setup
+    if (!roomData.isEmpty()) {
+      // ---- DUNGEON-STYLE LEVEL (rooms + doors + portal room) ----
+      this.level =
+          new LevelBuilder()
+              .buildMap(myMap)
+              .buildRooms(roomData)
+              .initializeRoomManager(this.physicsWorld)
+              .buildPhysicsFromMap(this.physicsWorld)
+              .spawnEnemiesInRooms(factory, this.physicsWorld)
+              .setEnvironment("dungeon_theme.mp3", 0.3f)
+              .build();
+    } else if (hasCavePortal) {
+      // ---- CAVE-STYLE LEVEL (random spawn + cave portal) ----
+      LevelFactory.EnemyConfig config =
+          LevelFactory.getEnemyConfig(
+              GameManager.getInstance().getCurrentLevelIndex(),
+              GameManager.getInstance().getGameMode());
+      this.level =
+          new LevelBuilder()
+              .buildMap(myMap)
+              .buildPhysicsFromMap(this.physicsWorld)
+              .spawnRandom(
+                  factory,
+                  this.physicsWorld,
+                  config.melee(),
+                  config.ranged(),
+                  config.tank(),
+                  config.ball(),
+                  config.spawnBoss())
+              .spawnCavePortal(this.physicsWorld)
+              .setEnvironment("cave_theme.mp3", 0.2f)
+              .build();
+    } else {
+      // ---- BOSS ARENA OR CUSTOM (minimal setup) ----
+      LevelFactory.EnemyConfig config =
+          LevelFactory.getEnemyConfig(
+              GameManager.getInstance().getCurrentLevelIndex(),
+              GameManager.getInstance().getGameMode());
+      this.level =
+          new LevelBuilder()
+              .buildMap(myMap)
+              .buildPhysicsFromMap(this.physicsWorld)
+              .spawnRandom(
+                  factory,
+                  this.physicsWorld,
+                  config.melee(),
+                  config.ranged(),
+                  config.tank(),
+                  config.ball(),
+                  config.spawnBoss())
+              .setEnvironment("boss_theme.mp3", 0.1f)
+              .build();
+    }
+
+    // Shielder 'target' setup and Listener registration
     if (this.level.getEnemies() != null) {
       for (AbstractEnemy e : this.level.getEnemies()) {
+        e.addProjectileListener(this); // Register listener
         if (e instanceof Shielder) {
           ((Shielder) e).setAllies(this.level.getEnemies());
         }
       }
+    }
+
+    // Wire player reference for teleportation on combat start
+    if (this.level.getRoomManager() != null && !players.isEmpty()) {
+      this.level.getRoomManager().setPlayers(players);
     }
 
     GameManager.getInstance().setCurrentLevel(this.level);
@@ -149,6 +206,11 @@ public class GameModel implements Disposable {
     }
 
     cleanDeadEnemies();
+
+    // Update room states (lock/unlock, clear checks)
+    if (level != null && level.getRoomManager() != null) {
+      level.getRoomManager().update(deltaTime);
+    }
   }
 
   private void updateEnemiesLogic(float deltaTime) {
@@ -159,52 +221,19 @@ public class GameModel implements Disposable {
     for (AbstractEnemy enemy : level.getEnemies()) {
       // AbstractEnemy doesn't have update(delta) but Entity does.
       // However AbstractEnemy extends Entity.
-      // We should check if update(delta) is enough or if we need to call something else.
+      // We should check if update(delta) is enough or if we need to call something
+      // else.
       // Entity.update(delta) syncs graphics from physics.
       enemy.update(deltaTime);
       enemy.updateBehavior(players, deltaTime);
-
-      if (enemy instanceof Ranger ranger) {
-        if (ranger.isReadyToShoot()) {
-          // Target nearest player
-          Player target = getNearestPlayer(ranger.getPosition());
-          if (target != null) {
-            projectileManager.addProjectile(
-                new Projectile(
-                    physicsWorld,
-                    ranger.getPosition().x,
-                    ranger.getPosition().y,
-                    target.getPosition()));
-            ranger.resetShot();
-          }
-        }
-      } else if (enemy instanceof Oblivion boss) {
-        if (boss.isReadyToShoot()) {
-          for (Vector2 targetPos : boss.getShotTargets()) {
-            projectileManager.addProjectile(
-                new Projectile(
-                    physicsWorld, boss.getPosition().x, boss.getPosition().y, targetPos));
-          }
-          boss.resetShot();
-        }
-      }
 
       checkMeleeCollision(enemy);
     }
   }
 
-  private Player getNearestPlayer(Vector2 pos) {
-    Player nearest = null;
-    float minDst = Float.MAX_VALUE;
-    for (Player p : players) {
-      if (p.isDead()) continue;
-      float dst = pos.dst(p.getPosition());
-      if (dst < minDst) {
-        minDst = dst;
-        nearest = p;
-      }
-    }
-    return nearest != null ? nearest : (players.isEmpty() ? null : players.get(0));
+  @Override
+  public void onProjectileRequest(Vector2 origin, Vector2 target, String type) {
+    projectileManager.addProjectile(new Projectile(physicsWorld, origin.x, origin.y, target));
   }
 
   private void checkMeleeCollision(AbstractEnemy enemy) {
@@ -298,8 +327,9 @@ public class GameModel implements Disposable {
     // Restore Seed
     this.currentSeed = memento.seed;
 
-    // Rebuild Map
-    TiledMap newMap = MapGenerator.generateProceduralMap(currentSeed);
+    // Rebuild Map (using level-based strategy)
+    MapGenerationStrategy strategy = GameManager.getInstance().getCurrentLevelStrategy();
+    TiledMap newMap = strategy.generate();
     if (level != null) level.dispose();
 
     // Rebuild Level (No random spawn)
@@ -330,8 +360,9 @@ public class GameModel implements Disposable {
           this.level.addEnemy(enemy);
         }
       }
-      // Restore Shielder links
+      // Restore Shielder links and Listener registration
       for (AbstractEnemy e : this.level.getEnemies()) {
+        e.addProjectileListener(this); // Register listener
         if (e instanceof Shielder) {
           ((Shielder) e).setAllies(this.level.getEnemies());
         }
@@ -395,6 +426,14 @@ public class GameModel implements Disposable {
 
   public void setPaused(boolean paused) {
     this.isPaused = paused;
+  }
+
+  public boolean isLevelCompleted() {
+    return levelCompleted;
+  }
+
+  public void setLevelCompleted(boolean completed) {
+    this.levelCompleted = completed;
   }
 
   @Override

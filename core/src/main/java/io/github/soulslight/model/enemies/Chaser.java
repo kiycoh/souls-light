@@ -60,6 +60,14 @@ public class Chaser extends AbstractEnemy {
     Player target = getNearestTarget(players);
     if (target == null) return; // Stop if everyone is dead
 
+    // Feature Logic: RoomIdleState check
+    // If the enemy is in RoomIdleState (waiting for player to enter room), do
+    // nothing.
+    if (getCurrentState() instanceof io.github.soulslight.model.enemies.ai.RoomIdleState) {
+      getCurrentState().update(this, players, deltaTime);
+      return;
+    }
+
     syncBody();
 
     if (attackCooldown > 0) attackCooldown -= deltaTime;
@@ -102,6 +110,8 @@ public class Chaser extends AbstractEnemy {
           moveAway(target.getPosition());
           if (retreatTimer <= 0) currentState = State.CHASING;
           break;
+        default:
+          break;
       }
     } else {
       if (currentState == State.RETREATING && retreatTimer > 0) {
@@ -126,9 +136,11 @@ public class Chaser extends AbstractEnemy {
     }
   }
 
-  // Method to sync body position back to Entity state (from Enemy.java, moved here or rely on
+  // Method to sync body position back to Entity state (from Enemy.java, moved
+  // here or rely on
   // AbstractEnemy?)
-  // AbstractEnemy doesn't seem to have syncBody(), but it updates position in moveTowards/moveAway.
+  // AbstractEnemy doesn't seem to have syncBody(), but it updates position in
+  // moveTowards/moveAway.
   // However, Chaser.updateBehavior calls syncBody().
   // Enemy.java had syncBody(). AbstractEnemy.java did not.
   // I should add syncBody() to Chaser or AbstractEnemy.

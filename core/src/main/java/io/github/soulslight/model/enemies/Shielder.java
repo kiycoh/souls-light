@@ -44,6 +44,12 @@ public class Shielder extends AbstractEnemy {
     Player player = getNearestTarget(players);
     if (player == null) return;
 
+    // Feature Logic: RoomIdleState check
+    if (getCurrentState() instanceof io.github.soulslight.model.enemies.ai.RoomIdleState) {
+      getCurrentState().update(this, players, deltaTime);
+      return;
+    }
+
     syncBody();
 
     // Trova il ranger piu vicino
@@ -56,13 +62,16 @@ public class Shielder extends AbstractEnemy {
       // Se ci vede si mette in mezzo e ci respinge
       blockLineOfFire(player, vip, deltaTime);
 
-      // Check for shield bash if close enough (Merged from HEAD logic idea, or feature branch
+      // Check for shield bash if close enough (Merged from HEAD logic idea, or
+      // feature branch
       // logic?)
       // Feature branch didn't seem to have explicit attack call in updateBehavior,
-      // but maybe blockLineOfFire handles position and collision deals damage via ContactListener?
+      // but maybe blockLineOfFire handles position and collision deals damage via
+      // ContactListener?
       // HEAD had: this.attack(player) if close.
       // Feature branch logic only handles movement.
-      // I'll stick to Feature branch movement logic. If attack is needed, it might be contact based
+      // I'll stick to Feature branch movement logic. If attack is needed, it might be
+      // contact based
       // or separate.
 
     } else {
