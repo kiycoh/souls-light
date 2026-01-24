@@ -89,7 +89,8 @@ class MapGeneratorTest {
           break;
         }
       }
-      if (hasWideArea) break;
+      if (hasWideArea)
+        break;
     }
     assertTrue(
         hasWideArea, "Dungeon should contain at least 3x3 open areas (wide corridors/rooms)");
@@ -113,7 +114,8 @@ class MapGeneratorTest {
         if (isFloor(layer, x, y)) {
           GridPoint2 p = new GridPoint2(x, y);
           allFloors.add(p);
-          if (start == null) start = p;
+          if (start == null)
+            start = p;
         }
       }
     }
@@ -128,8 +130,8 @@ class MapGeneratorTest {
     queue.add(start);
     visited.add(start);
 
-    int[] dx = {0, 0, 1, -1};
-    int[] dy = {1, -1, 0, 0};
+    int[] dx = { 0, 0, 1, -1 };
+    int[] dy = { 1, -1, 0, 0 };
 
     while (!queue.isEmpty()) {
       GridPoint2 current = queue.poll();

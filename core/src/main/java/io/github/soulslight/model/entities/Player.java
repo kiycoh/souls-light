@@ -11,7 +11,8 @@ public class Player extends Entity {
 
   private static final float BODY_RADIUS = 14.0f;
   private static final float NORMAL_DAMPING = 10.0f; // Attrito per non scivolare
-  // private float speed = 300f; al momento la speed è data da gamecontroller, da cambiare
+  // private float speed = 300f; al momento la speed è data da gamecontroller, da
+  // cambiare
   // evetualmente
   private boolean wasInKnockback = false;
 
@@ -28,7 +29,7 @@ public class Player extends Entity {
     WARRIOR {
       @Override
       public AttackStrategy getStrategy() {
-        return new WarriorAttack(35);
+        return new WarriorAttack(9000);
       }
     },
     MAGE {
@@ -62,7 +63,8 @@ public class Player extends Entity {
     this.health = 500;
     this.maxHealth = 500;
     this.type = type;
-    // this.speed= 100; al momento la speed è data da gamecontroller, da cambiare evetualmente
+    // this.speed= 100; al momento la speed è data da gamecontroller, da cambiare
+    // evetualmente
     this.attackStrategy = type.getStrategy();
     this.position = new Vector2(startX, startY);
     createBody(world, startX, startY);
@@ -71,9 +73,12 @@ public class Player extends Entity {
   @Override
   public void update(float delta) {
 
-    if (invincibilityTimer > 0) invincibilityTimer -= delta;
-    if (knockbackTimer > 0) knockbackTimer -= delta;
-    if (attackCooldown > 0) attackCooldown -= delta;
+    if (invincibilityTimer > 0)
+      invincibilityTimer -= delta;
+    if (knockbackTimer > 0)
+      knockbackTimer -= delta;
+    if (attackCooldown > 0)
+      attackCooldown -= delta;
 
     if (knockbackTimer > 0) {
       wasInKnockback = true;
@@ -101,7 +106,8 @@ public class Player extends Entity {
   }
 
   public void applyKnockback(Vector2 direction, float speedForce, float duration) {
-    if (body == null) return;
+    if (body == null)
+      return;
 
     this.currentKnockbackVelocity.set(direction).nor().scl(speedForce);
 
@@ -130,7 +136,7 @@ public class Player extends Entity {
     fdef.friction = 0.0f;
     fdef.restitution = 0.0f; // No bouncing
     fdef.filter.categoryBits = Constants.BIT_PLAYER;
-    fdef.filter.maskBits = Constants.BIT_WALL | Constants.BIT_ENEMY;
+    fdef.filter.maskBits = Constants.BIT_WALL | Constants.BIT_ENEMY | Constants.BIT_DOOR | Constants.BIT_SENSOR;
 
     this.body.createFixture(fdef);
     this.body.setUserData(this);
@@ -138,10 +144,12 @@ public class Player extends Entity {
   }
 
   public void attack(List<AbstractEnemy> enemies) {
-    if (attackCooldown > 0) return;
+    if (attackCooldown > 0)
+      return;
     attackCooldown = ATTACK_COOLDOWN_DURATION;
     for (AbstractEnemy enemy : enemies) {
-      if (enemy == null || enemy.isDead()) continue;
+      if (enemy == null || enemy.isDead())
+        continue;
       if (this.getPosition().dst(enemy.getPosition()) <= attackStrategy.getRange()) {
         enemy.takeDamage(attackStrategy.getDamage());
       }
@@ -149,18 +157,22 @@ public class Player extends Entity {
   }
 
   public void move(float x, float y) {
-    if (body != null) body.setLinearVelocity(x, y);
+    if (body != null)
+      body.setLinearVelocity(x, y);
   }
 
   @Override
   public void takeDamage(float amount) {
-    if (invincibilityTimer > 0) return;
+    if (invincibilityTimer > 0)
+      return;
     super.takeDamage(amount);
-    if (!isDead()) invincibilityTimer = INVINCIBILITY_DURATION;
+    if (!isDead())
+      invincibilityTimer = INVINCIBILITY_DURATION;
   }
 
   public void doAnAttack() {
-    if (attackStrategy != null) attackStrategy.attack();
+    if (attackStrategy != null)
+      attackStrategy.attack();
   }
 
   public boolean isInvincible() {

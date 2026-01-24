@@ -4,7 +4,10 @@ import com.badlogic.gdx.Gdx;
 import io.github.soulslight.model.entities.Entity;
 import java.util.List;
 
-/** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Warrior). */
+/**
+ * Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior
+ * (Warrior).
+ */
 public class WarriorAttack extends AbstractAttack {
 
   private final float damage;

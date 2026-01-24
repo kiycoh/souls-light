@@ -8,7 +8,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Represents a gameplay room with state management. Implements the Context role in the State
+ * Represents a gameplay room with state management. Implements the Context role
+ * in the State
  * pattern. Rooms transition between Passive, ActiveCombat, and Cleared states.
  */
 public class Room implements EnemyDeathListener {
@@ -20,14 +21,16 @@ public class Room implements EnemyDeathListener {
   private final List<Door> doors;
   private boolean doorsLocked;
   private boolean cleared;
+  private boolean pendingPlayerEntry; // Deferred flag to avoid Box2D world-locked assertion
+  private RoomManager roomManager; // Reference for global door control
 
   /**
    * Creates a new room with the specified bounds.
    *
-   * @param id Unique identifier for this room
-   * @param x X position of the room in world units
-   * @param y Y position of the room in world units
-   * @param width Width of the room in world units
+   * @param id     Unique identifier for this room
+   * @param x      X position of the room in world units
+   * @param y      Y position of the room in world units
+   * @param width  Width of the room in world units
    * @param height Height of the room in world units
    */
   public Room(String id, float x, float y, float width, float height) {
@@ -37,6 +40,7 @@ public class Room implements EnemyDeathListener {
     this.doors = new ArrayList<>();
     this.doorsLocked = false;
     this.cleared = false;
+    this.pendingPlayerEntry = false;
     this.currentState = PassiveState.INSTANCE;
   }
 
@@ -59,12 +63,20 @@ public class Room implements EnemyDeathListener {
    * @param deltaTime Time since last update
    */
   public void update(float deltaTime) {
+    // Process deferred player entry (avoids Box2D world-locked assertion)
+    if (pendingPlayerEntry) {
+      pendingPlayerEntry = false;
+      currentState.onPlayerEntered(this);
+    }
     currentState.update(this, deltaTime);
   }
 
-  /** Called when the player enters this room's sensor zone. */
+  /**
+   * Called when the player enters this room's sensor zone.
+   * Defers actual processing to update() to avoid modifying physics during step.
+   */
   public void onPlayerEntered() {
-    currentState.onPlayerEntered(this);
+    pendingPlayerEntry = true;
   }
 
   /** Checks if the room clear condition is met and transitions if so. */
@@ -91,6 +103,19 @@ public class Room implements EnemyDeathListener {
   public void addEnemy(AbstractEnemy enemy) {
     enemies.add(enemy);
     enemy.setDeathListener(this);
+  }
+
+  /**
+   * Activates all enemies in this room by switching them from RoomIdleState to
+   * ChaseState.
+   * Called when combat begins.
+   */
+  public void activateEnemies() {
+    for (AbstractEnemy enemy : enemies) {
+      if (!enemy.isDead()) {
+        enemy.setAIState(new io.github.soulslight.model.enemies.ai.ChaseState());
+      }
+    }
   }
 
   /**
@@ -143,6 +168,24 @@ public class Room implements EnemyDeathListener {
 
   public boolean isCleared() {
     return cleared;
+  }
+
+  /**
+   * Sets the room manager reference for global door control.
+   *
+   * @param manager The room manager
+   */
+  public void setRoomManager(RoomManager manager) {
+    this.roomManager = manager;
+  }
+
+  /**
+   * Returns the room manager for global door operations.
+   *
+   * @return The room manager, or null if not set
+   */
+  public RoomManager getRoomManager() {
+    return roomManager;
   }
 
   public int getRemainingEnemyCount() {

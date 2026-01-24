@@ -54,16 +54,28 @@ public class Chaser extends AbstractEnemy {
 
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players == null || players.isEmpty() || this.health <= 0) return;
+    if (players == null || players.isEmpty() || this.health <= 0)
+      return;
 
     // CHANGED: Use nearest target instead of players.get(0)
     Player target = getNearestTarget(players);
-    if (target == null) return; // Stop if everyone is dead
+    if (target == null)
+      return; // Stop if everyone is dead
+
+    // Feature Logic: RoomIdleState check
+    // If the enemy is in RoomIdleState (waiting for player to enter room), do
+    // nothing.
+    if (getCurrentState() instanceof io.github.soulslight.model.enemies.ai.RoomIdleState) {
+      getCurrentState().update(this, players, deltaTime);
+      return;
+    }
 
     syncBody();
 
-    if (attackCooldown > 0) attackCooldown -= deltaTime;
-    if (retreatTimer > 0) retreatTimer -= deltaTime;
+    if (attackCooldown > 0)
+      attackCooldown -= deltaTime;
+    if (retreatTimer > 0)
+      retreatTimer -= deltaTime;
 
     Vector2 myPos = (body != null) ? body.getPosition() : this.position;
 
@@ -79,7 +91,8 @@ public class Chaser extends AbstractEnemy {
       switch (currentState) {
         case CHASING:
           if (distance <= STOP_DISTANCE) {
-            if (body != null) body.setLinearVelocity(0, 0);
+            if (body != null)
+              body.setLinearVelocity(0, 0);
             currentState = State.ATTACKING;
           } else {
             moveTowards(target.getPosition(), deltaTime);
@@ -87,7 +100,8 @@ public class Chaser extends AbstractEnemy {
           break;
 
         case ATTACKING:
-          if (body != null) body.setLinearVelocity(0, 0);
+          if (body != null)
+            body.setLinearVelocity(0, 0);
           if (attackCooldown <= 0) {
             this.attack(players);
             currentState = State.RETREATING;
@@ -100,7 +114,8 @@ public class Chaser extends AbstractEnemy {
 
         case RETREATING:
           moveAway(target.getPosition());
-          if (retreatTimer <= 0) currentState = State.CHASING;
+          if (retreatTimer <= 0)
+            currentState = State.CHASING;
           break;
         default:
           break;
@@ -119,7 +134,8 @@ public class Chaser extends AbstractEnemy {
         if (distToLastPos > 15f) {
           moveTowards(lastKnownPlayerPos, deltaTime);
         } else {
-          if (body != null) body.setLinearVelocity(0, 0);
+          if (body != null)
+            body.setLinearVelocity(0, 0);
         }
       } else {
         currentState = State.PATROLLING;
