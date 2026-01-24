@@ -21,7 +21,6 @@ public class Player extends Entity {
   private float invincibilityTimer = 0f;
   private final float INVINCIBILITY_DURATION = 0.1f;
   private float attackCooldown = 0f;
-  private static final float ATTACK_COOLDOWN_DURATION = 0.5f;
 
   private Vector2 currentKnockbackVelocity = new Vector2();
 
@@ -32,7 +31,7 @@ public class Player extends Entity {
     WARRIOR {
       @Override
       public AttackStrategy getStrategy() {
-        return new WarriorAttack(9000);
+        return new WarriorAttack(75);
       }
 
       @Override
@@ -211,7 +210,8 @@ public class Player extends Entity {
 
   public void attack(List<AbstractEnemy> enemies) {
     if (attackCooldown > 0) return;
-    attackCooldown = ATTACK_COOLDOWN_DURATION;
+    // Higher attackSpeed = lower cooldown (attacks per second)
+    attackCooldown = 1.0f / attackStrategy.getAttackSpeed();
     for (AbstractEnemy enemy : enemies) {
       if (enemy == null || enemy.isDead()) continue;
       if (this.getPosition().dst(enemy.getPosition()) <= attackStrategy.getRange()) {

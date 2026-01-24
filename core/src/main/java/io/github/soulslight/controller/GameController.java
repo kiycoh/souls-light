@@ -72,8 +72,12 @@ public class GameController extends InputAdapter implements ControllerListener {
         return true;
       case Input.Keys.O:
         if (p1 != null) {
-          p1.setAttackStrategy(new FireDamageDecorator(p1.getAttackStrategy()));
-          Gdx.app.log("Controller", "P1 Fire Damage Activated!");
+          if (!p1.getAttackStrategy().hasDecorator(FireDamageDecorator.class)) {
+            p1.setAttackStrategy(new FireDamageDecorator(p1.getAttackStrategy()));
+            Gdx.app.log("Controller", "P1 Fire Damage Activated!");
+          } else {
+            Gdx.app.log("Controller", "P1 Fire Damage Already Active!");
+          }
         }
         return true;
       case Input.Keys.P:

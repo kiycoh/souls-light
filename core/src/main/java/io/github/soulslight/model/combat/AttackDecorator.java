@@ -40,4 +40,12 @@ public abstract class AttackDecorator implements AttackStrategy {
   public String getSoundID() {
     return wrappedAttack.getSoundID();
   }
+
+  @Override
+  public boolean hasDecorator(Class<?> type) {
+    if (type.isInstance(this)) {
+      return true;
+    }
+    return wrappedAttack.hasDecorator(type);
+  }
 }
