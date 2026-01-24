@@ -160,10 +160,9 @@ public class SpikedBall extends AbstractEnemy {
     }
   }
 
-    public boolean isCharging() {
-        return currentState == State.CHARGING;
-    }
-
+  public boolean isCharging() {
+    return currentState == State.CHARGING;
+  }
 
   private void syncBody() {
     if (body != null) {

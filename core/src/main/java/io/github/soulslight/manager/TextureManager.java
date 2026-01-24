@@ -14,152 +14,151 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TextureManager {
-    private static final Map<String, Texture> textures = new HashMap<>();
+  private static final Map<String, Texture> textures = new HashMap<>();
 
-    private static Animation<TextureRegion> chaserWalkAnim;
-    private static Animation<TextureRegion> rangerWalkAnim;
-    private static Animation<TextureRegion> shielderWalkAnim;
-    private static Animation<TextureRegion> spikedBallWalkAnim;
-    private static Animation<TextureRegion> spikedBallChargeAnim;
+  private static Animation<TextureRegion> chaserWalkAnim;
+  private static Animation<TextureRegion> rangerWalkAnim;
+  private static Animation<TextureRegion> shielderWalkAnim;
+  private static Animation<TextureRegion> spikedBallWalkAnim;
+  private static Animation<TextureRegion> spikedBallChargeAnim;
 
-    private static final Map<String, Animation<TextureRegion>> builtAnims = new HashMap<>();
+  private static final Map<String, Animation<TextureRegion>> builtAnims = new HashMap<>();
 
-    public static void load() {
-        // Carica le texture e assegna le chiavi sottoforma di stringhe
-        if (!textures.isEmpty()) return;
+  public static void load() {
+    // Carica le texture e assegna le chiavi sottoforma di stringhe
+    if (!textures.isEmpty()) return;
 
-        textures.put("player", new Texture(Gdx.files.internal("images/player.png")));
-        textures.put("skeleton", new Texture(Gdx.files.internal("images/skeleton.png")));
-        textures.put("archer", new Texture(Gdx.files.internal("images/archer.png")));
-        textures.put("slime", new Texture(Gdx.files.internal("images/slime.png")));
-        textures.put("shielder", new Texture(Gdx.files.internal("images/shielder.png")));
-        textures.put("boss", new Texture(Gdx.files.internal("images/boss.png")));
+    textures.put("player", new Texture(Gdx.files.internal("images/player.png")));
+    textures.put("skeleton", new Texture(Gdx.files.internal("images/skeleton.png")));
+    textures.put("archer", new Texture(Gdx.files.internal("images/archer.png")));
+    textures.put("slime", new Texture(Gdx.files.internal("images/slime.png")));
+    textures.put("shielder", new Texture(Gdx.files.internal("images/shielder.png")));
+    textures.put("boss", new Texture(Gdx.files.internal("images/boss.png")));
 
-        if (Gdx.files.internal("images/arrow.png").exists()) {
-            textures.put("arrow", new Texture(Gdx.files.internal("images/arrow.png")));
-        } else {
-            // Se non c'è l'immagine arrow, usa quella del player o un'altra esistente
-            textures.put("arrow", textures.get("player"));
-        }
-
-        buildAnimIfExists("chaserWalk", 16, 23);
-        chaserWalkAnim = getBuiltAnim("chaserWalk");
-
-        buildAnimIfExists("rangerWalk", 16, 17);
-        rangerWalkAnim = getBuiltAnim("rangerWalk");
-
-        buildAnimIfExists("shielderWalk", 16, 27);
-        shielderWalkAnim = getBuiltAnim("shielderWalk");
-
-        buildAnimIfExists("spikedBallWalk", 32, 34);
-        spikedBallWalkAnim = getBuiltAnim("spikedBallWalk");
-
-        buildAnimIfExists("spikedBallCharge", 32, 34);
-        spikedBallChargeAnim = getBuiltAnim("spikedBallCharge");
-
-        // Filtro Pixel Art per non sfocare
-        for (Texture t : textures.values()) {
-            t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-        }
+    if (Gdx.files.internal("images/arrow.png").exists()) {
+      textures.put("arrow", new Texture(Gdx.files.internal("images/arrow.png")));
+    } else {
+      // Se non c'è l'immagine arrow, usa quella del player o un'altra esistente
+      textures.put("arrow", textures.get("player"));
     }
 
-    public static Texture get(String name) {
-        if (!textures.containsKey(name)) {
-            // Protezione contro i crash: se chiedi una texture che non esiste, stampa errore e ridai il
-            // player
-            System.err.println("ERRORE: Texture mancante -> " + name);
-            return textures.get("player");
-        }
-        return textures.get(name);
+    buildAnimIfExists("chaserWalk", 16, 23);
+    chaserWalkAnim = getBuiltAnim("chaserWalk");
+
+    buildAnimIfExists("rangerWalk", 16, 17);
+    rangerWalkAnim = getBuiltAnim("rangerWalk");
+
+    buildAnimIfExists("shielderWalk", 16, 27);
+    shielderWalkAnim = getBuiltAnim("shielderWalk");
+
+    buildAnimIfExists("spikedBallWalk", 32, 34);
+    spikedBallWalkAnim = getBuiltAnim("spikedBallWalk");
+
+    buildAnimIfExists("spikedBallCharge", 32, 34);
+    spikedBallChargeAnim = getBuiltAnim("spikedBallCharge");
+
+    // Filtro Pixel Art per non sfocare
+    for (Texture t : textures.values()) {
+      t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+    }
+  }
+
+  public static Texture get(String name) {
+    if (!textures.containsKey(name)) {
+      // Protezione contro i crash: se chiedi una texture che non esiste, stampa errore e ridai il
+      // player
+      System.err.println("ERRORE: Texture mancante -> " + name);
+      return textures.get("player");
+    }
+    return textures.get(name);
+  }
+
+  public static Texture getEnemyTexture(AbstractEnemy enemy) {
+    if (enemy instanceof Ranger) return get("archer");
+    if (enemy instanceof SpikedBall) return get("slime");
+    if (enemy instanceof Shielder) return get("shielder");
+    if (enemy instanceof Oblivion) return get("boss");
+    return get("skeleton");
+  }
+
+  public static TextureRegion getChaserWalkFrame(float stateTime) {
+    if (chaserWalkAnim == null) return null;
+    return chaserWalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getRangerWalkFrame(float stateTime) {
+    if (rangerWalkAnim == null) return null;
+    return rangerWalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getShielderWalkFrame(float stateTime) {
+    if (shielderWalkAnim == null) return null;
+    return shielderWalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getSpikedBallWalkFrame(float stateTime) {
+    if (spikedBallWalkAnim == null) return null;
+    return spikedBallWalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getSpikedBallChargeFrame(float stateTime) {
+    if (spikedBallChargeAnim == null) return null;
+    return spikedBallChargeAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static void dispose() {
+    for (Texture t : textures.values()) t.dispose();
+    textures.clear();
+
+    chaserWalkAnim = null;
+    rangerWalkAnim = null;
+    shielderWalkAnim = null;
+    spikedBallWalkAnim = null;
+    spikedBallChargeAnim = null;
+    builtAnims.clear();
+  }
+
+  // helper
+  private static void buildAnimIfExists(String key, int frameW, int frameH) {
+    String path = "images/" + key + ".png";
+    if (!Gdx.files.internal(path).exists()) {
+      return;
     }
 
-    public static Texture getEnemyTexture(AbstractEnemy enemy) {
-        if (enemy instanceof Ranger) return get("archer");
-        if (enemy instanceof SpikedBall) return get("slime");
-        if (enemy instanceof Shielder) return get("shielder");
-        if (enemy instanceof Oblivion) return get("boss");
-        return get("skeleton");
+    Texture tex = new Texture(Gdx.files.internal(path));
+    tex.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+    textures.put(key, tex);
+
+    int texW = tex.getWidth();
+    int texH = tex.getHeight();
+
+    int cols = texW / frameW;
+    int rows = texH / frameH;
+
+    if (cols <= 0 || rows <= 0) {
+      return;
     }
 
-    public static TextureRegion getChaserWalkFrame(float stateTime) {
-        if (chaserWalkAnim == null) return null;
-        return chaserWalkAnim.getKeyFrame(stateTime, true);
+    ArrayList<TextureRegion> frames = new ArrayList<>();
+
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        int x = c * frameW;
+        int y = r * frameH;
+        frames.add(new TextureRegion(tex, x, y, frameW, frameH));
+      }
     }
 
-    public static TextureRegion getRangerWalkFrame(float stateTime) {
-        if (rangerWalkAnim == null) return null;
-        return rangerWalkAnim.getKeyFrame(stateTime, true);
+    if (frames.isEmpty()) {
+      return;
     }
 
-    public static TextureRegion getShielderWalkFrame(float stateTime) {
-        if (shielderWalkAnim == null) return null;
-        return shielderWalkAnim.getKeyFrame(stateTime, true);
-    }
+    Animation<TextureRegion> anim = new Animation<>(0.08f, frames.toArray(new TextureRegion[0]));
+    anim.setPlayMode(Animation.PlayMode.LOOP);
+    builtAnims.put(key, anim);
+  }
 
-    public static TextureRegion getSpikedBallWalkFrame(float stateTime) {
-        if (spikedBallWalkAnim == null) return null;
-        return spikedBallWalkAnim.getKeyFrame(stateTime, true);
-    }
-
-    public static TextureRegion getSpikedBallChargeFrame(float stateTime) {
-        if (spikedBallChargeAnim == null) return null;
-        return spikedBallChargeAnim.getKeyFrame(stateTime, true);
-    }
-
-    public static void dispose() {
-        for (Texture t : textures.values()) t.dispose();
-        textures.clear();
-
-        chaserWalkAnim = null;
-        rangerWalkAnim = null;
-        shielderWalkAnim = null;
-        spikedBallWalkAnim = null;
-        spikedBallChargeAnim = null;
-        builtAnims.clear();
-    }
-
-    // helper
-    private static void buildAnimIfExists(String key, int frameW, int frameH) {
-        String path = "images/" + key + ".png";
-        if (!Gdx.files.internal(path).exists()) {
-            return;
-        }
-
-        Texture tex = new Texture(Gdx.files.internal(path));
-        tex.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-        textures.put(key, tex);
-
-        int texW = tex.getWidth();
-        int texH = tex.getHeight();
-
-        int cols = texW / frameW;
-        int rows = texH / frameH;
-
-        if (cols <= 0 || rows <= 0) {
-            return;
-        }
-
-        ArrayList<TextureRegion> frames = new ArrayList<>();
-
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                int x = c * frameW;
-                int y = r * frameH;
-                frames.add(new TextureRegion(tex, x, y, frameW, frameH));
-            }
-        }
-
-        if (frames.isEmpty()) {
-            return;
-        }
-
-        Animation<TextureRegion> anim =
-            new Animation<>(0.08f, frames.toArray(new TextureRegion[0]));
-        anim.setPlayMode(Animation.PlayMode.LOOP);
-        builtAnims.put(key, anim);
-    }
-
-    private static Animation<TextureRegion> getBuiltAnim(String key) {
-        return builtAnims.get(key);
-    }
+  private static Animation<TextureRegion> getBuiltAnim(String key) {
+    return builtAnims.get(key);
+  }
 }
