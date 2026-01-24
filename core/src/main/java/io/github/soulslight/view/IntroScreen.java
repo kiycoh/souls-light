@@ -2,6 +2,7 @@ package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -14,10 +15,10 @@ import io.github.soulslight.model.GameModel;
 
 public final class IntroScreen implements GameState {
 
-
     private static final float INTRO_DELAY = 1.2f;
-    private static final float LINE_FADE_DURATION = 2.5f;
-    private static final float LINE_DELAY = 2.8f;
+    private static final float LINE_FADE_DURATION = 1.5f;
+    private static final float LINE_DELAY = 0.8f;
+    private static final float TRANSITION_DURATION = 7f;
 
     private final SoulsLightGame game;
     private final SpriteBatch batch;
@@ -34,6 +35,11 @@ public final class IntroScreen implements GameState {
 
     private float elapsedTime = 0f;
     private boolean finished = false;
+
+    private boolean transitioning = false;
+    private float transitionTime = 0f;
+
+    private final Music transitionMusic;
 
     public IntroScreen(
         SoulsLightGame game, SpriteBatch batch, GameModel model, GameController controller) {
@@ -63,13 +69,17 @@ public final class IntroScreen implements GameState {
                 "e si trasformano in creature prive di senno.",
                 "",
                 "Tra queste, due anime scelgono di scendere nel punto più oscuro del Mu,",
-                "alla ricerca di una via di fuga..."
+                "alla ricerca di una via di fuga."
             };
 
         this.lineSpacing = font.getLineHeight() * 1.2f;
 
         this.totalDuration =
             INTRO_DELAY + (lines.length - 1) * LINE_DELAY + LINE_FADE_DURATION;
+
+        this.transitionMusic =
+            Gdx.audio.newMusic(Gdx.files.internal("audio/toExploration.mp3"));
+        this.transitionMusic.setLooping(false);
     }
 
     private void goToGame() {
@@ -81,29 +91,43 @@ public final class IntroScreen implements GameState {
 
     @Override
     public void render(float delta) {
-        if (!finished) {
-            elapsedTime += delta;
-            if (elapsedTime >= totalDuration) {
-                elapsedTime = totalDuration;
-                finished = true;
-            }
-        }
 
-        // Intro skip
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
-            || Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
-            || Gdx.input.justTouched()) {
-            if (!finished) {
-                elapsedTime = totalDuration;
-                finished = true;
-            } else {
-                // Start game once full text is on screen
+        if (transitioning) {
+            transitionTime += delta;
+            if (transitionTime >= TRANSITION_DURATION) {
                 goToGame();
+                return;
+            }
+        } else {
+            if (!finished) {
+                elapsedTime += delta;
+                if (elapsedTime >= totalDuration) {
+                    elapsedTime = totalDuration;
+                    finished = true;
+                }
+            }
+
+            // Intro skip
+            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
+                || Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
+                || Gdx.input.justTouched()) {
+                if (!finished) {
+                    elapsedTime = totalDuration;
+                    finished = true;
+                } else {
+                    // Start game once full text is on screen
+                    transitioning = true;
+                    transitionTime = 0f;
+                    transitionMusic.play();
+                }
             }
         }
 
-        // clear schermo
-        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
+        float bg = transitioning
+            ? Math.min(1f, transitionTime / TRANSITION_DURATION)
+            : 0f;
+
+        Gdx.gl.glClearColor(bg, bg, bg, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         camera.update();
@@ -114,7 +138,6 @@ public final class IntroScreen implements GameState {
         float screenWidth = Gdx.graphics.getWidth();
         float screenHeight = Gdx.graphics.getHeight();
 
-        // calcolo altezza totale del blocco di testo per centrarlo in verticale
         float totalHeight = lineSpacing * lines.length;
         float startY = (screenHeight + totalHeight) / 2f;
 
@@ -129,13 +152,12 @@ public final class IntroScreen implements GameState {
             }
 
             float alpha;
-            if (finished) {
+            if (finished || transitioning) {
                 alpha = 1f;
             } else {
                 alpha = Math.min(1f, lineTime / LINE_FADE_DURATION);
             }
 
-            // righe vuote: solo spazio, ma manteniamo la cascata temporale
             if (line.isEmpty()) {
                 continue;
             }
@@ -149,9 +171,7 @@ public final class IntroScreen implements GameState {
             font.draw(batch, layout, x, y);
         }
 
-        // reset alpha a 1
         font.setColor(1f, 1f, 1f, 1f);
-
         batch.end();
     }
 
@@ -160,17 +180,13 @@ public final class IntroScreen implements GameState {
         camera.setToOrtho(false, width, height);
     }
 
-    @Override
-    public void pause() {}
-
-    @Override
-    public void resume() {}
-
-    @Override
-    public void hide() {}
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void hide() {}
 
     @Override
     public void dispose() {
         font.dispose();
+        transitionMusic.dispose();
     }
 }

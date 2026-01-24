@@ -4,6 +4,7 @@ audio/intro.mp3
 audio/no escape.mp3
 audio/saffron.mp3
 audio/slash.mp3
+audio/toExploration.mp3
 images/0x72_DungeonTilesetII_v1.7.png
 images/archer.png
 images/arrow.png
