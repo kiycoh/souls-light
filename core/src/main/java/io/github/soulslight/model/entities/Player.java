@@ -11,7 +11,8 @@ public class Player extends Entity {
 
   private static final float BODY_RADIUS = 14.0f;
   private static final float NORMAL_DAMPING = 10.0f; // Attrito per non scivolare
-  // private float speed = 300f; al momento la speed è data da gamecontroller, da cambiare
+  // private float speed = 300f; al momento la speed è data da gamecontroller, da
+  // cambiare
   // evetualmente
   private boolean wasInKnockback = false;
 
@@ -28,7 +29,22 @@ public class Player extends Entity {
     WARRIOR {
       @Override
       public AttackStrategy getStrategy() {
-        return new WarriorAttack(35);
+        return new WarriorAttack(9000);
+      }
+
+      @Override
+      public int getBaseHP() {
+        return 600;
+      }
+
+      @Override
+      public int getBaseWill() {
+        return 30;
+      }
+
+      @Override
+      public String getSpecialAbility() {
+        return "Shield Bash";
       }
     },
     MAGE {
@@ -36,11 +52,41 @@ public class Player extends Entity {
       public AttackStrategy getStrategy() {
         return new MageAttack(45);
       }
+
+      @Override
+      public int getBaseHP() {
+        return 350;
+      }
+
+      @Override
+      public int getBaseWill() {
+        return 100;
+      }
+
+      @Override
+      public String getSpecialAbility() {
+        return "Arcane Blast";
+      }
     },
     THIEF {
       @Override
       public AttackStrategy getStrategy() {
         return new ThiefAttack(20);
+      }
+
+      @Override
+      public int getBaseHP() {
+        return 400;
+      }
+
+      @Override
+      public int getBaseWill() {
+        return 60;
+      }
+
+      @Override
+      public String getSpecialAbility() {
+        return "Shadow Step";
       }
     },
     ARCHER {
@@ -48,9 +94,30 @@ public class Player extends Entity {
       public AttackStrategy getStrategy() {
         return new ArcherAttack(25);
       }
+
+      @Override
+      public int getBaseHP() {
+        return 450;
+      }
+
+      @Override
+      public int getBaseWill() {
+        return 50;
+      }
+
+      @Override
+      public String getSpecialAbility() {
+        return "Rain of Arrows";
+      }
     };
 
     public abstract AttackStrategy getStrategy();
+
+    public abstract int getBaseHP();
+
+    public abstract int getBaseWill();
+
+    public abstract String getSpecialAbility();
   }
 
   public Player(PlayerClass type, World world, float startX, float startY) {
@@ -62,7 +129,8 @@ public class Player extends Entity {
     this.health = 500;
     this.maxHealth = 500;
     this.type = type;
-    // this.speed= 100; al momento la speed è data da gamecontroller, da cambiare evetualmente
+    // this.speed= 100; al momento la speed è data da gamecontroller, da cambiare
+    // evetualmente
     this.attackStrategy = type.getStrategy();
     this.position = new Vector2(startX, startY);
     createBody(world, startX, startY);
@@ -130,7 +198,8 @@ public class Player extends Entity {
     fdef.friction = 0.0f;
     fdef.restitution = 0.0f; // No bouncing
     fdef.filter.categoryBits = Constants.BIT_PLAYER;
-    fdef.filter.maskBits = Constants.BIT_WALL | Constants.BIT_ENEMY;
+    fdef.filter.maskBits =
+        Constants.BIT_WALL | Constants.BIT_ENEMY | Constants.BIT_DOOR | Constants.BIT_SENSOR;
 
     this.body.createFixture(fdef);
     this.body.setUserData(this);
