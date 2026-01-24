@@ -160,6 +160,11 @@ public class SpikedBall extends AbstractEnemy {
     }
   }
 
+    public boolean isCharging() {
+        return currentState == State.CHARGING;
+    }
+
+
   private void syncBody() {
     if (body != null) {
       this.position.set(body.getPosition());
