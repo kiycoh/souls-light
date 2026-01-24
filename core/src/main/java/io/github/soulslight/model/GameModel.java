@@ -54,12 +54,13 @@ public class GameModel implements Disposable, ProjectileListener {
     // ---- PLAYERS: spawn on valid flood tile ----
     Vector2 spawn = findFirstFloorSpawn(myMap);
 
-    // Player 1
-    Player p1 = new Player(Player.PlayerClass.WARRIOR, this.physicsWorld, spawn.x, spawn.y);
+    // Player 1: Uses class selected in ClassSelectionScreen
+    Player.PlayerClass selectedClass = GameManager.getInstance().getSelectedPlayerClass();
+    Player p1 = new Player(selectedClass, this.physicsWorld, spawn.x, spawn.y);
     players.add(p1);
     GameManager.getInstance().addPlayer(p1);
 
-    // Player 2 (spawn slightly offset)
+    // Player 2 (spawn slightly offset) - for co-op testing
     Player p2 = new Player(Player.PlayerClass.ARCHER, this.physicsWorld, spawn.x + 20, spawn.y);
     players.add(p2);
     GameManager.getInstance().addPlayer(p2);

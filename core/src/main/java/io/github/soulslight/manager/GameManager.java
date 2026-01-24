@@ -8,7 +8,8 @@ import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.map.MapGenerationStrategy;
 
 /**
- * Pattern: Singleton Central coordinator for game state, campaign progression, and player
+ * Pattern: Singleton Central coordinator for game state, campaign progression,
+ * and player
  * management.
  */
 public class GameManager {
@@ -23,6 +24,9 @@ public class GameManager {
   private GameMode gameMode = GameMode.STORY;
   private int currentLevelIndex = 1;
   private long campaignSeed;
+
+  // Selected player class (default: WARRIOR)
+  private Player.PlayerClass selectedPlayerClass = Player.PlayerClass.WARRIOR;
 
   private GameManager() {
     this.players = new java.util.ArrayList<>();
@@ -139,6 +143,16 @@ public class GameManager {
 
   public boolean isFinalLevel() {
     return gameMode == GameMode.STORY && currentLevelIndex >= LevelFactory.getStoryModeLevelCount();
+  }
+
+  // --- Player Class Selection ---
+
+  public void setSelectedPlayerClass(Player.PlayerClass playerClass) {
+    this.selectedPlayerClass = playerClass;
+  }
+
+  public Player.PlayerClass getSelectedPlayerClass() {
+    return selectedPlayerClass;
   }
 
   // --- Cleanup ---
