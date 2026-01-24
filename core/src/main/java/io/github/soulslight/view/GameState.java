@@ -7,4 +7,9 @@ import com.badlogic.gdx.Screen;
  * be final because of sealed hierarchy.
  */
 public sealed interface GameState extends Screen
-    permits SplashScreen, MainMenuScreen, ClassSelectionScreen, GameScreen, SettingsScreen {}
+    permits SplashScreen,
+        MainMenuScreen,
+        ClassSelectionScreen,
+        GameScreen,
+        SettingsScreen,
+        IntroScreen {}
