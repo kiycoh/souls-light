@@ -62,22 +62,23 @@ public final class ClassSelectionScreen implements GameState {
         setupUI();
     }
 
-    /**
-     * Creates placeholder textures for mockup purposes. Will be replaced by artist
-     * assets.
-     */
     private void createMockupTextures() {
-        // Default dark background
-        defaultBackground = createSolidTexture(new Color(0.1f, 0.1f, 0.15f, 1f));
+        // Default background
+        defaultBackground = new Texture(
+            Gdx.files.internal("images/class_selection/default.png"));
 
-        // Class-specific backgrounds (mockup colors for now)
+        // Class-specific backgrounds
         classBackgrounds = new Texture[PlayerClass.values().length];
-        classBackgrounds[PlayerClass.WARRIOR.ordinal()] = createSolidTexture(new Color(0.3f, 0.15f, 0.1f, 1f)); // Reddish
-        classBackgrounds[PlayerClass.MAGE.ordinal()] = createSolidTexture(new Color(0.1f, 0.15f, 0.3f, 1f)); // Bluish
-        classBackgrounds[PlayerClass.THIEF.ordinal()] = createSolidTexture(new Color(0.15f, 0.15f, 0.15f, 1f)); // Dark
-                                                                                                                // gray
-        classBackgrounds[PlayerClass.ARCHER.ordinal()] = createSolidTexture(new Color(0.1f, 0.25f, 0.15f, 1f)); // Greenish
+        classBackgrounds[PlayerClass.WARRIOR.ordinal()] =
+            new Texture(Gdx.files.internal("images/class_selection/warrior.png"));
+        classBackgrounds[PlayerClass.MAGE.ordinal()] =
+            new Texture(Gdx.files.internal("images/class_selection/mage.png"));
+        classBackgrounds[PlayerClass.THIEF.ordinal()] =
+            new Texture(Gdx.files.internal("images/class_selection/thief.png"));
+        classBackgrounds[PlayerClass.ARCHER.ordinal()] =
+            new Texture(Gdx.files.internal("images/class_selection/archer.png"));
     }
+
 
     private Texture createSolidTexture(Color color) {
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -125,7 +126,7 @@ public final class ClassSelectionScreen implements GameState {
         Label.LabelStyle statStyle = new Label.LabelStyle(font, Color.WHITE);
 
         font.getData().setScale(2.0f);
-        classNameLabel = new Label("Select a Class", titleStyle);
+        classNameLabel = new Label("Who were you?", titleStyle);
         classNameLabel.setFontScale(2.0f);
         panel.add(classNameLabel).row();
 
