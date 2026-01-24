@@ -11,14 +11,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
-import make.some.noise.Noise;
 
 public record NoiseMapStrategy(
     long seed, int width, int height, float frequency, int octaves, float wallThreshold)
     implements MapGenerationStrategy {
 
   private static final int TILE_SIZE = 32;
-  private static final int SMOOTHING_ITERATIONS = 3;
+  // Increased iterations for better cave formation
+  private static final int SMOOTHING_ITERATIONS = 5;
+  // Border padding to ensure closed caves
+  private static final int BORDER_SIZE = 2;
+
+  /** Key for storing portal position in map properties (Vector2 in world units). */
+  public static final String PORTAL_POSITION_KEY = "portalPosition";
 
   @Override
   public TiledMap generate() {
@@ -30,15 +35,9 @@ public record NoiseMapStrategy(
 
     var layer = new TiledMapTileLayer(width, height, TILE_SIZE, TILE_SIZE);
 
-    var noise = new Noise();
-    noise.setSeed((int) seed);
-    noise.setNoiseType(Noise.VALUE);
-    noise.setFrequency(frequency);
-    noise.setFractalOctaves(octaves);
-
     ResourceManager rm = ResourceManager.getInstance();
 
-    // --- FLOOR TILES  ---
+    // --- FLOOR TILES ---
     TextureRegion[] floorRegions = rm.getFloorTextureRegions();
     StaticTiledMapTile[] floorTiles;
 
@@ -50,7 +49,8 @@ public record NoiseMapStrategy(
         floorTiles[i] = t;
       }
     } else {
-      // fallback: if for some reason no variants are available, use the old single floor tile
+      // fallback: if for some reason no variants are available, use the old single
+      // floor tile
       StaticTiledMapTile singleFloor = new StaticTiledMapTile(rm.getFloorTextureRegion());
       singleFloor.getProperties().put("type", "floor");
       floorTiles = new StaticTiledMapTile[] {singleFloor};
@@ -92,25 +92,39 @@ public record NoiseMapStrategy(
 
     Random rnd = new Random(seed);
 
+    // === CAVE GENERATION: White Noise Initialization ===
+    // Use wallThreshold as initial wall fill percentage (e.g., 0.45 = 45% walls)
+    // This replaces the coherent noise approach for proper cave formation
+    float initialFillPercent = wallThreshold > 0 && wallThreshold < 1 ? wallThreshold : 0.45f;
+
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        float n = noise.getConfiguredNoise(x, y);
-
-        if (n > wallThreshold) {
+        // Force walls at borders to ensure closed caves
+        if (x < BORDER_SIZE
+            || x >= width - BORDER_SIZE
+            || y < BORDER_SIZE
+            || y >= height - BORDER_SIZE) {
           setTile(layer, x, y, genericWallTile);
         } else {
-          StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
-          setTile(layer, x, y, selectedTile);
+          // Random fill: white noise seed for cellular automata
+          if (rnd.nextFloat() < initialFillPercent) {
+            setTile(layer, x, y, genericWallTile);
+          } else {
+            StaticTiledMapTile selectedTile = floorTiles[rnd.nextInt(floorTiles.length)];
+            setTile(layer, x, y, selectedTile);
+          }
         }
       }
     }
+
+    // Apply cellular automata smoothing (4-5 rule)
     for (int i = 0; i < SMOOTHING_ITERATIONS; i++) {
       smoothMap(layer, genericWallTile, floorTiles, rnd);
     }
 
     List<List<GridPoint2>> regions = getRegions(layer);
 
-    System.out.println("Map Generation Log:");
+    System.out.println("Cave Generation Log:");
     System.out.println("Found " + regions.size() + " disconnected regions.");
     for (int i = 0; i < regions.size(); i++) {
       System.out.println("Region " + i + " Size: " + regions.get(i).size() + " tiles.");
@@ -118,6 +132,17 @@ public record NoiseMapStrategy(
 
     if (regions.size() > 1) {
       connectRegions(regions, layer, floorTiles, rnd);
+    }
+
+    // === PORTAL PLACEMENT: Find tile farthest from spawn ===
+    GridPoint2 spawnTile = findFirstFloorTile(layer);
+    GridPoint2 portalTile = findFarthestFloorTile(layer, spawnTile);
+    if (portalTile != null) {
+      float portalX = portalTile.x * TILE_SIZE + TILE_SIZE / 2f;
+      float portalY = portalTile.y * TILE_SIZE + TILE_SIZE / 2f;
+      map.getProperties()
+          .put(PORTAL_POSITION_KEY, new com.badlogic.gdx.math.Vector2(portalX, portalY));
+      System.out.println("Portal placed at tile (" + portalTile.x + ", " + portalTile.y + ")");
     }
 
     applyWallAutotiling(layer, wallMaskTiles, innerNeTile, innerNwTile, innerSeTile, innerSwTile);
@@ -379,5 +404,72 @@ public record NoiseMapStrategy(
     return cell != null
         && cell.getTile() != null
         && "wall".equals(cell.getTile().getProperties().get("type"));
+  }
+
+  /**
+   * Finds the first floor tile in the map (used as spawn reference). Scans from bottom-left to find
+   * the first accessible floor.
+   */
+  private GridPoint2 findFirstFloorTile(TiledMapTileLayer layer) {
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        if (isFloor(layer, x, y)) {
+          return new GridPoint2(x, y);
+        }
+      }
+    }
+    return new GridPoint2(width / 2, height / 2); // Fallback to center
+  }
+
+  /**
+   * Uses BFS to find the floor tile farthest from the start position. This ensures the portal is
+   * placed at maximum exploration distance.
+   */
+  private GridPoint2 findFarthestFloorTile(TiledMapTileLayer layer, GridPoint2 start) {
+    if (start == null) return null;
+
+    int[][] distances = new int[width][height];
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        distances[x][y] = -1; // Unvisited
+      }
+    }
+
+    Queue<GridPoint2> queue = new LinkedList<>();
+    queue.add(start);
+    distances[start.x][start.y] = 0;
+
+    GridPoint2 farthest = start;
+    int maxDistance = 0;
+
+    int[] dx = {0, 0, 1, -1};
+    int[] dy = {1, -1, 0, 0};
+
+    while (!queue.isEmpty()) {
+      GridPoint2 current = queue.poll();
+      int currentDist = distances[current.x][current.y];
+
+      if (currentDist > maxDistance) {
+        maxDistance = currentDist;
+        farthest = current;
+      }
+
+      for (int i = 0; i < 4; i++) {
+        int nx = current.x + dx[i];
+        int ny = current.y + dy[i];
+
+        if (nx >= 0
+            && nx < width
+            && ny >= 0
+            && ny < height
+            && distances[nx][ny] == -1
+            && isFloor(layer, nx, ny)) {
+          distances[nx][ny] = currentDist + 1;
+          queue.add(new GridPoint2(nx, ny));
+        }
+      }
+    }
+
+    return farthest;
   }
 }

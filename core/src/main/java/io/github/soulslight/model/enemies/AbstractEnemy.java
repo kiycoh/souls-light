@@ -3,16 +3,21 @@ package io.github.soulslight.model.enemies;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import io.github.soulslight.model.combat.ProjectileListener;
 import io.github.soulslight.model.enemies.ai.EnemyState;
 import io.github.soulslight.model.entities.Entity;
 import io.github.soulslight.model.entities.Player;
+import io.github.soulslight.model.room.EnemyDeathListener;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class AbstractEnemy extends Entity implements Cloneable {
 
+  protected List<ProjectileListener> projectileListeners = new ArrayList<>();
+
   protected Vector2 lastKnownPlayerPos =
-      new Vector2(); // serve oer ricordare l'ultima posizione del player per cercarlo qualora lo
+      new Vector2(); // serve oer ricordare l'ultima posizione del player per
+  // cercarlo qualora lo
   // perdesse
   protected float searchTimer = 0;
   protected final float SEARCH_DURATION = 2.0f;
@@ -25,6 +30,7 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
   protected float speed;
 
   private EnemyState aiState;
+  private EnemyDeathListener deathListener;
 
   public AbstractEnemy() {
     super();
@@ -73,6 +79,11 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     fdef.shape = shape;
     fdef.density = 1.0f;
     fdef.friction = 0.0f;
+    fdef.filter.categoryBits = io.github.soulslight.model.Constants.BIT_ENEMY;
+    fdef.filter.maskBits =
+        io.github.soulslight.model.Constants.BIT_WALL
+            | io.github.soulslight.model.Constants.BIT_PLAYER
+            | io.github.soulslight.model.Constants.BIT_DOOR;
 
     this.body.createFixture(fdef);
     this.body.setUserData(this);
@@ -146,13 +157,13 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     this.position.set(body.getPosition());
   }
 
-  //  Metodo per il pattugliamento
+  // Metodo per il pattugliamento
   protected void updateWanderPatrol(float deltaTime) {
     if (body == null) return;
 
     wanderTimer -= deltaTime;
 
-    //  serve per non farli allontanare troppo dallo spawn
+    // serve per non farli allontanare troppo dallo spawn
     if (getPosition().dst(spawnPoint) > MAX_WANDER_DIST) {
       patrolAngle = new Vector2(spawnPoint).sub(getPosition()).angleDeg();
       wanderTimer = 2.0f;
@@ -189,7 +200,8 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     this.position.set(body.getPosition());
   }
 
-  // metodo che testa effettivamente la presenza di una parete lungo il cammino dei nemici
+  // metodo che testa effettivamente la presenza di una parete lungo il cammino
+  // dei nemici
   private boolean checkObstacle(float angleOffset) {
     final boolean[] hit = {false};
 
@@ -226,7 +238,8 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     this.spawnPoint.set(x, y);
   }
 
-  // metodo che toglie il corpo fisico dal mondo una volta morto in modo da non avere sovraccarico
+  // metodo che toglie il corpo fisico dal mondo una volta morto in modo da non
+  // avere sovraccarico
   // in memoria
   public void destroyBody(World world) {
     if (body != null) {
@@ -273,6 +286,24 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     this.searchTimer = searchTimer;
   }
 
+  /**
+   * Sets the death listener for this enemy (Observer pattern).
+   *
+   * @param listener The listener to notify on death
+   */
+  public void setDeathListener(EnemyDeathListener listener) {
+    this.deathListener = listener;
+  }
+
+  /** Override to notify death listener when enemy dies. */
+  @Override
+  public void takeDamage(float amount) {
+    super.takeDamage(amount);
+    if (isDead() && deathListener != null) {
+      deathListener.onEnemyDied(this);
+    }
+  }
+
   public abstract void updateBehavior(List<Player> players, float deltaTime);
 
   @Override
@@ -281,5 +312,21 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
   public void attack(List<Player> players) {
     if (this.attackStrategy == null) return;
     this.attackStrategy.executeAttack(this, new ArrayList<>(players));
+  }
+
+  public void addProjectileListener(ProjectileListener listener) {
+    if (!projectileListeners.contains(listener)) {
+      projectileListeners.add(listener);
+    }
+  }
+
+  public void removeProjectileListener(ProjectileListener listener) {
+    projectileListeners.remove(listener);
+  }
+
+  protected void notifyProjectileRequest(Vector2 origin, Vector2 target, String type) {
+    for (ProjectileListener listener : projectileListeners) {
+      listener.onProjectileRequest(origin, target, type);
+    }
   }
 }

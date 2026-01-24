@@ -55,6 +55,12 @@ public class SpikedBall extends AbstractEnemy {
     Player target = getNearestTarget(players);
     if (target == null) return;
 
+    // Feature Logic: RoomIdleState check
+    if (getCurrentState() instanceof io.github.soulslight.model.enemies.ai.RoomIdleState) {
+      getCurrentState().update(this, players, deltaTime);
+      return;
+    }
+
     syncBody();
 
     boolean canSee = canSeePlayer(target, body.getWorld());

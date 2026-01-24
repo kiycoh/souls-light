@@ -455,6 +455,10 @@ intro/intro_0440.png
 maps/MAppa.tmx
 maps/MAppa2.tmx
 maps/MappaSoul'sLight.tiled-session
+savegame.bak
+savegame.sav
+savegame_0.sav
+savegame_0.sav.bak
 tiles/floor1.png
 tiles/floor2.png
 tiles/floor3.png
