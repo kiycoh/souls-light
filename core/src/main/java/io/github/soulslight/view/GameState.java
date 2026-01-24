@@ -8,8 +8,8 @@ import com.badlogic.gdx.Screen;
  */
 public sealed interface GameState extends Screen
     permits SplashScreen,
-    MainMenuScreen,
-    ClassSelectionScreen,
-    GameScreen,
-    SettingsScreen,
-    IntroScreen {}
+        MainMenuScreen,
+        ClassSelectionScreen,
+        GameScreen,
+        SettingsScreen,
+        IntroScreen {}
