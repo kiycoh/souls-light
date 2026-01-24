@@ -27,10 +27,10 @@ import io.github.soulslight.model.enemies.Shielder;
 import io.github.soulslight.model.enemies.SpikedBall;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import io.github.soulslight.model.room.Portal;
 import io.github.soulslight.model.room.PortalRoom;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 public final class GameScreen implements GameState {
 

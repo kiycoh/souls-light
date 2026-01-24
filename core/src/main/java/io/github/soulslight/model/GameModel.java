@@ -14,6 +14,7 @@ import io.github.soulslight.model.entities.Projectile;
 import io.github.soulslight.model.map.DungeonMapStrategy;
 import io.github.soulslight.model.map.Level;
 import io.github.soulslight.model.map.LevelBuilder;
+import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.map.MapGenerationStrategy;
 import io.github.soulslight.model.map.NoiseMapStrategy;
 import io.github.soulslight.model.physics.GameContactListener;
