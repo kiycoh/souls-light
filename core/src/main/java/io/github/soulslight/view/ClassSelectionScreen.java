@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -25,8 +26,7 @@ import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.entities.Player.PlayerClass;
 
 /**
- * Pattern: State Class selection screen shown after Story Mode is selected.
- * Allows the player to
+ * Pattern: State Class selection screen shown after Story Mode is selected. Allows the player to
  * choose a character class before starting gameplay.
  */
 public final class ClassSelectionScreen implements GameState {
@@ -62,10 +62,10 @@ public final class ClassSelectionScreen implements GameState {
         setupUI();
     }
 
+    /** Creates placeholder textures for mockup purposes. Will be replaced by artist assets. */
     private void createMockupTextures() {
         // Default background
-        defaultBackground = new Texture(
-            Gdx.files.internal("images/class_selection/default.png"));
+        defaultBackground = new Texture(Gdx.files.internal("images/class_selection/default.png"));
 
         // Class-specific backgrounds
         classBackgrounds = new Texture[PlayerClass.values().length];
@@ -78,7 +78,6 @@ public final class ClassSelectionScreen implements GameState {
         classBackgrounds[PlayerClass.ARCHER.ordinal()] =
             new Texture(Gdx.files.internal("images/class_selection/archer.png"));
     }
-
 
     private Texture createSolidTexture(Color color) {
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -109,12 +108,12 @@ public final class ClassSelectionScreen implements GameState {
         TextButton backButton = new TextButton("Back", buttonStyle);
         backButton.setPosition(50, 50);
         backButton.addListener(
-                new ClickListener() {
-                    @Override
-                    public void clicked(InputEvent event, float x, float y) {
-                        game.setScreen(new MainMenuScreen(game, batch));
-                    }
-                });
+            new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    game.setScreen(new MainMenuScreen(game, batch));
+                }
+            });
         stage.addActor(backButton);
     }
 
@@ -126,21 +125,23 @@ public final class ClassSelectionScreen implements GameState {
         Label.LabelStyle statStyle = new Label.LabelStyle(font, Color.WHITE);
 
         font.getData().setScale(2.0f);
-        classNameLabel = new Label("Who were you?", titleStyle);
+        classNameLabel = new Label(" Who were you?", titleStyle);
         classNameLabel.setFontScale(2.0f);
         panel.add(classNameLabel).row();
 
-        font.getData().setScale(1.3f);
         hpLabel = new Label("HP: ---", statStyle);
         hpLabel.setFontScale(1.3f);
+        hpLabel.setVisible(false);
         panel.add(hpLabel).row();
 
         willLabel = new Label("Will: ---", statStyle);
         willLabel.setFontScale(1.3f);
+        willLabel.setVisible(false);
         panel.add(willLabel).row();
 
         abilityLabel = new Label("Special: ---", statStyle);
         abilityLabel.setFontScale(1.3f);
+        abilityLabel.setVisible(false);
         panel.add(abilityLabel).row();
 
         return panel;
@@ -205,22 +206,36 @@ public final class ClassSelectionScreen implements GameState {
         willLabel.setText("Will: " + playerClass.getBaseWill());
         abilityLabel.setText("Special: " + playerClass.getSpecialAbility());
 
-        // Update background
-        backgroundImage.setDrawable(
-                new TextureRegionDrawable(classBackgrounds[playerClass.ordinal()]));
+        hpLabel.setVisible(true);
+        willLabel.setVisible(true);
+        abilityLabel.setVisible(true);
+
+        // Update background fade-in
+        backgroundImage.clearActions();
+        backgroundImage.setDrawable(new TextureRegionDrawable(classBackgrounds[playerClass.ordinal()]));
+        Color c = backgroundImage.getColor();
+        backgroundImage.setColor(c.r, c.g, c.b, 0f);
+        backgroundImage.addAction(Actions.fadeIn(0.25f));
     }
 
     private void onClassUnhover() {
         hoveredClass = null;
 
         // Reset stats panel
-        classNameLabel.setText("Who were you?");
+        classNameLabel.setText(" Who were you?");
         hpLabel.setText("HP: ---");
         willLabel.setText("Will: ---");
         abilityLabel.setText("Special: ---");
+        hpLabel.setVisible(false);
+        willLabel.setVisible(false);
+        abilityLabel.setVisible(false);
 
-        // Reset background
+        // Reset background fade-in
+        backgroundImage.clearActions();
         backgroundImage.setDrawable(new TextureRegionDrawable(defaultBackground));
+        Color c = backgroundImage.getColor();
+        backgroundImage.setColor(c.r, c.g, c.b, 0f);
+        backgroundImage.addAction(Actions.fadeIn(0.25f));
     }
 
     private void onClassSelected(PlayerClass playerClass) {
@@ -247,27 +262,22 @@ public final class ClassSelectionScreen implements GameState {
     }
 
     @Override
-    public void pause() {
-    }
+    public void pause() {}
 
     @Override
-    public void resume() {
-    }
+    public void resume() {}
 
     @Override
-    public void hide() {
-    }
+    public void hide() {}
 
     @Override
     public void dispose() {
         stage.dispose();
         font.dispose();
-        if (defaultBackground != null)
-            defaultBackground.dispose();
+        if (defaultBackground != null) defaultBackground.dispose();
         if (classBackgrounds != null) {
             for (Texture tex : classBackgrounds) {
-                if (tex != null)
-                    tex.dispose();
+                if (tex != null) tex.dispose();
             }
         }
     }
