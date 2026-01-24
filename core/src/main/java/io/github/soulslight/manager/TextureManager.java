@@ -20,23 +20,29 @@ public class TextureManager {
   private static Animation<TextureRegion> rangerWalkAnim;
   private static Animation<TextureRegion> shielderWalkAnim;
   private static Animation<TextureRegion> spikedBallWalkAnim;
+
   private static Animation<TextureRegion> spikedBallChargeAnim;
 
   private static final Map<String, Animation<TextureRegion>> builtAnims = new HashMap<>();
+
+  // used for tests
+  private static String ASSETS_BASE = "";
 
   public static void load() {
     // Carica le texture e assegna le chiavi sottoforma di stringhe
     if (!textures.isEmpty()) return;
 
-    textures.put("player", new Texture(Gdx.files.internal("images/player.png")));
-    textures.put("skeleton", new Texture(Gdx.files.internal("images/skeleton.png")));
-    textures.put("archer", new Texture(Gdx.files.internal("images/archer.png")));
-    textures.put("slime", new Texture(Gdx.files.internal("images/slime.png")));
-    textures.put("shielder", new Texture(Gdx.files.internal("images/shielder.png")));
-    textures.put("boss", new Texture(Gdx.files.internal("images/boss.png")));
+    detectAssetsBase();
 
-    if (Gdx.files.internal("images/arrow.png").exists()) {
-      textures.put("arrow", new Texture(Gdx.files.internal("images/arrow.png")));
+    textures.put("player", new Texture(Gdx.files.internal(ASSETS_BASE + "images/player.png")));
+    textures.put("skeleton", new Texture(Gdx.files.internal(ASSETS_BASE + "images/skeleton.png")));
+    textures.put("archer", new Texture(Gdx.files.internal(ASSETS_BASE + "images/archer.png")));
+    textures.put("slime", new Texture(Gdx.files.internal(ASSETS_BASE + "images/slime.png")));
+    textures.put("shielder", new Texture(Gdx.files.internal(ASSETS_BASE + "images/shielder.png")));
+    textures.put("boss", new Texture(Gdx.files.internal(ASSETS_BASE + "images/boss.png")));
+
+    if (Gdx.files.internal(ASSETS_BASE + "images/arrow.png").exists()) {
+      textures.put("arrow", new Texture(Gdx.files.internal(ASSETS_BASE + "images/arrow.png")));
     } else {
       // Se non c'è l'immagine arrow, usa quella del player o un'altra esistente
       textures.put("arrow", textures.get("player"));
@@ -57,9 +63,19 @@ public class TextureManager {
     buildAnimIfExists("spikedBallCharge", 32, 34);
     spikedBallChargeAnim = getBuiltAnim("spikedBallCharge");
 
-    // Filtro Pixel Art per non sfocare
+    // Filtro Pixel Art
     for (Texture t : textures.values()) {
       t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+    }
+  }
+
+  private static void detectAssetsBase() {
+    if (Gdx.files.internal("images/player.png").exists()) {
+      ASSETS_BASE = "";
+    } else if (Gdx.files.internal("../assets/images/player.png").exists()) {
+      ASSETS_BASE = "../assets/";
+    } else {
+      ASSETS_BASE = "";
     }
   }
 
@@ -120,7 +136,7 @@ public class TextureManager {
 
   // helper
   private static void buildAnimIfExists(String key, int frameW, int frameH) {
-    String path = "images/" + key + ".png";
+    String path = ASSETS_BASE + "images/" + key + ".png";
     if (!Gdx.files.internal(path).exists()) {
       return;
     }
