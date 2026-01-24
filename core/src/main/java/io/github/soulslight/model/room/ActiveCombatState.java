@@ -3,8 +3,7 @@ package io.github.soulslight.model.room;
 import io.github.soulslight.model.entities.Player;
 
 /**
- * Pattern: State (Concrete State) Combat state: doors locked, enemies active.
- * Monitors enemy count
+ * Pattern: State (Concrete State) Combat state: doors locked, enemies active. Monitors enemy count
  * for transition to ClearedState.
  */
 public final class ActiveCombatState implements RoomState {
@@ -12,8 +11,7 @@ public final class ActiveCombatState implements RoomState {
   /** Singleton instance for state flyweight optimization. */
   public static final ActiveCombatState INSTANCE = new ActiveCombatState();
 
-  private ActiveCombatState() {
-  }
+  private ActiveCombatState() {}
 
   @Override
   public void onEnter(Room room) {
@@ -30,8 +28,8 @@ public final class ActiveCombatState implements RoomState {
   }
 
   /**
-   * Teleports all players just inside the nearest door.
-   * Prevents edge case where players are on door tiles when doors close.
+   * Teleports all players just inside the nearest door. Prevents edge case where players are on
+   * door tiles when doors close.
    */
   private void teleportPlayersInsideDoor(RoomManager manager, Room room) {
     // Offset distance from door into the room - reduced to avoid "center" feel in
@@ -39,8 +37,7 @@ public final class ActiveCombatState implements RoomState {
     final float DOOR_OFFSET = 35f;
 
     for (Player player : manager.getPlayers()) {
-      if (player == null || player.getBody() == null)
-        continue;
+      if (player == null || player.getBody() == null) continue;
 
       // Find the closest door to this player
       Door nearestDoor = findNearestDoor(room, player);
@@ -61,7 +58,13 @@ public final class ActiveCombatState implements RoomState {
       }
 
       System.out.println(
-          "Teleporting player to: " + targetX + ", " + targetY + " (DoorDir: " + nearestDoor.getDirection() + ")");
+          "Teleporting player to: "
+              + targetX
+              + ", "
+              + targetY
+              + " (DoorDir: "
+              + nearestDoor.getDirection()
+              + ")");
 
       // SetTransform moves the physics body instantly
       player.getBody().setTransform(targetX, targetY, 0);
@@ -70,9 +73,7 @@ public final class ActiveCombatState implements RoomState {
     }
   }
 
-  /**
-   * Finds the door closest to the player's current position.
-   */
+  /** Finds the door closest to the player's current position. */
   private Door findNearestDoor(Room room, Player player) {
     Door nearest = null;
     float minDist = Float.MAX_VALUE;

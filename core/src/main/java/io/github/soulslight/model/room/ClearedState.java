@@ -1,8 +1,7 @@
 package io.github.soulslight.model.room;
 
 /**
- * Pattern: State (Concrete State) Terminal state: room cleared, doors unlocked.
- * Optional loot spawn
+ * Pattern: State (Concrete State) Terminal state: room cleared, doors unlocked. Optional loot spawn
  * trigger could be added here.
  */
 public final class ClearedState implements RoomState {
@@ -10,8 +9,7 @@ public final class ClearedState implements RoomState {
   /** Singleton instance for state flyweight optimization. */
   public static final ClearedState INSTANCE = new ClearedState();
 
-  private ClearedState() {
-  }
+  private ClearedState() {}
 
   @Override
   public void onEnter(Room room) {

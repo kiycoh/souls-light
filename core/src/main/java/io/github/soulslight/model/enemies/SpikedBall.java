@@ -51,11 +51,9 @@ public class SpikedBall extends AbstractEnemy {
 
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players.isEmpty() || this.health <= 0)
-      return;
+    if (players.isEmpty() || this.health <= 0) return;
     Player target = getNearestTarget(players);
-    if (target == null)
-      return;
+    if (target == null) return;
 
     // Feature Logic: RoomIdleState check
     if (getCurrentState() instanceof io.github.soulslight.model.enemies.ai.RoomIdleState) {
@@ -74,8 +72,7 @@ public class SpikedBall extends AbstractEnemy {
       if (currentState != State.COOLDOWN) {
         currentState = State.COOLDOWN;
         stateTimer = COOLDOWN_TIME;
-        if (body != null)
-          body.setLinearVelocity(0, 0);
+        if (body != null) body.setLinearVelocity(0, 0);
       }
 
       stateTimer -= deltaTime;
@@ -120,8 +117,7 @@ public class SpikedBall extends AbstractEnemy {
   private void stopCharge() {
     this.currentState = State.COOLDOWN;
     this.stateTimer = COOLDOWN_TIME;
-    if (body != null)
-      body.setLinearVelocity(0, 0);
+    if (body != null) body.setLinearVelocity(0, 0);
   }
 
   private void handleSearchLogic(float deltaTime) {
@@ -129,8 +125,7 @@ public class SpikedBall extends AbstractEnemy {
     if (distToLastPos > 20f) {
       moveTowards(lastKnownPlayerPos, deltaTime);
     } else {
-      if (body != null)
-        body.setLinearVelocity(0, 0);
+      if (body != null) body.setLinearVelocity(0, 0);
     }
   }
 
