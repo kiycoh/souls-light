@@ -2,16 +2,27 @@ package io.github.soulslight.manager;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import io.github.soulslight.model.enemies.AbstractEnemy;
 import io.github.soulslight.model.enemies.Oblivion;
 import io.github.soulslight.model.enemies.Ranger;
 import io.github.soulslight.model.enemies.Shielder;
 import io.github.soulslight.model.enemies.SpikedBall;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TextureManager {
   private static final Map<String, Texture> textures = new HashMap<>();
+
+  private static Animation<TextureRegion> chaserWalkAnim;
+  private static Animation<TextureRegion> rangerWalkAnim;
+  private static Animation<TextureRegion> shielderWalkAnim;
+  private static Animation<TextureRegion> spikedBallWalkAnim;
+  private static Animation<TextureRegion> spikedBallChargeAnim;
+
+  private static final Map<String, Animation<TextureRegion>> builtAnims = new HashMap<>();
 
   public static void load() {
     // Carica le texture e assegna le chiavi sottoforma di stringhe
@@ -30,6 +41,21 @@ public class TextureManager {
       // Se non c'è l'immagine arrow, usa quella del player o un'altra esistente
       textures.put("arrow", textures.get("player"));
     }
+
+    buildAnimIfExists("chaserWalk", 16, 23);
+    chaserWalkAnim = getBuiltAnim("chaserWalk");
+
+    buildAnimIfExists("rangerWalk", 16, 17);
+    rangerWalkAnim = getBuiltAnim("rangerWalk");
+
+    buildAnimIfExists("shielderWalk", 16, 27);
+    shielderWalkAnim = getBuiltAnim("shielderWalk");
+
+    buildAnimIfExists("spikedBallWalk", 32, 34);
+    spikedBallWalkAnim = getBuiltAnim("spikedBallWalk");
+
+    buildAnimIfExists("spikedBallCharge", 32, 34);
+    spikedBallChargeAnim = getBuiltAnim("spikedBallCharge");
 
     // Filtro Pixel Art per non sfocare
     for (Texture t : textures.values()) {
@@ -55,8 +81,84 @@ public class TextureManager {
     return get("skeleton");
   }
 
+  public static TextureRegion getChaserWalkFrame(float stateTime) {
+    if (chaserWalkAnim == null) return null;
+    return chaserWalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getRangerWalkFrame(float stateTime) {
+    if (rangerWalkAnim == null) return null;
+    return rangerWalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getShielderWalkFrame(float stateTime) {
+    if (shielderWalkAnim == null) return null;
+    return shielderWalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getSpikedBallWalkFrame(float stateTime) {
+    if (spikedBallWalkAnim == null) return null;
+    return spikedBallWalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getSpikedBallChargeFrame(float stateTime) {
+    if (spikedBallChargeAnim == null) return null;
+    return spikedBallChargeAnim.getKeyFrame(stateTime, true);
+  }
+
   public static void dispose() {
     for (Texture t : textures.values()) t.dispose();
     textures.clear();
+
+    chaserWalkAnim = null;
+    rangerWalkAnim = null;
+    shielderWalkAnim = null;
+    spikedBallWalkAnim = null;
+    spikedBallChargeAnim = null;
+    builtAnims.clear();
+  }
+
+  // helper
+  private static void buildAnimIfExists(String key, int frameW, int frameH) {
+    String path = "images/" + key + ".png";
+    if (!Gdx.files.internal(path).exists()) {
+      return;
+    }
+
+    Texture tex = new Texture(Gdx.files.internal(path));
+    tex.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+    textures.put(key, tex);
+
+    int texW = tex.getWidth();
+    int texH = tex.getHeight();
+
+    int cols = texW / frameW;
+    int rows = texH / frameH;
+
+    if (cols <= 0 || rows <= 0) {
+      return;
+    }
+
+    ArrayList<TextureRegion> frames = new ArrayList<>();
+
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        int x = c * frameW;
+        int y = r * frameH;
+        frames.add(new TextureRegion(tex, x, y, frameW, frameH));
+      }
+    }
+
+    if (frames.isEmpty()) {
+      return;
+    }
+
+    Animation<TextureRegion> anim = new Animation<>(0.08f, frames.toArray(new TextureRegion[0]));
+    anim.setPlayMode(Animation.PlayMode.LOOP);
+    builtAnims.put(key, anim);
+  }
+
+  private static Animation<TextureRegion> getBuiltAnim(String key) {
+    return builtAnims.get(key);
   }
 }
