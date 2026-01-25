@@ -25,6 +25,11 @@ public class Oblivion extends AbstractEnemy {
     private float shootTimer = 0f;
     private float retreatTimer = 0f;
 
+    // Timer interno per l'attacco melee (windup + swing)
+    private float attackTimer = 0f;
+    private boolean hasDealtMeleeDamage = false;
+
+    // cooldown tra un melee e l'altro
     private float attackCooldown = 0f;
 
     private final List<Vector2> shotTargets = new ArrayList<>();
@@ -45,6 +50,11 @@ public class Oblivion extends AbstractEnemy {
     private static final float BOSS_DAMAGE = 40f;
     private static final float RETREAT_DURATION = 1.5f;
 
+    // tempi per le fasi dell'animazione melee
+    private static final float MELEE_WINDUP_TIME = 0.3f;
+    private static final float MELEE_ATTACK_TIME = 0.4f;
+    private static final float MELEE_COOLDOWN = 1.0f; // tempo minimo tra due melee completi
+
     private AttackStrategy meleeStrategy;
 
     public Oblivion() {
@@ -64,7 +74,6 @@ public class Oblivion extends AbstractEnemy {
         this.isPhaseTwo = target.isPhaseTwo;
         this.teleportTimer = target.teleportTimer;
         this.meleeStrategy = target.meleeStrategy;
-        // Copia i confini nel clone
         this.mapWidthBoundary = target.mapWidthBoundary;
         this.mapHeightBoundary = target.mapHeightBoundary;
     }
@@ -80,7 +89,7 @@ public class Oblivion extends AbstractEnemy {
         this.mapHeightBoundary = height;
     }
 
-    @Override
+    // logica principale del boss
     public void updateBehavior(List<Player> players, float deltaTime) {
         if (players.isEmpty()) return;
         if (isPhaseTwo && this.health <= 0) return;
@@ -97,6 +106,7 @@ public class Oblivion extends AbstractEnemy {
             getCurrentState().update(this, players, deltaTime);
             return;
         }
+
         Vector2 myPos = (body != null) ? body.getPosition() : this.position;
         float distance = myPos.dst(target.getPosition());
 
@@ -129,9 +139,8 @@ public class Oblivion extends AbstractEnemy {
                 if (body != null) body.setLinearVelocity(0, 0);
                 if (shootTimer <= 0) {
                     prepareTripleShot(target.getPosition());
-                    // readyToShoot = true; // Removed
                     for (Vector2 t : shotTargets) {
-                        notifyProjectileRequest(getPosition(), t, "fireball"); // Assuming fireball or default
+                        notifyProjectileRequest(getPosition(), t, "fireball");
                     }
                     shootTimer = SHOOT_COOLDOWN;
                 }
@@ -139,23 +148,45 @@ public class Oblivion extends AbstractEnemy {
 
             case CHASING:
                 if (distance > STOP_DISTANCE) {
+                    // troppo lontano: avvicinati
                     moveTowards(target.getPosition(), deltaTime);
                 } else {
-                    if (body != null) body.setLinearVelocity(0, 0);
-                    currentState = State.ATTACKING;
-                    attackCooldown = 0.3f;
+                    // sei in range per il melee, ma solo se il cooldown è finito
+                    if (attackCooldown <= 0f) {
+                        if (body != null) body.setLinearVelocity(0, 0);
+                        currentState = State.ATTACKING;
+                        attackTimer = 0f;
+                        hasDealtMeleeDamage = false;
+                    } else {
+                        // aspetta fermo finché il cooldown non scende a 0
+                        if (body != null) body.setLinearVelocity(0, 0);
+                    }
                 }
                 break;
 
             case ATTACKING:
                 if (body != null) body.setLinearVelocity(0, 0);
-                if (attackCooldown <= 0) {
+                attackTimer += deltaTime;
+
+                // qui parte il colpo (inizio fase swing)
+                if (!hasDealtMeleeDamage && attackTimer >= MELEE_WINDUP_TIME) {
                     performBossMeleeAttack(target);
+                    hasDealtMeleeDamage = true;
+                }
+
+                // fine animazione melee -> passa a RETREATING e setta cooldown
+                if (attackTimer >= MELEE_WINDUP_TIME + MELEE_ATTACK_TIME) {
                     currentState = State.RETREATING;
                     retreatTimer = RETREAT_DURATION;
-                    attackCooldown = 0f;
-                } else if (distance > BOSS_ATTACK_RANGE + 20f) {
-                    currentState = State.CHASING;
+                    attackCooldown = MELEE_COOLDOWN;
+                } else {
+                    // se il bersaglio scappa fuori range, consideriamo l'attacco "whiffato"
+                    float distNow = getPosition().dst(target.getPosition());
+                    if (distNow > BOSS_ATTACK_RANGE + 40f) {
+                        currentState = State.RETREATING;
+                        retreatTimer = RETREAT_DURATION;
+                        attackCooldown = MELEE_COOLDOWN;
+                    }
                 }
                 break;
 
@@ -178,11 +209,10 @@ public class Oblivion extends AbstractEnemy {
     }
 
     private void startPhaseTwo() {
-        this.isPhaseTwo = true;
+        isPhaseTwo = true;
         this.health = PHASE_2_HP;
         this.maxHealth = PHASE_2_HP;
-        this.speed = 170f;
-        this.isDead = false;
+        this.attackStrategy = new MageAttack(45);
         this.currentState = State.CHASING;
     }
 
@@ -206,11 +236,20 @@ public class Oblivion extends AbstractEnemy {
             body.setLinearVelocity(0, 0);
             this.position.set(newX, newY);
         } else {
-            this.setPosition(newX, newY);
+            this.position.set(newX, newY);
         }
+    }
 
-        currentState = State.CHASING;
-        System.out.println("OBLIVION: Teleported Horizontal (Dir: " + direction + ")");
+    // deve rimanere public per non rompere l'override
+    public void moveTowards(Vector2 targetPos, float deltaTime) {
+        if (body != null) {
+            Vector2 direction = targetPos.cpy().sub(body.getPosition()).nor();
+            body.setLinearVelocity(direction.scl(speed));
+            this.position.set(body.getPosition());
+        } else {
+            Vector2 direction = targetPos.cpy().sub(position).nor();
+            this.position.add(direction.scl(speed * deltaTime));
+        }
     }
 
     @Override
@@ -220,10 +259,12 @@ public class Oblivion extends AbstractEnemy {
             direction.nor();
             body.setLinearVelocity(direction.scl(speed));
             this.position.set(body.getPosition());
+        } else {
+            Vector2 direction = position.cpy().sub(targetPos).nor();
+            this.position.add(direction.scl(speed * 0.016f));
         }
     }
 
-    // Spara attacchi a distanza in tre direzioni
     private void prepareTripleShot(Vector2 playerPos) {
         shotTargets.clear();
         Vector2 myPos = getPosition();
@@ -233,6 +274,17 @@ public class Oblivion extends AbstractEnemy {
         shotTargets.add(myPos.cpy().add(leftDir));
         Vector2 rightDir = mainDir.cpy().rotateDeg(-20);
         shotTargets.add(myPos.cpy().add(rightDir));
+    }
+
+    // --- Getter usati dal rendering per scegliere l'animazione melee ---
+    public boolean isMeleeWindup() {
+        return currentState == State.ATTACKING && attackTimer < MELEE_WINDUP_TIME;
+    }
+
+    public boolean isMeleeAttacking() {
+        return currentState == State.ATTACKING
+            && attackTimer >= MELEE_WINDUP_TIME
+            && attackTimer < MELEE_WINDUP_TIME + MELEE_ATTACK_TIME;
     }
 
     public boolean isPhaseTwo() {
