@@ -1,6 +1,8 @@
 .gitkeep
+audio/bossfight.mp3
 audio/button.mp3
 audio/end.mp3
+audio/exploration.mp3
 audio/intro.mp3
 audio/no escape.mp3
 audio/saffron.mp3
