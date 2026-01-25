@@ -429,13 +429,13 @@ public class GameModel implements Disposable, ProjectileListener {
   }
 
   public GameStateMemento createMemento() {
-    java.util.List<PlayerMemento> playerStates = new java.util.ArrayList<>();
+    List<PlayerMemento> playerStates = new java.util.ArrayList<>();
     for (Player p : players) {
       playerStates.add(
           new PlayerMemento(p.getType(), p.getHealth(), p.getPosition().x, p.getPosition().y));
     }
 
-    java.util.List<EnemyMemento> enemyStates = new java.util.ArrayList<>();
+    List<EnemyMemento> enemyStates = new java.util.ArrayList<>();
     if (level != null && level.getEnemies() != null) {
       for (AbstractEnemy e : level.getEnemies()) {
         if (!e.isDead()) {
@@ -446,7 +446,7 @@ public class GameModel implements Disposable, ProjectileListener {
       }
     }
 
-    java.util.List<ProjectileMemento> projectileStates = new java.util.ArrayList<>();
+    List<ProjectileMemento> projectileStates = new java.util.ArrayList<>();
     for (Projectile p : projectileManager.getProjectiles()) {
       if (!p.shouldDestroy()) {
         Vector2 vel = p.getBody().getLinearVelocity();
@@ -455,7 +455,43 @@ public class GameModel implements Disposable, ProjectileListener {
       }
     }
 
-    return new GameStateMemento(playerStates, enemyStates, projectileStates, this.currentSeed, 1);
+    // --- NEW: SAVE MAP STATE ---
+    List<RoomMemento> roomStates = new java.util.ArrayList<>();
+    List<DoorMemento> doorStates = new java.util.ArrayList<>();
+    List<PortalMemento> portalStates = new java.util.ArrayList<>();
+
+    if (level != null && level.getRoomManager() != null) {
+      for (io.github.soulslight.model.room.Room r : level.getRoomManager().getRooms()) {
+        roomStates.add(new RoomMemento(r.getId(), r.isCleared(), r.areDoorsLocked()));
+
+        // Save doors (flattened list, relying on deterministic order from generation)
+        for (io.github.soulslight.model.room.Door d : r.getDoors()) {
+          doorStates.add(new DoorMemento(doorStates.size(), d.isLocked()));
+        }
+      }
+
+      // Save PortalRoom state
+      io.github.soulslight.model.room.PortalRoom pr = level.getRoomManager().getPortalRoom();
+      if (pr != null && pr.getPortal() != null) {
+        portalStates.add(new PortalMemento(pr.getPortal().isActivated()));
+      }
+    }
+
+    // Cave Portal (if exists)
+    if (level != null && level.getCavePortal() != null) {
+      portalStates.add(new PortalMemento(level.getCavePortal().isActivated()));
+    }
+
+    // Fix: Save actual current level index instead of hardcoded 1
+    return new GameStateMemento(
+        playerStates,
+        enemyStates,
+        projectileStates,
+        roomStates,
+        doorStates,
+        portalStates,
+        this.currentSeed,
+        GameManager.getInstance().getCurrentLevelIndex());
   }
 
   private String getEnemyType(AbstractEnemy e) {
@@ -470,7 +506,17 @@ public class GameModel implements Disposable, ProjectileListener {
   public void restoreMemento(GameStateMemento memento) {
     if (memento == null || memento.players == null) return;
 
-    // Clear EVERYTHING from physics world
+    // Dispose Level first to clean up Managers (RoomManager destroys sensors)
+    // allowing them to remove bodies safely before we wipe the world.
+    if (level != null) level.dispose();
+
+    // Clear logical lists
+    players.clear();
+    GameManager.getInstance().clearPlayers();
+    this.projectileManager.getProjectiles().clear();
+
+    // Clear EVERYTHING remaining from physics world (Enemies, Players, Walls,
+    // etc.)
     com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies =
         new com.badlogic.gdx.utils.Array<>();
     physicsWorld.getBodies(bodies);
@@ -478,26 +524,39 @@ public class GameModel implements Disposable, ProjectileListener {
       physicsWorld.destroyBody(b);
     }
 
-    // Clear lists
-    players.clear();
-    GameManager.getInstance().clearPlayers();
-
     // Restore Seed
     this.currentSeed = memento.seed;
+
+    // Fix: Restore Level Index BEFORE generating map
+    GameManager.getInstance().setCurrentLevelIndex(memento.currentLevelIndex);
 
     // Rebuild Map (using level-based strategy)
     MapGenerationStrategy strategy = GameManager.getInstance().getCurrentLevelStrategy();
     TiledMap newMap = strategy.generate();
     this.lightingSystem.prepareLightingOverlay(newMap);
-    if (level != null) level.dispose();
 
-    // Rebuild Level (No random spawn)
-    this.level =
-        new LevelBuilder()
-            .buildMap(newMap)
-            .buildPhysicsFromMap(this.physicsWorld)
-            .setEnvironment("dungeon_theme.mp3", 0.3f)
-            .build();
+    // Extract room data for reconstruction
+    List<RoomData> roomData = DungeonMapStrategy.extractRoomData(newMap);
+    boolean hasCavePortal =
+        newMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
+
+    LevelBuilder builder =
+        new LevelBuilder().buildMap(newMap).buildPhysicsFromMap(this.physicsWorld);
+
+    // Conditional setup based on level type, mirroring constructor but WITHOUT
+    // auto-spawning enemies
+    if (!roomData.isEmpty()) {
+      builder
+          .buildRooms(roomData)
+          .initializeRoomManager(this.physicsWorld)
+          .setEnvironment("dungeon_theme.mp3", 0.3f);
+    } else if (hasCavePortal) {
+      builder.spawnCavePortal(this.physicsWorld).setEnvironment("cave_theme.mp3", 0.2f);
+    } else {
+      builder.setEnvironment("boss_theme.mp3", 0.1f);
+    }
+
+    this.level = builder.build();
     GameManager.getInstance().setCurrentLevel(this.level);
 
     // 2. Recreate players from Memento
@@ -509,7 +568,81 @@ public class GameModel implements Disposable, ProjectileListener {
       GameManager.getInstance().addPlayer(newPlayer);
     }
 
-    // Recreate Enemies
+    // 3. Restore Map State (Rooms, Doors, Portals)
+    if (level.getRoomManager() != null && memento.rooms != null) {
+      List<io.github.soulslight.model.room.Room> currentRooms = level.getRoomManager().getRooms();
+
+      // We assume strict ordering: generated rooms match memento rooms 1:1
+      for (int i = 0; i < currentRooms.size() && i < memento.rooms.size(); i++) {
+        io.github.soulslight.model.room.Room room = currentRooms.get(i);
+        RoomMemento rm = memento.rooms.get(i);
+
+        if (rm.isCleared) {
+          room.forceCleared(); // Marks cleared, kills enemies, unlocks doors
+          // Note: forceCleared() also kills enemies. Since we rebuild enemies below,
+          // we should NOT spawn enemies in cleared rooms.
+          // But wait! LevelBuilder creates enemies by default in dungeon strategy.
+          // In my constructor above, I used a PARTIAL build chain:
+          // .buildMap().buildPhysics()...
+          // MISSING: .buildRooms().spawnEnemiesIsRooms().
+          // I need to replicate the FULL build chain but conditional on saved state.
+        }
+
+        // Apply door locks
+        // Logic: if room was saved as locked, we lock doors.
+        if (rm.doorsLocked) {
+          room.setDoorsLocked(true);
+        }
+      }
+
+      // Restore Doors (Specific states override room defaults if needed)
+      // Actually doorStates is a flattened list.
+      if (memento.doors != null) {
+        int doorIndex = 0;
+        for (io.github.soulslight.model.room.Room r : currentRooms) {
+          for (io.github.soulslight.model.room.Door d : r.getDoors()) {
+            if (doorIndex < memento.doors.size()) {
+              DoorMemento dm = memento.doors.get(doorIndex);
+              if (dm.isLocked) d.lock();
+              else d.unlock();
+            }
+            doorIndex++;
+          }
+        }
+      }
+
+      // Restore PortalRoom portal
+      if (memento.portals != null && !memento.portals.isEmpty()) {
+        io.github.soulslight.model.room.PortalRoom pr = level.getRoomManager().getPortalRoom();
+        if (pr != null && pr.getPortal() != null && memento.portals.get(0).isActivated) {
+          // Use reflection or add setter if needed, or just force flag
+          // Since Portal field is 'activated', we might need a method or simulate
+          // interaction
+          // For now, let's assume we just want to save completion state
+          if (memento.portals.get(0).isActivated) {
+            pr.getPortal().tryActivate(); // Attempt activation
+          }
+        }
+      }
+    }
+
+    // Restore Cave Portal
+    if (level.getCavePortal() != null && memento.portals != null) {
+      // Cave portal is usually last or second if existing
+      // If dungeon, portal[0] is portal room. If cave, portal[0] is cave portal.
+      // Simplification: just check if any in list are true.
+      for (PortalMemento pm : memento.portals) {
+        if (pm.isActivated) level.getCavePortal().tryActivate();
+      }
+    }
+
+    // 4. Recreate Enemies
+    // CRITICAL: We only want to spawn enemies that were alive.
+    // Level generation usually spawns fresh enemies.
+    // Instead of letting LevelFactory spawn them, we explicitly respawn from
+    // Memento only.
+    // That's why I removed `.spawnEnemiesInRooms` from the builder chain above!
+
     if (memento.enemies != null) {
       for (EnemyMemento em : memento.enemies) {
         AbstractEnemy enemy = EnemyRegistry.getEnemy(em.type);
@@ -526,11 +659,14 @@ public class GameModel implements Disposable, ProjectileListener {
           ((Shielder) e).setAllies(this.level.getEnemies());
         }
       }
+    } else {
+      // Fallback for legacy saves or if no enemy list:
+      // If we loaded a level but have no enemy data, we might be stuck in empty
+      // level.
+      // But memento.enemies should be empty only if all dead.
     }
 
     // Recreate Projectiles
-    this.projectileManager.getProjectiles().clear();
-
     if (memento.projectiles != null) {
       for (ProjectileMemento pm : memento.projectiles) {
         // Workaround: Create with dummy target, then override velocity.

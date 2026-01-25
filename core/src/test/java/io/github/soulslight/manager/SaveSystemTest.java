@@ -24,7 +24,8 @@ class SaveSystemTest {
 
   @Test
   void testMementoIsPOJO() {
-    // Mandate check: Memento should NOT be a record anymore to support standard LibGDX JSON
+    // Mandate check: Memento should NOT be a record anymore to support standard
+    // LibGDX JSON
     assertFalse(
         GameStateMemento.class.isRecord(), "GameStateMemento should be a POJO for LibGDX JSON");
     assertFalse(PlayerMemento.class.isRecord(), "PlayerMemento should be a POJO for LibGDX JSON");
@@ -47,7 +48,16 @@ class SaveSystemTest {
 
     long seed = 123456789L;
 
-    GameStateMemento original = new GameStateMemento(players, enemies, projectiles, seed, 2);
+    GameStateMemento original =
+        new GameStateMemento(
+            players,
+            enemies,
+            projectiles,
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            seed,
+            2);
 
     // Serialize with LibGDX Json (Standard Way)
     Json json = new Json();
@@ -85,7 +95,15 @@ class SaveSystemTest {
     // Mock GameModel to return a valid memento
     GameModel mockModel = Mockito.mock(GameModel.class);
     GameStateMemento memento =
-        new GameStateMemento(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 999L, 1);
+        new GameStateMemento(
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            999L,
+            1);
     Mockito.when(mockModel.createMemento()).thenReturn(memento);
 
     // Save
@@ -108,7 +126,15 @@ class SaveSystemTest {
 
     // Creiamo un memento vuoto ma valido
     GameStateMemento validMemento =
-        new GameStateMemento(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 123L, 1);
+        new GameStateMemento(
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            123L,
+            1);
 
     Json json = new Json();
     String validJson = json.toJson(validMemento);
@@ -119,7 +145,8 @@ class SaveSystemTest {
 
     // Creiamo un salvataggio primario corrotto
     FileHandle primary = Gdx.files.local("savegame.sav");
-    // "INVALID" non è Base64 valido, ma il SaveManager ora dovrebbe gestirlo e passare al backup
+    // "INVALID" non è Base64 valido, ma il SaveManager ora dovrebbe gestirlo e
+    // passare al backup
     primary.writeString("INVALID_CONTENT_NOT_BASE64", false);
 
     // Proviamo a caricare
@@ -141,13 +168,29 @@ class SaveSystemTest {
 
     // Primo salvataggio
     GameStateMemento m1 =
-        new GameStateMemento(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 1L, 1);
+        new GameStateMemento(
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            1L,
+            1);
     Mockito.when(mockModel.createMemento()).thenReturn(m1);
     saveManager.saveGame(mockModel);
 
     // Secondo salvataggio
     GameStateMemento m2 =
-        new GameStateMemento(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 2L, 2);
+        new GameStateMemento(
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            2L,
+            2);
     Mockito.when(mockModel.createMemento()).thenReturn(m2);
     saveManager.saveGame(mockModel);
 
@@ -183,7 +226,8 @@ class SaveSystemTest {
 
     assertDoesNotThrow(() -> saveManager.loadGame(mockModel));
 
-    // restoreMemento non deve essere mai stato chiamato perché entrambi i tentativi sono falliti
+    // restoreMemento non deve essere mai stato chiamato perché entrambi i tentativi
+    // sono falliti
     Mockito.verify(mockModel, Mockito.never()).restoreMemento(Mockito.any());
 
     // Pulizia finale

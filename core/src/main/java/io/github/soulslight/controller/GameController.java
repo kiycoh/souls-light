@@ -117,15 +117,16 @@ public class GameController extends InputAdapter implements ControllerListener {
         return true;
 
       // --- SYSTEM ---
-      case Input.Keys.F5:
-        saveManager.saveGame(model);
-        return true;
-      case Input.Keys.F9:
+      case Input.Keys.F5: // RESTORE (Load)
         if (saveManager.hasSaveFile()) {
           saveManager.loadGame(model);
         } else {
-          Gdx.app.log("Controller", "Nessun file di salvataggio trovato (savegame.json)!");
+          Gdx.app.log("Controller", "No save file found!");
         }
+        return true;
+      case Input.Keys.F6: // SAVE
+        saveManager.saveGame(model);
+        Gdx.app.log("Controller", "Game Saved (F6)");
         return true;
       case Input.Keys.NUM_0: // Debug toggles with 0 (top row)
         GameManager.DEBUG_MODE = !GameManager.DEBUG_MODE;

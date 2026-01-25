@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
 import io.github.soulslight.manager.AudioManager;

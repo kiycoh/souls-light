@@ -42,7 +42,7 @@ class ProjectileManagerTest {
     p.getBody().setLinearVelocity(10f, 0f);
 
     // Update
-    manager.update(11.0f, new ArrayList<>());
+    manager.update(11.0f, new ArrayList<>(), new ArrayList<>());
 
     assertTrue(manager.getProjectiles().isEmpty());
     assertEquals(0, world.getBodyCount());
@@ -65,11 +65,11 @@ class ProjectileManagerTest {
 
     manager.addProjectile(p);
 
-    // 4. Step Fisico
+    // Step Fisico
     world.step(0.1f, 6, 2);
 
-    // 5. Update Manager
-    manager.update(0.1f, new ArrayList<>());
+    // Update Manager
+    manager.update(0.1f, new ArrayList<>(), new ArrayList<>());
 
     // Verifica
     assertTrue(
@@ -99,7 +99,7 @@ class ProjectileManagerTest {
     world.step(0.1f, 6, 2);
 
     // Update
-    manager.update(0.1f, players);
+    manager.update(0.1f, players, new ArrayList<>());
 
     // Verifica collisione
     verify(player).takeDamage(anyFloat());
@@ -121,7 +121,7 @@ class ProjectileManagerTest {
 
     world.step(0.1f, 6, 2);
 
-    manager.update(0.1f, players);
+    manager.update(0.1f, players, new ArrayList<>());
 
     verify(player, never()).takeDamage(anyFloat());
     assertEquals(1, manager.getProjectiles().size(), "Proiettile passa attraverso");
