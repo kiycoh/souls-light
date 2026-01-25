@@ -50,13 +50,13 @@ public class LightingRenderer {
 
         float alpha;
         if (!isExplored) {
-          alpha = 1.0f; // Unexplored = Black
+          alpha = 0.8f; // Unexplored = Black
         } else {
           // Explored but currently dark = Fog (0.7f max darkness?)
           // Light 1.0 = Alpha 0.0 (transparent)
-          // Light 0.0 = Alpha 0.7 (dim)
+          // Light 0.0 = Alpha 0.6 (dim)
           // You can tweak this "Memory" darkness
-          float maxDarkness = 1.0f; // 0.8f for "seen but dark"
+          float maxDarkness = 0.6f; // 0.8f for "seen but dark"
           alpha = maxDarkness * (1.0f - (float) light);
         }
 
