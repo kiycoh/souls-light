@@ -14,7 +14,7 @@ public class FireDamageDecorator extends AttackDecorator {
   @Override
   public void attack() {
     super.attack();
-    Gdx.app.log("FireDamageDecorator", "... with Fire Effect!");
+    Gdx.app.log("FireDamageDecorator", "..with Fire Effect!");
   }
 
   @Override
@@ -22,7 +22,7 @@ public class FireDamageDecorator extends AttackDecorator {
     // EXECUTES BASE ATTACK
     super.executeAttack(attacker, targets);
 
-    Gdx.app.log("FireDamageDecorator", "... 🔥 BRUCIA! (+5 Danni Fuoco) 🔥");
+    Gdx.app.log("FireDamageDecorator", "Applied fire damage to " + targets.size() + " targets");
 
     for (Entity target : targets) {
       if (attacker.getPosition().dst(target.getPosition()) <= super.getRange()) {

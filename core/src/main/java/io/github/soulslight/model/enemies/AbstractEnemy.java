@@ -32,6 +32,11 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
   private EnemyState aiState;
   private EnemyDeathListener deathListener;
 
+  // Knockback fields
+  protected float knockbackTimer = 0f;
+  protected Vector2 currentKnockbackVelocity = new Vector2();
+  protected boolean wasInKnockback = false;
+
   public AbstractEnemy() {
     super();
     this.speed = 100f;
@@ -304,6 +309,41 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     }
   }
 
+  public void applyKnockback(Vector2 direction, float speedForce, float duration) {
+    if (body == null) return;
+    this.currentKnockbackVelocity.set(direction).nor().scl(speedForce);
+    this.knockbackTimer = duration;
+    // Override damping to allow sliding
+    body.setLinearDamping(0f);
+    body.setLinearVelocity(currentKnockbackVelocity);
+  }
+
+  @Override
+  public void update(float delta) {
+    if (knockbackTimer > 0) {
+      knockbackTimer -= delta;
+      wasInKnockback = true;
+      if (body != null) {
+        body.setLinearDamping(0f);
+        body.setLinearVelocity(currentKnockbackVelocity);
+      }
+      // Skip normal behavior updates during knockback if desired,
+      // but we still need super.update(delta) for animations.
+      super.update(delta);
+      return;
+    }
+
+    if (wasInKnockback) {
+      wasInKnockback = false;
+      if (body != null) {
+        body.setLinearVelocity(0, 0);
+        body.setLinearDamping(10.0f); // Restore normal damping
+      }
+    }
+
+    super.update(delta);
+  }
+
   public abstract void updateBehavior(List<Player> players, float deltaTime);
 
   @Override
@@ -326,7 +366,8 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
 
   protected void notifyProjectileRequest(Vector2 origin, Vector2 target, String type) {
     for (ProjectileListener listener : projectileListeners) {
-      listener.onProjectileRequest(origin, target, type);
+      float damage = (attackStrategy != null) ? attackStrategy.getDamage() : 15f;
+      listener.onProjectileRequest(origin, target, type, damage);
     }
   }
 }

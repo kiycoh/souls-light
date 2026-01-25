@@ -65,14 +65,25 @@ public final class GameScreen implements GameState {
   private DebugMenuController debugMenuController;
   private DebugMenuOverlay debugMenuOverlay;
 
+  private PauseMenuOverlay pauseMenuOverlay;
+
+  private Texture blankTexture;
+
   public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
     this.batch = batch;
     this.model = model;
     this.controller = controller;
 
+    // Pass GameScreen instance to controller so it can trigger pause UI switch
+    this.controller.setGameScreen(this);
+
     // Camera + viewport: what you see on screen (not map size)
     this.camera = new OrthographicCamera();
-    this.viewport = new FitViewport(720, 480, camera);
+    this.viewport =
+        new FitViewport(
+            io.github.soulslight.model.Constants.V_WIDTH,
+            io.github.soulslight.model.Constants.V_HEIGHT,
+            camera);
 
     // Map renderer
     this.mapRenderer = new OrthogonalTiledMapRenderer(model.getMap(), batch);
@@ -80,6 +91,9 @@ public final class GameScreen implements GameState {
     // HUD and Debug
     this.hud = new GameHUD();
     this.debugRenderer = new Box2DDebugRenderer();
+
+    // Pause Menu
+    this.pauseMenuOverlay = new PauseMenuOverlay(batch, this);
 
     // Debug Menu Setup (only when DEBUG_MODE is enabled)
     if (GameManager.DEBUG_MODE) {
@@ -227,10 +241,17 @@ public final class GameScreen implements GameState {
 
     batch.end();
 
-    hud.render(batch, model.getPlayers(), model.getActiveEnemies());
+    hud.render(batch, model);
 
     // Draw portal prompt (on HUD layer)
     drawPortalPrompt();
+
+    // Pause Menu Overlay
+    // Only show if paused AND Debug Menu is NOT visible
+    boolean debugVisible = debugMenuController != null && debugMenuController.isVisible();
+    if (model.isPaused() && !debugVisible && pauseMenuOverlay != null) {
+      pauseMenuOverlay.render(delta);
+    }
 
     if (GameManager.DEBUG_MODE && GameManager.SHOW_HITBOXES) {
       debugRenderer.render(model.getWorld(), camera.combined);
@@ -461,6 +482,23 @@ public final class GameScreen implements GameState {
     mapPixelHeight = mapHeight * tileHeight;
   }
 
+  public void resumeGame() {
+    model.setPaused(false);
+    Gdx.input.setInputProcessor(controller);
+  }
+
+  public SpriteBatch getBatch() {
+    return batch;
+  }
+
+  public void updateInputMode() {
+    if (model.isPaused()) {
+      Gdx.input.setInputProcessor(pauseMenuOverlay.getStage());
+    } else {
+      Gdx.input.setInputProcessor(controller);
+    }
+  }
+
   // Center draw
   private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
     if (tex != null) {
@@ -485,6 +523,7 @@ public final class GameScreen implements GameState {
   @Override
   public void resize(int width, int height) {
     viewport.update(width, height, true);
+    if (pauseMenuOverlay != null) pauseMenuOverlay.resize(width, height);
   }
 
   @Override
@@ -502,6 +541,7 @@ public final class GameScreen implements GameState {
     if (debugRenderer != null) debugRenderer.dispose();
     if (hud != null) hud.dispose();
     if (debugMenuOverlay != null) debugMenuOverlay.dispose();
+    if (pauseMenuOverlay != null) pauseMenuOverlay.dispose();
     enemyAnimOffset.clear();
     enemyFacingRight.clear();
   }

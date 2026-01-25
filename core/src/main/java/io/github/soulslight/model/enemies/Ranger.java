@@ -119,7 +119,7 @@ public class Ranger extends AbstractEnemy {
         System.out.println("RANGER: Fire!");
 
         if (target != null) {
-          notifyProjectileRequest(getPosition(), target.getPosition(), "arrow");
+          notifyProjectileRequest(getPosition(), target.getPosition(), "enemy_arrow");
         }
       }
     }
