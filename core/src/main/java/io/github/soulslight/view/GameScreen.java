@@ -73,6 +73,9 @@ public final class GameScreen implements GameState {
   private float enemyAnimTime = 0f;
   private final Map<AbstractEnemy, Float> enemyAnimOffset = new IdentityHashMap<>();
 
+  private float playerAnimTime = 0f;
+  private final Map<Player, Boolean> playerFacingRight = new IdentityHashMap<>();
+
   // Used to stop animation
   private static final float IDLE_VELOCITY_EPS = 0.05f;
 
@@ -205,6 +208,7 @@ public final class GameScreen implements GameState {
     }
 
     enemyAnimTime += delta;
+    playerAnimTime += delta;
 
     updateBossCrossfade(delta);
 
@@ -219,11 +223,25 @@ public final class GameScreen implements GameState {
     batch.setProjectionMatrix(camera.combined);
     batch.begin();
 
+    int playerIndex = 0;
     for (Player player : model.getPlayers()) {
       batch.setColor(player.isDead() ? Color.RED : Color.WHITE);
-      String texName = "player";
-      drawEntity(TextureManager.get(texName), player.getPosition(), 32, 32);
+
+      TextureRegion frame = computePlayerFrame(player, playerIndex);
+      boolean flipX = shouldFlipPlayerXStable(player);
+
+      float drawWidth = 32f;
+      float drawHeight = 46f;
+
+      if (frame != null) {
+        drawEntity(frame, player.getPosition(), drawWidth, drawHeight, flipX);
+      } else {
+        String texName = "player";
+        drawEntity(TextureManager.get(texName), player.getPosition(), drawWidth, drawHeight);
+      }
+
       batch.setColor(Color.WHITE);
+      playerIndex++;
     }
 
     for (AbstractEnemy enemy : model.getActiveEnemies()) {
@@ -497,6 +515,32 @@ public final class GameScreen implements GameState {
     }
   }
 
+  private TextureRegion computePlayerFrame(Player player, int index) {
+    boolean isIdle = true;
+
+    if (player.getBody() != null) {
+      Vector2 vel = player.getBody().getLinearVelocity();
+      isIdle = vel.len2() < IDLE_VELOCITY_EPS * IDLE_VELOCITY_EPS;
+    }
+
+    if (isIdle) {
+      return getPlayerAnimFrame(index, 0f);
+    }
+
+    return getPlayerAnimFrame(index, playerAnimTime);
+  }
+
+  private TextureRegion getPlayerAnimFrame(int index, float time) {
+    switch (index) {
+      case 0:
+        return TextureManager.getP1WalkFrame(time);
+      case 1:
+        return TextureManager.getP2WalkFrame(time);
+      default:
+        return TextureManager.getP1WalkFrame(time);
+    }
+  }
+
   private TextureRegion computeOblivionFrame(Oblivion boss) {
     if (boss.isDying()) {
       float t = boss.getDeathAnimTime();
@@ -548,6 +592,26 @@ public final class GameScreen implements GameState {
     }
   }
 
+  private boolean shouldFlipPlayerXStable(Player player) {
+    boolean facingRight = playerFacingRight.computeIfAbsent(player, p -> true);
+
+    if (player.getBody() == null) {
+      return !facingRight;
+    }
+
+    float vx = player.getBody().getLinearVelocity().x;
+
+    if (vx > ENEMY_FLIP_EPS) {
+      facingRight = true;
+      playerFacingRight.put(player, true);
+    } else if (vx < -ENEMY_FLIP_EPS) {
+      facingRight = false;
+      playerFacingRight.put(player, false);
+    }
+
+    return !facingRight;
+  }
+
   private boolean shouldFlipXStable(AbstractEnemy enemy) {
     boolean facingRight = enemyFacingRight.computeIfAbsent(enemy, e -> true);
 
@@ -563,7 +627,7 @@ public final class GameScreen implements GameState {
         return !facingRight;
       }
 
-      // else, flips towards neaest player
+      // else, flips towards nearest player
       java.util.List<Player> players = model.getPlayers();
       if (!players.isEmpty()) {
         Player nearest = players.get(0);
@@ -749,6 +813,7 @@ public final class GameScreen implements GameState {
 
     enemyAnimOffset.clear();
     enemyFacingRight.clear();
+    playerFacingRight.clear();
   }
 
   // Crossfade logic between exploration and boss music

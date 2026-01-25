@@ -25,6 +25,9 @@ images/oblivionMeleeWindup.png
 images/oblivionSpell.png
 images/oblivionTeleport.png
 images/oblivionWalk.png
+images/p1Walk.png
+images/p2Walk.png
+images/p4Walk.png
 images/player.png
 images/rangerWalk.png
 images/shielder.png
