@@ -15,6 +15,12 @@ images/class_selection/default.png
 images/class_selection/mage.png
 images/class_selection/thief.png
 images/class_selection/warrior.png
+images/oblivionIdle.png
+images/oblivionMeleeAttack.png
+images/oblivionMeleeWindup.png
+images/oblivionSpell.png
+images/oblivionTeleport.png
+images/oblivionWalk.png
 images/player.png
 images/rangerWalk.png
 images/shielder.png
