@@ -18,7 +18,6 @@ public record DungeonMapStrategy(long seed, int width, int height)
     implements MapGenerationStrategy {
 
   private static final int TILE_SIZE = 32;
-  private static final int CORRIDOR_WIDTH = 3;
   private static final int GRID_ROWS = 3;
   private static final int GRID_COLS = 3;
 
@@ -101,10 +100,10 @@ public record DungeonMapStrategy(long seed, int width, int height)
 
     var rng = new Random(seed);
 
-    // 2. Generate Grid Path
+    // 2. Generate Grid Path (Guaranteed ~6 rooms)
     int cellW = width / GRID_COLS;
     int cellH = height / GRID_ROWS;
-    List<GridPoint> path = generateGridPath(rng);
+    List<GridPoint> path = generateGridPath(rng, 6);
 
     // 3. Place Rooms in Path Cells
     List<Room> rooms = new ArrayList<>();
@@ -132,7 +131,7 @@ public record DungeonMapStrategy(long seed, int width, int height)
       createRoom(room, layer, floorTiles, rng);
     }
 
-    // 4. Connect Rooms Sequentially
+    // 4. Connect Rooms with Organic Tunnels
     Map<Integer, List<DoorPosition>> roomDoors = new HashMap<>();
     for (int i = 0; i < rooms.size(); i++) {
       roomDoors.put(i, new ArrayList<>());
@@ -141,7 +140,7 @@ public record DungeonMapStrategy(long seed, int width, int height)
     for (int i = 0; i < rooms.size() - 1; i++) {
       Room r1 = rooms.get(i);
       Room r2 = rooms.get(i + 1);
-      connectRoomsWithDoors(r1, r2, layer, floorTiles, rng, i, i + 1, roomDoors);
+      createOrganicTunnel(r1, r2, layer, floorTiles, rng, i, i + 1, roomDoors);
     }
 
     // 5. Apply Wall Auto-tiling
@@ -183,39 +182,52 @@ public record DungeonMapStrategy(long seed, int width, int height)
     return Collections.emptyList();
   }
 
-  private List<GridPoint> generateGridPath(Random rng) {
-    List<GridPoint> path = new ArrayList<>();
-    boolean[][] visited = new boolean[GRID_COLS][GRID_ROWS];
-    int cx = 0;
-    int cy = 0;
-    path.add(new GridPoint(cx, cy));
-    visited[cx][cy] = true;
+  /**
+   * Generates a path of distinct GridPoints. Retries until a path of desired minLength is found.
+   */
+  private List<GridPoint> generateGridPath(Random rng, int targetLength) {
+    List<GridPoint> bestPath = new ArrayList<>();
 
-    boolean stuck = false;
-    while (!stuck) {
-      List<GridPoint> neighbors = new ArrayList<>();
-      int[] dx = {0, 0, -1, 1};
-      int[] dy = {1, -1, 0, 0};
+    // Attempt up to 20 times to find a path of sufficient length
+    for (int attempt = 0; attempt < 20; attempt++) {
+      List<GridPoint> path = new ArrayList<>();
+      boolean[][] visited = new boolean[GRID_COLS][GRID_ROWS];
+      int cx = rng.nextInt(GRID_COLS);
+      int cy = rng.nextInt(GRID_ROWS);
+      path.add(new GridPoint(cx, cy));
+      visited[cx][cy] = true;
 
-      for (int i = 0; i < 4; i++) {
-        int nx = cx + dx[i];
-        int ny = cy + dy[i];
-        if (nx >= 0 && nx < GRID_COLS && ny >= 0 && ny < GRID_ROWS && !visited[nx][ny]) {
-          neighbors.add(new GridPoint(nx, ny));
+      boolean stuck = false;
+      while (!stuck) {
+        List<GridPoint> neighbors = new ArrayList<>();
+        int[] dx = {0, 0, -1, 1};
+        int[] dy = {1, -1, 0, 0};
+
+        for (int i = 0; i < 4; i++) {
+          int nx = cx + dx[i];
+          int ny = cy + dy[i];
+          if (nx >= 0 && nx < GRID_COLS && ny >= 0 && ny < GRID_ROWS && !visited[nx][ny]) {
+            neighbors.add(new GridPoint(nx, ny));
+          }
+        }
+
+        if (neighbors.isEmpty()) {
+          stuck = true;
+        } else {
+          GridPoint next = neighbors.get(rng.nextInt(neighbors.size()));
+          cx = next.x;
+          cy = next.y;
+          path.add(next);
+          visited[cx][cy] = true;
         }
       }
 
-      if (neighbors.isEmpty()) {
-        stuck = true;
-      } else {
-        GridPoint next = neighbors.get(rng.nextInt(neighbors.size()));
-        cx = next.x;
-        cy = next.y;
-        path.add(next);
-        visited[cx][cy] = true;
+      if (path.size() >= targetLength || path.size() > bestPath.size()) {
+        bestPath = path;
+        if (bestPath.size() >= targetLength) break;
       }
     }
-    return path;
+    return bestPath;
   }
 
   private void createRoom(
@@ -228,7 +240,11 @@ public record DungeonMapStrategy(long seed, int width, int height)
     }
   }
 
-  private void connectRoomsWithDoors(
+  /**
+   * Creates an "Organic Tunnel" (Guided Drunkard's Walk) between two rooms. Also detects where the
+   * tunnel pierces the room walls to place Doors.
+   */
+  private void createOrganicTunnel(
       Room r1,
       Room r2,
       TiledMapTileLayer layer,
@@ -238,80 +254,158 @@ public record DungeonMapStrategy(long seed, int width, int height)
       int room2Idx,
       Map<Integer, List<DoorPosition>> roomDoors) {
 
-    int x1 = r1.x + r1.w / 2;
-    int y1 = r1.y + r1.h / 2;
-    int x2 = r2.x + r2.w / 2;
-    int y2 = r2.y + r2.h / 2;
+    // Start center of R1
+    int cx = r1.x + r1.w / 2;
+    int cy = r1.y + r1.h / 2;
 
-    if (rng.nextBoolean()) {
-      createHCorridor(x1, x2, y1, layer, floorTiles, rng);
-      createVCorridor(y1, y2, x2, layer, floorTiles, rng);
-      DoorPosition door1 = calculateDoorForRoom(r1, x1, y1, x2, y2, true);
-      roomDoors.get(room1Idx).add(door1);
-    } else {
-      createVCorridor(y1, y2, x1, layer, floorTiles, rng);
-      createHCorridor(x1, x2, y2, layer, floorTiles, rng);
-      DoorPosition door1 = calculateDoorForRoom(r1, x1, y1, x2, y2, false);
-      roomDoors.get(room1Idx).add(door1);
-    }
-  }
+    // Target center of R2
+    int tx = r2.x + r2.w / 2;
+    int ty = r2.y + r2.h / 2;
 
-  private DoorPosition calculateDoorForRoom(
-      Room room,
-      int roomCenterX,
-      int roomCenterY,
-      int targetX,
-      int targetY,
-      boolean isHorizontalFirst) {
-    float centerPixelY = roomCenterY * TILE_SIZE + TILE_SIZE / 2f;
-    float centerPixelX = roomCenterX * TILE_SIZE + TILE_SIZE / 2f;
+    // Flags to ensure we only place one door per room per tunnel connection
+    boolean r1DoorPlaced = false;
+    boolean r2DoorPlaced = false;
 
-    if (isHorizontalFirst) {
-      if (targetX > roomCenterX) {
-        float doorX = (room.x + room.w) * TILE_SIZE;
-        return DoorPosition.of(doorX, centerPixelY, DoorPosition.Direction.EAST);
+    // "Brush" size for digging (makes tunnels slightly wider than 1 tile)
+    // 0 = 1x1, 1 = 3x3 (approx) with chance
+
+    // Maximum iterations to prevent infinite loops
+    int maxSteps = width * height * 2;
+    int steps = 0;
+
+    // We track "Previous" position to determine door direction
+    int prevX = cx;
+    int prevY = cy;
+
+    while (steps < maxSteps) {
+      if (cx == tx && cy == ty) break;
+
+      // 1. Determine Move
+      // Bias towards target (70% chance)
+      // Random wobble (30% chance)
+      int dx = 0;
+      int dy = 0;
+
+      if (rng.nextFloat() < 0.7f) {
+        // Move towards target
+        dx = Integer.signum(tx - cx);
+        dy = Integer.signum(ty - cy);
+
+        // If diagonal, pick one axis randomly to avoid zigzag bias
+        if (dx != 0 && dy != 0) {
+          if (rng.nextBoolean()) dx = 0;
+          else dy = 0;
+        }
       } else {
-        float doorX = room.x * TILE_SIZE;
-        return DoorPosition.of(doorX, centerPixelY, DoorPosition.Direction.WEST);
-      }
-    } else {
-      if (targetY > roomCenterY) {
-        float doorY = (room.y + room.h) * TILE_SIZE;
-        return DoorPosition.of(centerPixelX, doorY, DoorPosition.Direction.NORTH);
-      } else {
-        float doorY = room.y * TILE_SIZE;
-        return DoorPosition.of(centerPixelX, doorY, DoorPosition.Direction.SOUTH);
-      }
-    }
-  }
-
-  private void createHCorridor(
-      int x1, int x2, int y, TiledMapTileLayer layer, StaticTiledMapTile[] floorTiles, Random rng) {
-    int startX = Math.min(x1, x2);
-    int endX = Math.max(x1, x2);
-    int halfWidth = CORRIDOR_WIDTH / 2;
-
-    for (int x = startX; x <= endX; x++) {
-      for (int offset = -halfWidth; offset <= halfWidth; offset++) {
-        int cy = y + offset;
-        if (cy >= 0 && cy < height) {
-          setTile(layer, x, cy, floorTiles[rng.nextInt(floorTiles.length)]);
+        // Random wobble (4 directions)
+        int dir = rng.nextInt(4);
+        switch (dir) {
+          case 0 -> dx = 1;
+          case 1 -> dx = -1;
+          case 2 -> dy = 1;
+          case 3 -> dy = -1;
         }
       }
+
+      // Apply move
+      int nextX = cx + dx;
+      int nextY = cy + dy;
+
+      // Bounds check
+      if (nextX > 1 && nextX < width - 1 && nextY > 1 && nextY < height - 1) {
+        cx = nextX;
+        cy = nextY;
+
+        // Dig at current position
+        carveRough(layer, cx, cy, floorTiles, rng);
+
+        // --- DOOR DETECTION LOGIC ---
+        // If we are exiting Room 1
+        // (Previously inside R1, now outside R1)
+        if (!r1DoorPlaced) {
+          boolean wasInR1 = r1.contains(prevX, prevY);
+          boolean inR1 = r1.contains(cx, cy);
+
+          if (wasInR1 && !inR1) {
+            // Just exited R1. Place door at prevX, prevY
+            // Direction is towards the walk (Outward)
+            // If we want the door "In" the wall, usually it's the tile inside the room
+            DoorPosition dp = determineDoorPos(r1, prevX, prevY, cx, cy);
+            if (dp != null) {
+              roomDoors.get(room1Idx).add(dp);
+              r1DoorPlaced = true;
+            }
+          }
+        }
+
+        // If we are entering Room 2
+        // (Previously outside R2, now inside R2)
+        if (!r2DoorPlaced) {
+          boolean wasInR2 = r2.contains(prevX, prevY);
+          boolean inR2 = r2.contains(cx, cy);
+
+          if (!wasInR2 && inR2) {
+            // Just entered R2. Place door at cx, cy (the tile inside)
+            // or prevX, prevY (the tile outside)? Usually logical door is on the edge.
+            // Let's place it at 'cx, cy' as the "inner" point, facing outward.
+            // Wait, 'determineDoorPos' logic expects us to define "Inside".
+            DoorPosition dp = determineDoorPos(r2, cx, cy, prevX, prevY);
+            if (dp != null) {
+              roomDoors.get(room2Idx).add(dp);
+              r2DoorPlaced = true;
+            }
+          }
+        }
+      }
+
+      prevX = cx;
+      prevY = cy;
+      steps++;
     }
   }
 
-  private void createVCorridor(
-      int y1, int y2, int x, TiledMapTileLayer layer, StaticTiledMapTile[] floorTiles, Random rng) {
-    int startY = Math.min(y1, y2);
-    int endY = Math.max(y1, y2);
-    int halfWidth = CORRIDOR_WIDTH / 2;
+  private DoorPosition determineDoorPos(
+      Room r, int insideX, int insideY, int outsideX, int outsideY) {
+    float pixelX = insideX * TILE_SIZE + TILE_SIZE / 2f;
+    float pixelY = insideY * TILE_SIZE + TILE_SIZE / 2f;
 
-    for (int y = startY; y <= endY; y++) {
-      for (int offset = -halfWidth; offset <= halfWidth; offset++) {
-        int cx = x + offset;
-        if (cx >= 0 && cx < width) {
-          setTile(layer, cx, y, floorTiles[rng.nextInt(floorTiles.length)]);
+    // Determine edge based on relative delta
+    int dx = outsideX - insideX;
+    int dy = outsideY - insideY;
+
+    if (dx > 0)
+      return DoorPosition.of(
+          pixelX + TILE_SIZE / 2f,
+          pixelY,
+          DoorPosition.Direction.EAST); // Moving Right -> East Wall
+    if (dx < 0)
+      return DoorPosition.of(
+          pixelX - TILE_SIZE / 2f, pixelY, DoorPosition.Direction.WEST); // Moving Left -> West Wall
+    if (dy > 0)
+      return DoorPosition.of(
+          pixelX, pixelY + TILE_SIZE / 2f, DoorPosition.Direction.NORTH); // Moving Up -> North Wall
+    if (dy < 0)
+      return DoorPosition.of(
+          pixelX, pixelY - TILE_SIZE / 2f, DoorPosition.Direction.SOUTH); // Moving Down -> South
+    // Wall
+
+    // Fallback
+    return DoorPosition.of(pixelX, pixelY, DoorPosition.Direction.SOUTH);
+  }
+
+  private void carveRough(
+      TiledMapTileLayer layer, int x, int y, StaticTiledMapTile[] floorTiles, Random rng) {
+    // Carve a 3x3 area to ensure ~3 tile width for main path
+    for (int dx = -1; dx <= 1; dx++) {
+      for (int dy = -1; dy <= 1; dy++) {
+        // High chance to carve all 3x3, but skips corners sometimes for "rounded" look
+        if (Math.abs(dx) + Math.abs(dy) == 2 && rng.nextFloat() > 0.7f) continue;
+
+        int nx = x + dx;
+        int ny = y + dy;
+
+        if (nx > 0 && nx < width - 1 && ny > 0 && ny < height - 1) {
+          setTile(layer, nx, ny, floorTiles[rng.nextInt(floorTiles.length)]);
         }
       }
     }
@@ -384,7 +478,11 @@ public record DungeonMapStrategy(long seed, int width, int height)
         && "wall".equals(cell.getTile().getProperties().get("type"));
   }
 
-  private record Room(int x, int y, int w, int h) {}
+  private record Room(int x, int y, int w, int h) {
+    boolean contains(int px, int py) {
+      return px >= x && px < x + w && py >= y && py < y + h;
+    }
+  }
 
   private record GridPoint(int x, int y) {}
 }
