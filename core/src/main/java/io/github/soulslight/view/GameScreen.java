@@ -85,11 +85,10 @@ public final class GameScreen implements GameState {
 
     // Camera + viewport: what you see on screen (not map size)
     this.camera = new OrthographicCamera();
-    this.viewport =
-        new FitViewport(
-            io.github.soulslight.model.Constants.V_WIDTH,
-            io.github.soulslight.model.Constants.V_HEIGHT,
-            camera);
+    this.viewport = new FitViewport(
+        io.github.soulslight.model.Constants.V_WIDTH,
+        io.github.soulslight.model.Constants.V_HEIGHT,
+        camera);
 
     // Map renderer
     this.mapRenderer = new OrthogonalTiledMapRenderer(model.getMap(), batch);
@@ -226,13 +225,13 @@ public final class GameScreen implements GameState {
       }
 
       Texture tex = TextureManager.getEnemyTexture(enemy);
-      float size =
-          (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
+      float size = (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
       drawEntity(tex, enemy.getPosition(), size, size);
     }
 
     Texture tArrow = TextureManager.get("arrow");
-    if (tArrow == null) tArrow = TextureManager.get("player");
+    if (tArrow == null)
+      tArrow = TextureManager.get("player");
 
     for (Projectile p : model.getProjectiles()) {
       batch.draw(
@@ -285,7 +284,8 @@ public final class GameScreen implements GameState {
   }
 
   private void drawPortal() {
-    if (model.getLevel() == null) return;
+    if (model.getLevel() == null)
+      return;
 
     Portal portal = null;
 
@@ -302,7 +302,8 @@ public final class GameScreen implements GameState {
       portal = model.getLevel().getCavePortal();
     }
 
-    if (portal == null) return;
+    if (portal == null)
+      return;
 
     Vector2 pos = portal.getPosition();
 
@@ -318,7 +319,8 @@ public final class GameScreen implements GameState {
   }
 
   private void drawPortalPrompt() {
-    if (model.getLevel() == null) return;
+    if (model.getLevel() == null)
+      return;
 
     boolean playerNearPortal = false;
 
@@ -335,7 +337,8 @@ public final class GameScreen implements GameState {
       playerNearPortal = true;
     }
 
-    if (!playerNearPortal) return;
+    if (!playerNearPortal)
+      return;
 
     // Simple text prompt at top-center of screen
     batch.begin();
@@ -349,7 +352,8 @@ public final class GameScreen implements GameState {
   }
 
   private void checkLevelTransition() {
-    if (!model.isLevelCompleted()) return;
+    if (!model.isLevelCompleted())
+      return;
 
     // Reset flag immediately to prevent multiple triggers
     model.setLevelCompleted(false);
@@ -372,8 +376,7 @@ public final class GameScreen implements GameState {
           } else {
             Gdx.app.log("GameScreen", "Campaign complete! All levels finished.");
             // Return to main menu on victory
-            if (Gdx.app.getApplicationListener()
-                instanceof io.github.soulslight.SoulsLightGame game) {
+            if (Gdx.app.getApplicationListener() instanceof io.github.soulslight.SoulsLightGame game) {
               game.setScreen(new MainMenuScreen(game, batch));
             }
           }
@@ -422,14 +425,16 @@ public final class GameScreen implements GameState {
     if (boss.isDying()) {
       float t = boss.getDeathAnimTime();
       float duration = Oblivion.getDeathAnimDuration();
-      if (t > duration) t = duration;
+      if (t > duration)
+        t = duration;
       return TextureManager.getOblivionDeathFrame(t);
     }
 
     if (boss.isTeleportingOut() || boss.isTeleportingIn()) {
       float t = boss.getTeleportAnimTime();
       float duration = Oblivion.getTeleportAnimDuration();
-      if (t > duration) t = duration;
+      if (t > duration)
+        t = duration;
 
       float animTime;
       if (boss.isTeleportingOut()) {
@@ -567,7 +572,8 @@ public final class GameScreen implements GameState {
 
   private void centerCameraOnPlayer() {
     java.util.List<Player> players = model.getPlayers();
-    if (players.isEmpty()) return;
+    if (players.isEmpty())
+      return;
 
     // Just center on first player for initial spawn or calculate average
     Player p = players.get(0);
@@ -576,7 +582,8 @@ public final class GameScreen implements GameState {
   }
 
   private void cacheMapSizeInPixels() {
-    if (model.getMap() == null) return;
+    if (model.getMap() == null)
+      return;
 
     MapProperties prop = model.getMap().getProperties();
     int mapWidth = prop.get("width", Integer.class);
@@ -614,7 +621,8 @@ public final class GameScreen implements GameState {
 
   private void drawEntity(
       TextureRegion region, Vector2 pos, float width, float height, boolean flipX) {
-    if (region == null) return;
+    if (region == null)
+      return;
 
     float x = pos.x - width / 2f;
     float y = pos.y - height / 2f;
@@ -627,7 +635,8 @@ public final class GameScreen implements GameState {
   }
 
   private void drawOblivion(TextureRegion region, Vector2 pos, boolean flipX) {
-    if (region == null) return;
+    if (region == null)
+      return;
 
     float width = OBLIVION_WIDTH;
     float height = OBLIVION_HEIGHT;
@@ -646,27 +655,36 @@ public final class GameScreen implements GameState {
   @Override
   public void resize(int width, int height) {
     viewport.update(width, height, true);
-    if (pauseMenuOverlay != null) pauseMenuOverlay.resize(width, height);
+    if (pauseMenuOverlay != null)
+      pauseMenuOverlay.resize(width, height);
   }
 
   @Override
-  public void pause() {}
+  public void pause() {
+  }
 
   @Override
-  public void resume() {}
+  public void resume() {
+  }
 
   @Override
-  public void hide() {}
+  public void hide() {
+  }
 
   @Override
   public void dispose() {
-    if (mapRenderer != null) mapRenderer.dispose();
-    if (model != null) model.dispose();
-    if (debugRenderer != null) debugRenderer.dispose();
-    if (hud != null) hud.dispose();
-    if (debugMenuOverlay != null) debugMenuOverlay.dispose();
-    if (pauseMenuOverlay != null) pauseMenuOverlay.dispose();
-    if (promptFont != null) promptFont.dispose();
+    if (mapRenderer != null)
+      mapRenderer.dispose();
+    if (debugRenderer != null)
+      debugRenderer.dispose();
+    if (hud != null)
+      hud.dispose();
+    if (debugMenuOverlay != null)
+      debugMenuOverlay.dispose();
+    if (pauseMenuOverlay != null)
+      pauseMenuOverlay.dispose();
+    if (promptFont != null)
+      promptFont.dispose();
     enemyAnimOffset.clear();
     enemyFacingRight.clear();
   }
