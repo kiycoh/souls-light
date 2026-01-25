@@ -62,18 +62,6 @@ public class Shielder extends AbstractEnemy {
       // Se ci vede si mette in mezzo e ci respinge
       blockLineOfFire(player, vip, deltaTime);
 
-      // Check for shield bash if close enough (Merged from HEAD logic idea, or
-      // feature branch
-      // logic?)
-      // Feature branch didn't seem to have explicit attack call in updateBehavior,
-      // but maybe blockLineOfFire handles position and collision deals damage via
-      // ContactListener?
-      // HEAD had: this.attack(player) if close.
-      // Feature branch logic only handles movement.
-      // I'll stick to Feature branch movement logic. If attack is needed, it might be
-      // contact based
-      // or separate.
-
     } else {
       // Se non ci vede cammina insieme al ranger da proteggere
       moveToFormation(vip, deltaTime);

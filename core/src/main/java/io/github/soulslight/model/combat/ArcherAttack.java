@@ -1,8 +1,6 @@
 package io.github.soulslight.model.combat;
 
 import com.badlogic.gdx.Gdx;
-import io.github.soulslight.model.entities.Entity;
-import java.util.List;
 
 /** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Archer). */
 public class ArcherAttack extends AbstractAttack {
@@ -14,13 +12,34 @@ public class ArcherAttack extends AbstractAttack {
   }
 
   @Override
+  protected java.util.List<io.github.soulslight.model.entities.Entity> selectTargets(
+      io.github.soulslight.model.entities.Entity attacker,
+      java.util.List<io.github.soulslight.model.entities.Entity> candidates) {
+    // Also uses single nearest target, like Mage
+    return findNearestTarget(attacker, candidates);
+  }
+
+  @Override
+  protected void performAttack(
+      io.github.soulslight.model.entities.Entity attacker,
+      io.github.soulslight.model.entities.Entity target) {
+
+    ((io.github.soulslight.model.entities.Player) attacker)
+        .notifyProjectileRequest(
+            attacker.getPosition(),
+            target.getPosition(), // Target Position (non-homing)
+            "fast_arrow",
+            getDamage());
+  }
+
+  @Override
   public void attack() {
-    Gdx.app.log("ArcherAttack", "Attack executed");
+    Gdx.app.log("ArcherAttack", "Shooting Fast Arrow");
   }
 
   @Override
   public float getRange() {
-    return 100.0f;
+    return 300.0f;
   }
 
   @Override
@@ -36,16 +55,5 @@ public class ArcherAttack extends AbstractAttack {
   @Override
   public String getSoundID() {
     return "bow_sound";
-  }
-
-  @Override
-  public void executeAttack(Entity attacker, List<Entity> targets) {
-    // Logica semplice: colpisci il primo che è a tiro
-    for (Entity target : targets) {
-      // Verifica distanza
-      if (attacker.getPosition().dst(target.getPosition()) <= getRange()) {
-        target.takeDamage(getDamage());
-      }
-    }
   }
 }

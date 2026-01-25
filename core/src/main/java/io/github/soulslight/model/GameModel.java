@@ -56,16 +56,19 @@ public class GameModel implements Disposable, ProjectileListener {
     TiledMap myMap = strategy.generate();
 
     // ---- PLAYERS: spawn on valid flood tile ----
-    Vector2 spawn = findFirstFloorSpawn(myMap);
+    List<RoomData> roomData = DungeonMapStrategy.extractRoomData(myMap);
+    Vector2 spawn = findFirstFloorSpawn(myMap, roomData);
 
     // Player 1: Uses class selected in ClassSelectionScreen
     Player.PlayerClass selectedClass = GameManager.getInstance().getSelectedPlayerClass();
     Player p1 = new Player(selectedClass, this.physicsWorld, spawn.x, spawn.y);
+    p1.addProjectileListener(this); // Register listener
     players.add(p1);
     GameManager.getInstance().addPlayer(p1);
 
     // Player 2 (spawn slightly offset) - for co-op testing
     Player p2 = new Player(Player.PlayerClass.ARCHER, this.physicsWorld, spawn.x + 20, spawn.y);
+    p2.addProjectileListener(this); // Register listener
     players.add(p2);
     GameManager.getInstance().addPlayer(p2);
 
@@ -75,7 +78,6 @@ public class GameModel implements Disposable, ProjectileListener {
     EnemyFactory factory = new DungeonEnemyFactory();
 
     // ---- MAP TYPE DETECTION: Dungeon (rooms) vs Cave (roomless) ----
-    List<RoomData> roomData = DungeonMapStrategy.extractRoomData(myMap);
     boolean hasCavePortal = myMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
 
     if (!roomData.isEmpty()) {
@@ -150,8 +152,19 @@ public class GameModel implements Disposable, ProjectileListener {
     GameManager.getInstance().setCurrentLevel(this.level);
   }
 
-  /** Finds a valid spawn point ("floor" tile) and returns pixel coordinates */
-  private Vector2 findFirstFloorSpawn(TiledMap map) {
+  /** Finds a valid spawn point ("floor" tile) prioritizing start rooms over portal rooms. */
+  private Vector2 findFirstFloorSpawn(TiledMap map, List<RoomData> roomData) {
+    // 1. Smart Search: If we have room data, pick the first room (Start Room)
+    if (roomData != null && !roomData.isEmpty()) {
+      for (RoomData room : roomData) {
+        if (!room.isPortalRoom()) {
+          Vector2 spawn = findSpawnInRoom(map, room);
+          if (spawn != null) return spawn;
+        }
+      }
+    }
+
+    // 2. Fallback: Naive bottom-up scan (for caves or legacy maps)
     if (map == null || map.getLayers().getCount() == 0) {
       return new Vector2(17, 17);
     }
@@ -167,7 +180,6 @@ public class GameModel implements Disposable, ProjectileListener {
         if (cell == null || cell.getTile() == null) continue;
 
         var props = cell.getTile().getProperties();
-
         boolean isFloor;
         if (props.containsKey("type")) {
           isFloor = "floor".equals(props.get("type", String.class));
@@ -186,12 +198,85 @@ public class GameModel implements Disposable, ProjectileListener {
     return new Vector2(17, 17);
   }
 
+  private Vector2 findSpawnInRoom(TiledMap map, RoomData room) {
+    TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(0);
+    float tileSize = layer.getTileWidth();
+
+    // Convert world bounds to tile coordinates
+    int startX = (int) (room.bounds().x / tileSize);
+    int startY = (int) (room.bounds().y / tileSize);
+    int endX = (int) ((room.bounds().x + room.bounds().width) / tileSize);
+    int endY = (int) ((room.bounds().y + room.bounds().height) / tileSize);
+
+    for (int y = startY; y < endY; y++) {
+      for (int x = startX; x < endX; x++) {
+        TiledMapTileLayer.Cell cell = layer.getCell(x, y);
+        if (cell != null && cell.getTile() != null) {
+          String type = cell.getTile().getProperties().get("type", String.class);
+          if ("floor".equals(type)) {
+            float px = x * tileSize + tileSize / 2f;
+            float py = y * tileSize + tileSize / 2f;
+            return new Vector2(px, py);
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   public void update(float deltaTime) {
     if (isPaused) return;
 
     for (Player p : players) {
       if (p != null) p.update(deltaTime);
     }
+
+    // Revive Logic
+    for (Player activePlayer : players) {
+      if (activePlayer == null || activePlayer.isDead()) continue;
+
+      // Check if player is still
+      float velSq =
+          activePlayer.getBody() != null ? activePlayer.getBody().getLinearVelocity().len2() : 0f;
+      // Increased tolerance for "stillness"
+      boolean isStill = activePlayer.getBody() != null && velSq < 5.0f;
+
+      boolean revivingSomeone = false;
+
+      if (isStill) {
+        for (Player deadPlayer : players) {
+          if (deadPlayer == null || !deadPlayer.isDead()) continue;
+
+          float dist = activePlayer.getPosition().dst(deadPlayer.getPosition());
+          // com.badlogic.gdx.Gdx.app.log("ReviveDebug", "Dist to dead: " + dist);
+
+          // Check overlap (assuming radius ~14f, combined ~28f, use 40f for tolerance)
+          if (dist < 40f) {
+            revivingSomeone = true;
+            activePlayer.setReviveAttemptTimer(activePlayer.getReviveAttemptTimer() + deltaTime);
+
+            // Log every integer second to verify progress
+            if ((int) activePlayer.getReviveAttemptTimer()
+                > (int) (activePlayer.getReviveAttemptTimer() - deltaTime)) {
+              com.badlogic.gdx.Gdx.app.log(
+                  "ReviveDebug", "Reviving... Timer: " + activePlayer.getReviveAttemptTimer());
+            }
+
+            if (activePlayer.getReviveAttemptTimer() >= 5.0f) {
+              deadPlayer.revive();
+              activePlayer.setReviveAttemptTimer(0f);
+              com.badlogic.gdx.Gdx.app.log("GameModel", "Player revived!");
+            }
+            break; // Only revive one at a time
+          }
+        }
+      }
+
+      if (!revivingSomeone) {
+        activePlayer.setReviveAttemptTimer(0f);
+      }
+    }
+
     updateEnemiesLogic(deltaTime);
 
     physicsAccumulator += deltaTime;
@@ -200,7 +285,7 @@ public class GameModel implements Disposable, ProjectileListener {
       physicsWorld.step(1 / 60f, 6, 2);
       // Update projectiles for all players
       if (!players.isEmpty()) {
-        projectileManager.update(1 / 60f, players);
+        projectileManager.update(1 / 60f, players, getActiveEnemies());
       }
       physicsAccumulator -= 1 / 60f;
     }
@@ -232,8 +317,48 @@ public class GameModel implements Disposable, ProjectileListener {
   }
 
   @Override
-  public void onProjectileRequest(Vector2 origin, Vector2 target, String type) {
-    projectileManager.addProjectile(new Projectile(physicsWorld, origin.x, origin.y, target));
+  public void onProjectileRequest(Vector2 origin, Vector2 target, String type, float damage) {
+    boolean isPlayerSource = false;
+    float speed = 400f;
+
+    // Handle Player Projectile Types
+    if ("arrow".equals(type)) { // Rain of Arrows
+      isPlayerSource = true;
+      speed = 400f;
+    } else if ("fast_arrow".equals(type)) { // Archer Base Attack
+      isPlayerSource = true;
+      speed = 700f; // Faster than default
+    } else if ("homing_fireball_target".equals(type) || type.startsWith("homing_fireball_target")) {
+      isPlayerSource = true;
+    } else if ("enemy_arrow".equals(type)) {
+      isPlayerSource = false; // Explicitly enemy source
+      speed = 300f; // Slower than player arrows to be dodgeable
+    }
+
+    projectileManager.addProjectile(
+        new Projectile(
+            physicsWorld, origin.x, origin.y, target, isPlayerSource, null, speed, damage));
+  }
+
+  @Override
+  public void onProjectileRequest(
+      Vector2 origin,
+      io.github.soulslight.model.entities.Entity targetEntity,
+      String type,
+      float damage) {
+
+    projectileManager.addProjectile(
+        new Projectile(
+            physicsWorld,
+            origin.x,
+            origin.y,
+            targetEntity.getPosition(),
+            true, // isPlayerSource
+            targetEntity,
+            400f,
+            damage)); // Default speed for homing
+    // MISSING DAMAGE IN CONSTRUCTOR CALL?
+    // I need to use the full constructor.
   }
 
   private void checkMeleeCollision(AbstractEnemy enemy) {
