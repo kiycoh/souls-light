@@ -77,8 +77,8 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     CircleShape shape = new CircleShape();
     shape.setRadius(
         this instanceof Oblivion
-            ? 24f
-            : 14f); // crea la hitbox, 24 per il boss, 14 per tutti gli altri
+            ? 80f
+            : 14f); // crea la hitbox, 80 per il boss, 14 per tutti gli altri
 
     FixtureDef fdef = new FixtureDef();
     fdef.shape = shape;

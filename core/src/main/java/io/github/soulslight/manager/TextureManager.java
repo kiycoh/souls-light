@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TextureManager {
+
   private static final Map<String, Texture> textures = new HashMap<>();
 
   private static Animation<TextureRegion> chaserWalkAnim;
@@ -22,6 +23,14 @@ public class TextureManager {
   private static Animation<TextureRegion> spikedBallWalkAnim;
 
   private static Animation<TextureRegion> spikedBallChargeAnim;
+
+  private static Animation<TextureRegion> oblivionIdleAnim;
+  private static Animation<TextureRegion> oblivionWalkAnim;
+  private static Animation<TextureRegion> oblivionMeleeWindupAnim;
+  private static Animation<TextureRegion> oblivionMeleeAttackAnim;
+  private static Animation<TextureRegion> oblivionSpellAnim;
+  private static Animation<TextureRegion> oblivionTeleportAnim;
+  private static Animation<TextureRegion> oblivionDeathAnim;
 
   private static final Map<String, Animation<TextureRegion>> builtAnims = new HashMap<>();
 
@@ -62,6 +71,27 @@ public class TextureManager {
 
     buildAnimIfExists("spikedBallCharge", 32, 34);
     spikedBallChargeAnim = getBuiltAnim("spikedBallCharge");
+
+    buildAnimIfExists("oblivionIdle", 288, 160);
+    oblivionIdleAnim = getBuiltAnim("oblivionIdle");
+
+    buildAnimIfExists("oblivionWalk", 288, 160);
+    oblivionWalkAnim = getBuiltAnim("oblivionWalk");
+
+    buildAnimIfExists("oblivionMeleeWindup", 288, 160);
+    oblivionMeleeWindupAnim = getBuiltAnim("oblivionMeleeWindup");
+
+    buildAnimIfExists("oblivionMeleeAttack", 288, 160);
+    oblivionMeleeAttackAnim = getBuiltAnim("oblivionMeleeAttack");
+
+    buildAnimIfExists("oblivionSpell", 288, 160);
+    oblivionSpellAnim = getBuiltAnim("oblivionSpell");
+
+    buildAnimIfExists("oblivionTeleport", 288, 160);
+    oblivionTeleportAnim = getBuiltAnim("oblivionTeleport");
+
+    buildAnimIfExists("oblivionDeath", 288, 160);
+    oblivionDeathAnim = getBuiltAnim("oblivionDeath");
 
     // Filtro Pixel Art
     for (Texture t : textures.values()) {
@@ -122,6 +152,41 @@ public class TextureManager {
     return spikedBallChargeAnim.getKeyFrame(stateTime, true);
   }
 
+  public static TextureRegion getOblivionIdleFrame(float stateTime) {
+    if (oblivionIdleAnim == null) return null;
+    return oblivionIdleAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getOblivionWalkFrame(float stateTime) {
+    if (oblivionWalkAnim == null) return null;
+    return oblivionWalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getOblivionMeleeWindupFrame(float stateTime) {
+    if (oblivionMeleeWindupAnim == null) return null;
+    return oblivionMeleeWindupAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getOblivionMeleeAttackFrame(float stateTime) {
+    if (oblivionMeleeAttackAnim == null) return null;
+    return oblivionMeleeAttackAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getOblivionSpellFrame(float stateTime) {
+    if (oblivionSpellAnim == null) return null;
+    return oblivionSpellAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getOblivionTeleportFrame(float stateTime) {
+    if (oblivionTeleportAnim == null) return null;
+    return oblivionTeleportAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getOblivionDeathFrame(float stateTime) {
+    if (oblivionDeathAnim == null) return null;
+    return oblivionDeathAnim.getKeyFrame(stateTime, false);
+  }
+
   public static void dispose() {
     for (Texture t : textures.values()) t.dispose();
     textures.clear();
@@ -131,6 +196,15 @@ public class TextureManager {
     shielderWalkAnim = null;
     spikedBallWalkAnim = null;
     spikedBallChargeAnim = null;
+
+    oblivionIdleAnim = null;
+    oblivionWalkAnim = null;
+    oblivionMeleeWindupAnim = null;
+    oblivionMeleeAttackAnim = null;
+    oblivionSpellAnim = null;
+    oblivionTeleportAnim = null;
+    oblivionDeathAnim = null;
+
     builtAnims.clear();
   }
 
