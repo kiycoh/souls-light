@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -166,6 +167,18 @@ public final class MainMenuScreen implements GameState {
     Table dialogTable = new Table();
     dialogTable.setFillParent(true);
     dialogTable.center();
+    // Make the dialog modal:
+    // 1. Enable touch events so the table itself (background) can be hit.
+    // 2. Add an event listener to consume all clicks, interfering with buttons
+    // below.
+    dialogTable.setTouchable(Touchable.enabled);
+    dialogTable.addListener(
+        new ClickListener() {
+          @Override
+          public void clicked(InputEvent event, float x, float y) {
+            // Consumes the event
+          }
+        });
 
     // Dialog background styling
     dialogTable.setBackground(
