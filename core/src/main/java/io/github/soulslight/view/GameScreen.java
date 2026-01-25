@@ -661,6 +661,7 @@ public final class GameScreen implements GameState {
   @Override
   public void dispose() {
     if (mapRenderer != null) mapRenderer.dispose();
+    if (model != null) model.dispose();
     if (debugRenderer != null) debugRenderer.dispose();
     if (hud != null) hud.dispose();
     if (debugMenuOverlay != null) debugMenuOverlay.dispose();

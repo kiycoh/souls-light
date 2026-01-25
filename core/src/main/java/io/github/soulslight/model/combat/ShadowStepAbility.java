@@ -21,11 +21,8 @@ public class ShadowStepAbility implements SpecialAbilityStrategy {
 
     // Teleport behind enemy
     Vector2 enemyPos = target.getPosition();
-    // Assuming enemy faces player, "behind" is direction from enemy to player
-    // reversed?
-    // Or just add offset. Let's try to pass through.
     Vector2 dir = enemyPos.cpy().sub(player.getPosition()).nor();
-    Vector2 behindPos = enemyPos.cpy().add(dir.scl(30f)); // 30 units behind?
+    Vector2 behindPos = enemyPos.cpy().add(dir.scl(30f)); // 30 units behind
 
     // Teleport
     player.setPosition(behindPos.x, behindPos.y);

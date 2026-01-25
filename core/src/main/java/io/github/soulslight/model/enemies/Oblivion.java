@@ -152,53 +152,55 @@ public class Oblivion extends AbstractEnemy {
       return;
     }
 
-    if (currentState == State.TELEPORT_OUT || currentState == State.TELEPORT_IN) {
-      if (body != null) body.setLinearVelocity(0, 0);
+    if (currentState != State.TELEPORT_OUT && currentState != State.TELEPORT_IN) {
+      Vector2 myPos = (body != null) ? body.getPosition() : this.position;
+      float distance = myPos.dst(target.getPosition());
 
-      teleportAnimTime += deltaTime;
+      teleportTimer += deltaTime;
+      if (attackCooldown > 0) attackCooldown -= deltaTime;
+      if (retreatTimer > 0) retreatTimer -= deltaTime;
+      if (shootTimer > 0) shootTimer -= deltaTime;
 
-      if (teleportAnimTime >= TELEPORT_ANIM_DURATION) {
-        teleportAnimTime = TELEPORT_ANIM_DURATION;
-        if (currentState == State.TELEPORT_OUT) {
+      if (teleportTimer >= TELEPORT_COOLDOWN) {
+        startTeleportOut();
+        teleportTimer = 0f;
+      } else {
+        // In fase due attacca anche a distanza
+        if (isPhaseTwo && distance > 220f) {
+          if (currentState != State.CASTING) {
+            currentState = State.CASTING;
+            this.attackStrategy = new MageAttack(45);
+          }
+        } else if (currentState == State.CASTING && distance <= 220f) {
+          currentState = State.CHASING;
+          this.attackStrategy = new WarriorAttack(45);
+        }
+      }
+    }
+
+    switch (currentState) {
+      case TELEPORT_OUT:
+        if (body != null) body.setLinearVelocity(0, 0);
+        teleportAnimTime += deltaTime;
+
+        if (teleportAnimTime >= TELEPORT_ANIM_DURATION) {
+          teleportAnimTime = TELEPORT_ANIM_DURATION;
           teleportToPlayer(target);
           teleportAnimTime = 0f;
           currentState = State.TELEPORT_IN;
           this.attackStrategy = new WarriorAttack(45);
-        } else {
+        }
+        break;
+
+      case TELEPORT_IN:
+        if (body != null) body.setLinearVelocity(0, 0);
+        teleportAnimTime += deltaTime;
+        if (teleportAnimTime >= TELEPORT_ANIM_DURATION) {
           teleportAnimTime = 0f;
           currentState = State.CHASING;
         }
-      }
+        break;
 
-      return;
-    }
-
-    Vector2 myPos = (body != null) ? body.getPosition() : this.position;
-    float distance = myPos.dst(target.getPosition());
-
-    teleportTimer += deltaTime;
-    if (attackCooldown > 0) attackCooldown -= deltaTime;
-    if (retreatTimer > 0) retreatTimer -= deltaTime;
-    if (shootTimer > 0) shootTimer -= deltaTime;
-
-    if (teleportTimer >= TELEPORT_COOLDOWN) {
-      startTeleportOut();
-      teleportTimer = 0f;
-      return;
-    }
-
-    // In fase due attacca anche a distanza
-    if (isPhaseTwo && distance > 220f) {
-      if (currentState != State.CASTING) {
-        currentState = State.CASTING;
-        this.attackStrategy = new MageAttack(45);
-      }
-    } else if (currentState == State.CASTING && distance <= 220f) {
-      currentState = State.CHASING;
-      this.attackStrategy = new WarriorAttack(45);
-    }
-
-    switch (currentState) {
       case CASTING:
         if (body != null) body.setLinearVelocity(0, 0);
         if (shootTimer <= 0) {
@@ -211,7 +213,8 @@ public class Oblivion extends AbstractEnemy {
         break;
 
       case CHASING:
-        if (distance > STOP_DISTANCE) {
+        float dist = getPosition().dst(target.getPosition());
+        if (dist > STOP_DISTANCE) {
           // troppo lontano: avvicinati
           moveTowards(target.getPosition(), deltaTime);
         } else {

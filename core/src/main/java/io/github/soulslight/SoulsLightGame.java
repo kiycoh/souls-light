@@ -4,6 +4,7 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.soulslight.manager.ResourceManager;
+import io.github.soulslight.manager.TextureManager;
 import io.github.soulslight.view.SplashScreen;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
@@ -34,6 +35,7 @@ public class SoulsLightGame extends Game {
   public void dispose() {
     batch.dispose();
     ResourceManager.getInstance().dispose();
+    TextureManager.dispose();
     super.dispose();
   }
 }
