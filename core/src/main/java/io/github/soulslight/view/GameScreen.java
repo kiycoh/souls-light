@@ -62,7 +62,9 @@ public final class GameScreen implements GameState {
     private final Map<AbstractEnemy, Boolean> enemyFacingRight = new IdentityHashMap<>();
 
     private static final float OBLIVION_HEIGHT = 96f * 5f;
-    private static final float OBLIVION_WIDTH = 173f * 5f; // 96 * 288 / 160 ≈ 172.8
+    private static final float OBLIVION_WIDTH = 173f * 5f; // may have to be tweaked later
+
+    private static final float OBLIVION_Y_OFFSET = 80f;
 
     // Debug menu components
     private DebugMenuController debugMenuController;
@@ -161,7 +163,7 @@ public final class GameScreen implements GameState {
                 if (frame != null) {
                     // Oblivion spritesheet needs to be flipped
                     boolean flipOblivion = !flipX;
-                    drawEntity(frame, enemy.getPosition(), OBLIVION_WIDTH, OBLIVION_HEIGHT, flipOblivion);
+                    drawOblivion(frame, enemy.getPosition(), flipOblivion);
                     continue;
                 }
             }
@@ -505,6 +507,23 @@ public final class GameScreen implements GameState {
 
         float x = pos.x - width / 2f;
         float y = pos.y - height / 2f;
+
+        if (!flipX) {
+            batch.draw(region, x, y, width, height);
+        } else {
+            batch.draw(region, x + width, y, -width, height);
+        }
+    }
+
+    private void drawOblivion(TextureRegion region, Vector2 pos, boolean flipX) {
+        if (region == null) return;
+
+        float width = OBLIVION_WIDTH;
+        float height = OBLIVION_HEIGHT;
+
+        float x = pos.x - width / 2f;
+        // Matching sprite to hitbox
+        float y = pos.y - height / 2f + OBLIVION_Y_OFFSET;
 
         if (!flipX) {
             batch.draw(region, x, y, width, height);
