@@ -9,6 +9,7 @@ public class SettingsManager {
   private static final String KEY_AUTO_AIM = "auto_aim";
   private static final String KEY_MUSIC_VOL = "music_volume";
   private static final String KEY_FULLSCREEN = "fullscreen";
+  private static final String KEY_SINGLE_PLAYER = "single_player";
 
   private static SettingsManager instance;
   private final Preferences preferences;
@@ -30,6 +31,15 @@ public class SettingsManager {
 
   public void setAutoAimEnabled(boolean enabled) {
     preferences.putBoolean(KEY_AUTO_AIM, enabled);
+    preferences.flush();
+  }
+
+  public boolean isSinglePlayer() {
+    return preferences.getBoolean(KEY_SINGLE_PLAYER, false);
+  }
+
+  public void setSinglePlayer(boolean enabled) {
+    preferences.putBoolean(KEY_SINGLE_PLAYER, enabled);
     preferences.flush();
   }
 

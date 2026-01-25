@@ -1,6 +1,7 @@
 package io.github.soulslight.model.room;
 
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import io.github.soulslight.model.enemies.AbstractEnemy;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -249,5 +250,23 @@ public class Room implements EnemyDeathListener {
    */
   public boolean contains(float x, float y) {
     return bounds.contains(x, y);
+  }
+
+  /**
+   * Checks if a player is completely inside the room (including body radius).
+   *
+   * @param player The player to check
+   * @return True if the player's body is fully contained within room bounds
+   */
+  public boolean isPlayerFullyInRoom(io.github.soulslight.model.entities.Player player) {
+    if (player == null || player.getBody() == null) return false;
+    Vector2 pos = player.getPosition();
+    float radius = 14.0f; // Standard player radius from Player.java constant
+
+    // Check all 4 extrema of the bounding circle
+    return bounds.contains(pos.x - radius, pos.y)
+        && bounds.contains(pos.x + radius, pos.y)
+        && bounds.contains(pos.x, pos.y - radius)
+        && bounds.contains(pos.x, pos.y + radius);
   }
 }

@@ -102,6 +102,14 @@ public final class GameScreen implements GameState {
   private OutroOverlay outroOverlay;
   private boolean showingOutro = false;
 
+  // Door particles
+  private com.badlogic.gdx.graphics.g2d.ParticleEffect doorEffect;
+  private com.badlogic.gdx.graphics.g2d.ParticleEffectPool doorEffectPool;
+  private final java.util.Map<
+          io.github.soulslight.model.room.Door,
+          com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>
+      doorEffectsMap = new java.util.IdentityHashMap<>();
+
   public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
     this.batch = batch;
     this.model = model;
@@ -234,6 +242,9 @@ public final class GameScreen implements GameState {
 
     batch.setProjectionMatrix(camera.combined);
     batch.begin();
+
+    // Draw particles for locked doors
+    drawDoorParticles(delta);
 
     int playerIndex = 0;
     for (Player player : model.getPlayers()) {
@@ -448,6 +459,82 @@ public final class GameScreen implements GameState {
         viewport.getWorldWidth() / 2 - 60,
         viewport.getWorldHeight() - 20);
     batch.end();
+  }
+
+  private void drawDoorParticles(float delta) {
+    if (model.getLevel() == null || model.getLevel().getRoomManager() == null) return;
+
+    if (doorEffect == null) {
+      doorEffect = new com.badlogic.gdx.graphics.g2d.ParticleEffect();
+      // Corrected path based on file check
+      if (Gdx.files.internal("particles/effects/Particle Park Pentagram Glitchy.p").exists()) {
+        doorEffect.load(
+            Gdx.files.internal("particles/effects/Particle Park Pentagram Glitchy.p"),
+            Gdx.files.internal("particles/images"));
+        doorEffect.scaleEffect(0.7f);
+        doorEffectPool = new com.badlogic.gdx.graphics.g2d.ParticleEffectPool(doorEffect, 10, 50);
+      } else {
+        Gdx.app.log(
+            "GameScreen",
+            "Particle file not found: particles/effects/Particle Park Pentagram Glitchy.p");
+      }
+    }
+
+    if (doorEffectPool == null) return;
+
+    if (doorEffectPool == null) return;
+
+    // 1. Update active effects
+    java.util.Iterator<
+            java.util.Map.Entry<
+                io.github.soulslight.model.room.Door,
+                com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>>
+        it = doorEffectsMap.entrySet().iterator();
+    while (it.hasNext()) {
+      java.util.Map.Entry<
+              io.github.soulslight.model.room.Door,
+              com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>
+          entry = it.next();
+      io.github.soulslight.model.room.Door door = entry.getKey();
+      com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect effect = entry.getValue();
+
+      // If door is no longer locked, stop effect
+      if (!door.isLocked()) {
+        effect.free();
+        it.remove();
+        continue;
+      }
+
+      effect.update(delta);
+      effect.draw(batch);
+
+      if (effect.isComplete()) {
+        effect.reset(); // Loop it if it completes? Or free and let spawn logic handle re-add?
+        // For continuous effect, reset ensures it keeps going
+      }
+    }
+
+    // Spawn effects for locked doors that don't have one
+
+    // Iterate all rooms/doors
+    for (io.github.soulslight.model.room.Room room : model.getLevel().getRoomManager().getRooms()) {
+      for (io.github.soulslight.model.room.Door door : room.getDoors()) {
+        if (door.isLocked()) {
+          if (!doorEffectsMap.containsKey(door)) {
+            // Create new effect
+            com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect eff =
+                doorEffectPool.obtain();
+            eff.setPosition(door.getPosition().x, door.getPosition().y);
+            eff.start();
+            doorEffectsMap.put(door, eff);
+          } else {
+            // Ensure position is synced if door moves (unlikely)
+            // doorEffectsMap.get(door).setPosition(door.getPosition().x,
+            // door.getPosition().y);
+          }
+        }
+      }
+    }
   }
 
   private void checkLevelTransition() {
@@ -872,6 +959,14 @@ public final class GameScreen implements GameState {
     enemyAnimOffset.clear();
     enemyFacingRight.clear();
     playerFacingRight.clear();
+
+    if (doorEffectsMap != null) {
+      for (com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect effect :
+          doorEffectsMap.values()) {
+        effect.free();
+      }
+      doorEffectsMap.clear();
+    }
   }
 
   // Crossfade logic between exploration and boss music

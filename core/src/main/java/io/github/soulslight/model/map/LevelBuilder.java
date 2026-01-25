@@ -354,8 +354,9 @@ public class LevelBuilder {
     bdef.type = BodyDef.BodyType.StaticBody;
 
     Body body = world.createBody(bdef);
+    float halfSize = Math.max(0.1f, size / 2f);
     PolygonShape shape = new PolygonShape();
-    shape.setAsBox(size / 2, size / 2);
+    shape.setAsBox(halfSize, halfSize);
 
     FixtureDef fdef = new FixtureDef();
     fdef.shape = shape;
@@ -408,8 +409,7 @@ public class LevelBuilder {
       int tileW = prop.get("tilewidth", Integer.class);
 
       float doorThickness = (float) tileW; // Corridor width blocked
-      float doorLength =
-          tileW * 3f; // Door spans corridor opening (corridor_width + 2 tiles for safety)
+      float doorLength = tileW * 4f; // Blocking 3x3 hall -> need at least 4 blocks wide
 
       for (DoorPosition doorPos : data.doorPositions()) {
         Door.Direction doorDir =

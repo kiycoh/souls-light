@@ -137,6 +137,29 @@ public final class SettingsScreen implements GameState {
     fullscreenToggle.setTransform(true);
     fullscreenToggle.setScale(0.85f);
 
+    // --- SINGLE PLAYER ---
+    Label singlePlayerLabel = new Label("Single Player", labelStyle);
+    final ImageButton singlePlayerToggle = new ImageButton(toggleStyle);
+    singlePlayerToggle.setChecked(SettingsManager.getInstance().isSinglePlayer());
+
+    // Feature: Disable toggling Single Player during a run
+    if (previousScreen instanceof GameScreen) {
+      singlePlayerToggle.setDisabled(true);
+      // Visual feedback for disabled state
+      singlePlayerToggle.setColor(1f, 1f, 1f, 0.5f);
+    } else {
+      singlePlayerToggle.addListener(
+          new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+              SettingsManager.getInstance().setSinglePlayer(singlePlayerToggle.isChecked());
+            }
+          });
+    }
+
+    singlePlayerToggle.setTransform(true);
+    singlePlayerToggle.setScale(0.85f);
+
     // --- VOLUME ---
     final Label volumeLabel = new Label(getVolumeText(), labelStyle);
 
@@ -189,6 +212,9 @@ public final class SettingsScreen implements GameState {
     table.add(fullscreenLabel).left().padRight(30f).padBottom(rowPad);
     table.add(fullscreenToggle).width(toggleW).height(toggleH).padBottom(rowPad).row();
 
+    table.add(singlePlayerLabel).left().padRight(30f).padBottom(rowPad);
+    table.add(singlePlayerToggle).width(toggleW).height(toggleH).padBottom(rowPad).row();
+
     Table volRow = new Table();
     volRow.add(volumeLabel).padRight(16f);
     volRow.add(volMinusBtn).width(48f).height(40f).padRight(8f);
@@ -218,22 +244,28 @@ public final class SettingsScreen implements GameState {
   }
 
   @Override
-  public void pause() {}
+  public void pause() {
+  }
 
   @Override
-  public void resume() {}
+  public void resume() {
+  }
 
   @Override
-  public void hide() {}
+  public void hide() {
+  }
 
   @Override
   public void dispose() {
     stage.dispose();
     font.dispose();
 
-    if (backgroundTexture != null) backgroundTexture.dispose();
-    if (toggleOnTexture != null) toggleOnTexture.dispose();
-    if (toggleOffTexture != null) toggleOffTexture.dispose();
+    if (backgroundTexture != null)
+      backgroundTexture.dispose();
+    if (toggleOnTexture != null)
+      toggleOnTexture.dispose();
+    if (toggleOffTexture != null)
+      toggleOffTexture.dispose();
 
     AudioManager.getInstance().stopMusic();
   }

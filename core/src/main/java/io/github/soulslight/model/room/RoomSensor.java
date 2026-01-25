@@ -36,8 +36,11 @@ public class RoomSensor {
 
     sensorBody = world.createBody(bodyDef);
 
+    float halfW = Math.max(0.1f, bounds.width / 2f);
+    float halfH = Math.max(0.1f, bounds.height / 2f);
+
     PolygonShape shape = new PolygonShape();
-    shape.setAsBox(bounds.width / 2f, bounds.height / 2f);
+    shape.setAsBox(halfW, halfH);
 
     FixtureDef fixtureDef = new FixtureDef();
     fixtureDef.shape = shape;

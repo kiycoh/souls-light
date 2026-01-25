@@ -39,6 +39,12 @@ public final class ActiveCombatState implements RoomState {
     for (Player player : manager.getPlayers()) {
       if (player == null || player.getBody() == null) continue;
 
+      // Fix: Only teleport players who are NOT fully inside the room.
+      // If a player is already safely inside, let them keep their position.
+      if (room.isPlayerFullyInRoom(player)) {
+        continue;
+      }
+
       // Find the closest door to this player
       Door nearestDoor = findNearestDoor(room, player);
       if (nearestDoor == null) {

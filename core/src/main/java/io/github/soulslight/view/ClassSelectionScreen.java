@@ -248,6 +248,15 @@ public final class ClassSelectionScreen implements GameState {
       // Player 1 Selected
       GameManager.getInstance().setPlayerClass(0, playerClass);
 
+      // Check Single Player Mode
+      if (io.github.soulslight.manager.SettingsManager.getInstance().isSinglePlayer()) {
+        // Start the game immediately
+        GameModel model = new GameModel();
+        GameController controller = new GameController(model);
+        game.setScreen(new IntroScreen(game, batch, model, controller));
+        return;
+      }
+
       // Advance to Player 2
       currentPlayerIndex = 1;
       updateTitle();

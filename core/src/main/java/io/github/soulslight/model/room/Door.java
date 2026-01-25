@@ -64,8 +64,11 @@ public class Door {
 
     physicsBody = world.createBody(bodyDef);
 
+    float halfW = Math.max(0.1f, width / 2f);
+    float halfH = Math.max(0.1f, height / 2f);
+
     PolygonShape shape = new PolygonShape();
-    shape.setAsBox(width / 2f, height / 2f);
+    shape.setAsBox(halfW, halfH);
 
     FixtureDef fixtureDef = new FixtureDef();
     fixtureDef.shape = shape;

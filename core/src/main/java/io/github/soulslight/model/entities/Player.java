@@ -289,8 +289,18 @@ public class Player extends Entity {
     }
   }
 
+  // Facing direction for attacks (independent of knockback)
+  private Vector2 facingDirection = new Vector2(0, -1);
+
   public void move(float x, float y) {
     if (body != null) body.setLinearVelocity(x, y);
+    if (Math.abs(x) > 0.1f || Math.abs(y) > 0.1f) {
+      facingDirection.set(x, y).nor();
+    }
+  }
+
+  public Vector2 getFacingDirection() {
+    return facingDirection.cpy();
   }
 
   @Override

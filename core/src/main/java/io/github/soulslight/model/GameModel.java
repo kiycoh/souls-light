@@ -71,12 +71,14 @@ public class GameModel implements Disposable, ProjectileListener {
     players.add(p1);
     GameManager.getInstance().addPlayer(p1);
 
-    // Player 2 (spawn slightly offset)
-    Player.PlayerClass p2Class = GameManager.getInstance().getPlayerClass(1);
-    Player p2 = new Player(p2Class, this.physicsWorld, spawn.x + 20, spawn.y);
-    p2.addProjectileListener(this); // Register listener
-    players.add(p2);
-    GameManager.getInstance().addPlayer(p2);
+    // Player 2 (spawn slightly offset) - Only if NOT single player
+    if (!io.github.soulslight.manager.SettingsManager.getInstance().isSinglePlayer()) {
+      Player.PlayerClass p2Class = GameManager.getInstance().getPlayerClass(1);
+      Player p2 = new Player(p2Class, this.physicsWorld, spawn.x + 20, spawn.y);
+      p2.addProjectileListener(this); // Register listener
+      players.add(p2);
+      GameManager.getInstance().addPlayer(p2);
+    }
 
     // Projectile Manager
     this.projectileManager = new ProjectileManager(physicsWorld);

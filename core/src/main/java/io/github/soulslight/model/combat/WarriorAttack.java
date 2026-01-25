@@ -30,13 +30,20 @@ public class WarriorAttack extends AbstractAttack {
     if (attacker.getPosition().dst(target.getPosition()) > getRange()) return false;
 
     // Direction Check (Cone)
-    if (attacker.getBody() != null) {
-      Vector2 facing = attacker.getBody().getLinearVelocity().cpy();
+    // Direction Check (Cone)
+    Vector2 facing = null;
+
+    if (attacker instanceof io.github.soulslight.model.entities.Player p) {
+      facing = p.getFacingDirection();
+    } else if (attacker.getBody() != null) {
+      facing = attacker.getBody().getLinearVelocity().cpy();
       if (facing.len2() < 0.01f) {
-        return true;
+        return true; // No velocity (and not Player), assume hit 360 or no hit? original was true
       }
       facing.nor();
+    }
 
+    if (facing != null) {
       Vector2 toTarget = target.getPosition().cpy().sub(attacker.getPosition()).nor();
       float dot = facing.dot(toTarget);
 
