@@ -10,4 +10,8 @@ public class Constants {
   public static final short BIT_SENSOR = 8;
   public static final short BIT_DOOR = 16;
   public static final short BIT_PROJECTILE = 32;
+
+  // Virtual Screen Size
+  public static final float V_WIDTH = 720f;
+  public static final float V_HEIGHT = 480f;
 }

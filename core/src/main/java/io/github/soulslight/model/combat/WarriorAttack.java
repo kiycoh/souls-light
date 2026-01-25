@@ -5,10 +5,7 @@ import com.badlogic.gdx.math.Vector2;
 import io.github.soulslight.model.enemies.AbstractEnemy;
 import io.github.soulslight.model.entities.Entity;
 
-/**
- * Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior
- * (Warrior).
- */
+/** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Warrior). */
 public class WarriorAttack extends AbstractAttack {
 
   private final float damage;
@@ -30,8 +27,7 @@ public class WarriorAttack extends AbstractAttack {
   @Override
   protected boolean isInRange(Entity attacker, Entity target) {
     // Distance Check
-    if (attacker.getPosition().dst(target.getPosition()) > getRange())
-      return false;
+    if (attacker.getPosition().dst(target.getPosition()) > getRange()) return false;
 
     // Direction Check (Cone)
     if (attacker.getBody() != null) {

@@ -82,51 +82,56 @@ public class GameModel implements Disposable, ProjectileListener {
 
     if (!roomData.isEmpty()) {
       // ---- DUNGEON-STYLE LEVEL (rooms + doors + portal room) ----
-      this.level = new LevelBuilder()
-          .buildMap(myMap)
-          .buildRooms(roomData)
-          .initializeRoomManager(this.physicsWorld)
-          .buildPhysicsFromMap(this.physicsWorld)
-          .spawnEnemiesInRooms(factory, this.physicsWorld)
-          .setEnvironment("dungeon_theme.mp3", 0.3f)
-          .build();
+      this.level =
+          new LevelBuilder()
+              .buildMap(myMap)
+              .buildRooms(roomData)
+              .initializeRoomManager(this.physicsWorld)
+              .buildPhysicsFromMap(this.physicsWorld)
+              .spawnEnemiesInRooms(factory, this.physicsWorld)
+              .setEnvironment("dungeon_theme.mp3", 0.3f)
+              .build();
     } else if (hasCavePortal) {
       // ---- CAVE-STYLE LEVEL (random spawn + cave portal) ----
-      LevelFactory.EnemyConfig config = LevelFactory.getEnemyConfig(
-          GameManager.getInstance().getCurrentLevelIndex(),
-          GameManager.getInstance().getGameMode());
-      this.level = new LevelBuilder()
-          .buildMap(myMap)
-          .buildPhysicsFromMap(this.physicsWorld)
-          .spawnRandom(
-              factory,
-              this.physicsWorld,
-              config.melee(),
-              config.ranged(),
-              config.tank(),
-              config.ball(),
-              config.spawnBoss())
-          .spawnCavePortal(this.physicsWorld)
-          .setEnvironment("cave_theme.mp3", 0.2f)
-          .build();
+      LevelFactory.EnemyConfig config =
+          LevelFactory.getEnemyConfig(
+              GameManager.getInstance().getCurrentLevelIndex(),
+              GameManager.getInstance().getGameMode());
+      this.level =
+          new LevelBuilder()
+              .buildMap(myMap)
+              .buildPhysicsFromMap(this.physicsWorld)
+              .spawnRandom(
+                  factory,
+                  this.physicsWorld,
+                  config.melee(),
+                  config.ranged(),
+                  config.tank(),
+                  config.ball(),
+                  config.spawnBoss())
+              .spawnCavePortal(this.physicsWorld)
+              .setEnvironment("cave_theme.mp3", 0.2f)
+              .build();
     } else {
       // ---- BOSS ARENA OR CUSTOM (minimal setup) ----
-      LevelFactory.EnemyConfig config = LevelFactory.getEnemyConfig(
-          GameManager.getInstance().getCurrentLevelIndex(),
-          GameManager.getInstance().getGameMode());
-      this.level = new LevelBuilder()
-          .buildMap(myMap)
-          .buildPhysicsFromMap(this.physicsWorld)
-          .spawnRandom(
-              factory,
-              this.physicsWorld,
-              config.melee(),
-              config.ranged(),
-              config.tank(),
-              config.ball(),
-              config.spawnBoss())
-          .setEnvironment("boss_theme.mp3", 0.1f)
-          .build();
+      LevelFactory.EnemyConfig config =
+          LevelFactory.getEnemyConfig(
+              GameManager.getInstance().getCurrentLevelIndex(),
+              GameManager.getInstance().getGameMode());
+      this.level =
+          new LevelBuilder()
+              .buildMap(myMap)
+              .buildPhysicsFromMap(this.physicsWorld)
+              .spawnRandom(
+                  factory,
+                  this.physicsWorld,
+                  config.melee(),
+                  config.ranged(),
+                  config.tank(),
+                  config.ball(),
+                  config.spawnBoss())
+              .setEnvironment("boss_theme.mp3", 0.1f)
+              .build();
     }
 
     // Shielder 'target' setup and Listener registration
@@ -161,8 +166,7 @@ public class GameModel implements Disposable, ProjectileListener {
     for (int y = 0; y < h; y++) {
       for (int x = 0; x < w; x++) {
         TiledMapTileLayer.Cell cell = layer.getCell(x, y);
-        if (cell == null || cell.getTile() == null)
-          continue;
+        if (cell == null || cell.getTile() == null) continue;
 
         var props = cell.getTile().getProperties();
 
@@ -185,13 +189,58 @@ public class GameModel implements Disposable, ProjectileListener {
   }
 
   public void update(float deltaTime) {
-    if (isPaused)
-      return;
+    if (isPaused) return;
 
     for (Player p : players) {
-      if (p != null)
-        p.update(deltaTime);
+      if (p != null) p.update(deltaTime);
     }
+
+    // Revive Logic
+    for (Player activePlayer : players) {
+      if (activePlayer == null || activePlayer.isDead()) continue;
+
+      // Check if player is still
+      float velSq =
+          activePlayer.getBody() != null ? activePlayer.getBody().getLinearVelocity().len2() : 0f;
+      // Increased tolerance for "stillness"
+      boolean isStill = activePlayer.getBody() != null && velSq < 5.0f;
+
+      boolean revivingSomeone = false;
+
+      if (isStill) {
+        for (Player deadPlayer : players) {
+          if (deadPlayer == null || !deadPlayer.isDead()) continue;
+
+          float dist = activePlayer.getPosition().dst(deadPlayer.getPosition());
+          // com.badlogic.gdx.Gdx.app.log("ReviveDebug", "Dist to dead: " + dist);
+
+          // Check overlap (assuming radius ~14f, combined ~28f, use 40f for tolerance)
+          if (dist < 40f) {
+            revivingSomeone = true;
+            activePlayer.setReviveAttemptTimer(activePlayer.getReviveAttemptTimer() + deltaTime);
+
+            // Log every integer second to verify progress
+            if ((int) activePlayer.getReviveAttemptTimer()
+                > (int) (activePlayer.getReviveAttemptTimer() - deltaTime)) {
+              com.badlogic.gdx.Gdx.app.log(
+                  "ReviveDebug", "Reviving... Timer: " + activePlayer.getReviveAttemptTimer());
+            }
+
+            if (activePlayer.getReviveAttemptTimer() >= 5.0f) {
+              deadPlayer.revive();
+              activePlayer.setReviveAttemptTimer(0f);
+              com.badlogic.gdx.Gdx.app.log("GameModel", "Player revived!");
+            }
+            break; // Only revive one at a time
+          }
+        }
+      }
+
+      if (!revivingSomeone) {
+        activePlayer.setReviveAttemptTimer(0f);
+      }
+    }
+
     updateEnemiesLogic(deltaTime);
 
     physicsAccumulator += deltaTime;
@@ -214,8 +263,7 @@ public class GameModel implements Disposable, ProjectileListener {
   }
 
   private void updateEnemiesLogic(float deltaTime) {
-    if (level == null || level.getEnemies() == null)
-      return;
+    if (level == null || level.getEnemies() == null) return;
 
     // List<Player> targets = Collections.singletonList(player);
 
@@ -278,8 +326,7 @@ public class GameModel implements Disposable, ProjectileListener {
   }
 
   private void checkMeleeCollision(AbstractEnemy enemy) {
-    if (enemy instanceof Ranger || enemy.isDead())
-      return;
+    if (enemy instanceof Ranger || enemy.isDead()) return;
 
     for (Player player : players) {
       float dist = player.getPosition().dst(enemy.getPosition());
@@ -289,8 +336,7 @@ public class GameModel implements Disposable, ProjectileListener {
         if (enemy instanceof Shielder) {
           Vector2 bounceDir = player.getPosition().cpy().sub(enemy.getPosition()).nor();
 
-          if (bounceDir.len2() < 0.01f)
-            bounceDir.set(1, 0);
+          if (bounceDir.len2() < 0.01f) bounceDir.set(1, 0);
 
           if (player.getBody() != null) {
             player.applyKnockback(bounceDir, 100f, 0.2f);
@@ -301,8 +347,7 @@ public class GameModel implements Disposable, ProjectileListener {
   }
 
   private void cleanDeadEnemies() {
-    if (level == null || level.getEnemies() == null)
-      return;
+    if (level == null || level.getEnemies() == null) return;
 
     Iterator<AbstractEnemy> it = level.getEnemies().iterator();
     while (it.hasNext()) {
@@ -345,25 +390,20 @@ public class GameModel implements Disposable, ProjectileListener {
   }
 
   private String getEnemyType(AbstractEnemy e) {
-    if (e instanceof Chaser)
-      return "Chaser";
-    if (e instanceof Ranger)
-      return "Ranger";
-    if (e instanceof Shielder)
-      return "Shielder";
-    if (e instanceof SpikedBall)
-      return "SpikedBall";
-    if (e instanceof Oblivion)
-      return "Oblivion";
+    if (e instanceof Chaser) return "Chaser";
+    if (e instanceof Ranger) return "Ranger";
+    if (e instanceof Shielder) return "Shielder";
+    if (e instanceof SpikedBall) return "SpikedBall";
+    if (e instanceof Oblivion) return "Oblivion";
     return "Chaser"; // Fallback
   }
 
   public void restoreMemento(GameStateMemento memento) {
-    if (memento == null || memento.players == null)
-      return;
+    if (memento == null || memento.players == null) return;
 
     // Clear EVERYTHING from physics world
-    com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies = new com.badlogic.gdx.utils.Array<>();
+    com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies =
+        new com.badlogic.gdx.utils.Array<>();
     physicsWorld.getBodies(bodies);
     for (com.badlogic.gdx.physics.box2d.Body b : bodies) {
       physicsWorld.destroyBody(b);
@@ -379,15 +419,15 @@ public class GameModel implements Disposable, ProjectileListener {
     // Rebuild Map (using level-based strategy)
     MapGenerationStrategy strategy = GameManager.getInstance().getCurrentLevelStrategy();
     TiledMap newMap = strategy.generate();
-    if (level != null)
-      level.dispose();
+    if (level != null) level.dispose();
 
     // Rebuild Level (No random spawn)
-    this.level = new LevelBuilder()
-        .buildMap(newMap)
-        .buildPhysicsFromMap(this.physicsWorld)
-        .setEnvironment("dungeon_theme.mp3", 0.3f)
-        .build();
+    this.level =
+        new LevelBuilder()
+            .buildMap(newMap)
+            .buildPhysicsFromMap(this.physicsWorld)
+            .setEnvironment("dungeon_theme.mp3", 0.3f)
+            .build();
     GameManager.getInstance().setCurrentLevel(this.level);
 
     // 2. Recreate players from Memento
@@ -487,10 +527,8 @@ public class GameModel implements Disposable, ProjectileListener {
 
   @Override
   public void dispose() {
-    if (physicsWorld != null)
-      physicsWorld.dispose();
-    if (level != null)
-      level.dispose();
+    if (physicsWorld != null) physicsWorld.dispose();
+    if (level != null) level.dispose();
     GameManager.getInstance().cleanUp();
   }
 }

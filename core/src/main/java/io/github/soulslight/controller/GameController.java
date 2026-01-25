@@ -19,6 +19,7 @@ public class GameController extends InputAdapter implements ControllerListener {
   private final GameModel model;
   private final SaveManager saveManager;
   private DebugMenuController debugMenuController;
+  private io.github.soulslight.view.GameScreen gameScreen;
   private static final float SPEED = 160f;
 
   public GameController(GameModel model) {
@@ -44,6 +45,7 @@ public class GameController extends InputAdapter implements ControllerListener {
         case Input.Keys.F1:
         case Input.Keys.ESCAPE:
           debugMenuController.closeMenu();
+          model.setPaused(false);
           return true;
         default:
           return true; // Consume all other keys when menu is open
@@ -54,6 +56,36 @@ public class GameController extends InputAdapter implements ControllerListener {
     if (keycode == Input.Keys.F1 && GameManager.DEBUG_MODE) {
       if (debugMenuController != null) {
         debugMenuController.toggleMenu();
+        // Pause game when debug menu is open (as per user request)
+        if (debugMenuController.isVisible()) {
+          model.setPaused(true);
+          // Note: Debug menu handles its own input processor usually, or overlaps?
+          // DebugMenuController usually takes over input?
+          // In GameController.keyDown, if (debugMenuController.isVisible()) block runs
+          // first.
+          // So input stays on GameController but it delegates to DebugMenuController.
+          // That works for Debug.
+
+          // For standard Pause, we want separate processor (Scene2D Stage).
+        } else {
+          model.setPaused(false);
+        }
+      }
+      return true;
+    }
+
+    // --- PAUSE MENU TOGGLE ---
+    if (keycode == Input.Keys.ESCAPE) {
+      // If debug menu is open, ESC closes it (handled above in top block, or here if
+      // we missed it)
+      // trace: top block handles ESC if debug visible. So we are here only if debug
+      // NOT visible.
+
+      boolean newState = !model.isPaused();
+      model.setPaused(newState);
+
+      if (gameScreen != null) {
+        gameScreen.updateInputMode(); // Notify screen to switch processors
       }
       return true;
     }
@@ -252,5 +284,9 @@ public class GameController extends InputAdapter implements ControllerListener {
    */
   public DebugMenuController getDebugMenuController() {
     return debugMenuController;
+  }
+
+  public void setGameScreen(io.github.soulslight.view.GameScreen gameScreen) {
+    this.gameScreen = gameScreen;
   }
 }

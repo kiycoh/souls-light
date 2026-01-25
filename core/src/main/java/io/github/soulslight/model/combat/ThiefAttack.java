@@ -2,10 +2,7 @@ package io.github.soulslight.model.combat;
 
 import com.badlogic.gdx.Gdx;
 
-/**
- * Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior
- * (Thief).
- */
+/** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Thief). */
 public class ThiefAttack extends AbstractAttack {
   @Override
   public void attack() {

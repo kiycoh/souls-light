@@ -31,6 +31,9 @@ public class Player extends Entity {
   private SpecialAbilityStrategy specialAbility;
   private float specialCooldownTimer = 0f;
 
+  // Revive Mechanic
+  private float reviveAttemptTimer = 0f;
+
   public enum PlayerClass {
     WARRIOR {
       @Override
@@ -334,5 +337,25 @@ public class Player extends Entity {
       body.setTransform(x, y, body.getAngle());
     }
     this.position.set(x, y);
+  }
+
+  /** Restores health to maximum and removes dead state. */
+  public void restoreMaxHealth() {
+    this.health = this.maxHealth;
+    this.isDead = false;
+  }
+
+  /** Revives the player with full health and 3 seconds of invincibility. */
+  public void revive() {
+    restoreMaxHealth();
+    this.invincibilityTimer = 3.0f;
+  }
+
+  public float getReviveAttemptTimer() {
+    return reviveAttemptTimer;
+  }
+
+  public void setReviveAttemptTimer(float reviveAttemptTimer) {
+    this.reviveAttemptTimer = reviveAttemptTimer;
   }
 }
