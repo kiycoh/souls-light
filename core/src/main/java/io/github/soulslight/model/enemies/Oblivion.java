@@ -6,6 +6,7 @@ import io.github.soulslight.model.combat.AttackStrategy;
 import io.github.soulslight.model.combat.MageAttack;
 import io.github.soulslight.model.combat.WarriorAttack;
 import io.github.soulslight.model.entities.Player;
+import io.github.soulslight.model.room.EnemyDeathListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +16,9 @@ public class Oblivion extends AbstractEnemy {
     CHASING,
     ATTACKING,
     RETREATING,
-    CASTING
+    CASTING,
+    TELEPORT_OUT,
+    TELEPORT_IN
   }
 
   private State currentState = State.CHASING;
@@ -25,11 +28,13 @@ public class Oblivion extends AbstractEnemy {
   private float shootTimer = 0f;
   private float retreatTimer = 0f;
 
+  private float attackTimer = 0f;
+  private boolean hasDealtMeleeDamage = false;
+
   private float attackCooldown = 0f;
 
   private final List<Vector2> shotTargets = new ArrayList<>();
 
-  // Servono per non far teletrasportare il boss fuori dalla mappa
   private float mapWidthBoundary = 0f;
   private float mapHeightBoundary = 0f;
 
@@ -40,10 +45,24 @@ public class Oblivion extends AbstractEnemy {
   private static final float TELEPORT_OFFSET = 120f; // Distanza del teletrasporto
 
   private static final float SHOOT_COOLDOWN = 0.5f;
-  private static final float STOP_DISTANCE = 50f;
-  private static final float BOSS_ATTACK_RANGE = 60f;
+  private static final float STOP_DISTANCE = 110f;
+  private static final float BOSS_ATTACK_RANGE = 120f;
   private static final float BOSS_DAMAGE = 40f;
   private static final float RETREAT_DURATION = 1.5f;
+
+  private static final float MELEE_WINDUP_TIME = 0.3f;
+  private static final float MELEE_ATTACK_TIME = 0.4f;
+  private static final float MELEE_COOLDOWN = 1.0f;
+
+  private static final float TELEPORT_ANIM_DURATION = 1.8f;
+  private float teleportAnimTime = 0f;
+
+  private static final float DEATH_ANIM_DURATION = 1.6f;
+  private boolean isDying = false;
+  private boolean deathAnimationFinished = false;
+  private float deathAnimTime = 0f;
+
+  private EnemyDeathListener deathListenerCopy;
 
   private AttackStrategy meleeStrategy;
 
@@ -64,7 +83,6 @@ public class Oblivion extends AbstractEnemy {
     this.isPhaseTwo = target.isPhaseTwo;
     this.teleportTimer = target.teleportTimer;
     this.meleeStrategy = target.meleeStrategy;
-    // Copia i confini nel clone
     this.mapWidthBoundary = target.mapWidthBoundary;
     this.mapHeightBoundary = target.mapHeightBoundary;
   }
@@ -74,18 +92,54 @@ public class Oblivion extends AbstractEnemy {
     return new Oblivion(this);
   }
 
+  @Override
+  public boolean isDead() {
+    if (!isPhaseTwo) {
+      return false;
+    }
+    return this.health <= 0 && deathAnimationFinished;
+  }
+
+  @Override
+  public void setDeathListener(EnemyDeathListener listener) {
+    super.setDeathListener(listener);
+    this.deathListenerCopy = listener;
+  }
+
   // setta i confini della mappa
   public void setMapBounds(float width, float height) {
     this.mapWidthBoundary = width;
     this.mapHeightBoundary = height;
   }
 
+  // logica principale del boss
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players.isEmpty()) return;
-    if (isPhaseTwo && this.health <= 0) return;
+
     if (!isPhaseTwo && this.health <= 0) {
       startPhaseTwo();
+      return;
+    }
+
+    if (isPhaseTwo && this.health <= 0) {
+      if (!isDying) {
+        isDying = true;
+        deathAnimTime = 0f;
+        if (body != null) {
+          body.setLinearVelocity(0, 0);
+        }
+      } else if (!deathAnimationFinished) {
+        deathAnimTime += deltaTime;
+        if (deathAnimTime >= DEATH_ANIM_DURATION) {
+          deathAnimTime = DEATH_ANIM_DURATION;
+          deathAnimationFinished = true;
+
+          if (deathListenerCopy != null) {
+            deathListenerCopy.onEnemyDied(this);
+          }
+        }
+      }
       return;
     }
 
@@ -97,6 +151,28 @@ public class Oblivion extends AbstractEnemy {
       getCurrentState().update(this, players, deltaTime);
       return;
     }
+
+    if (currentState == State.TELEPORT_OUT || currentState == State.TELEPORT_IN) {
+      if (body != null) body.setLinearVelocity(0, 0);
+
+      teleportAnimTime += deltaTime;
+
+      if (teleportAnimTime >= TELEPORT_ANIM_DURATION) {
+        teleportAnimTime = TELEPORT_ANIM_DURATION;
+        if (currentState == State.TELEPORT_OUT) {
+          teleportToPlayer(target);
+          teleportAnimTime = 0f;
+          currentState = State.TELEPORT_IN;
+          this.attackStrategy = new WarriorAttack(45);
+        } else {
+          teleportAnimTime = 0f;
+          currentState = State.CHASING;
+        }
+      }
+
+      return;
+    }
+
     Vector2 myPos = (body != null) ? body.getPosition() : this.position;
     float distance = myPos.dst(target.getPosition());
 
@@ -106,10 +182,8 @@ public class Oblivion extends AbstractEnemy {
     if (shootTimer > 0) shootTimer -= deltaTime;
 
     if (teleportTimer >= TELEPORT_COOLDOWN) {
-      teleportToPlayer(target);
-      teleportTimer = 0;
-      currentState = State.CHASING;
-      this.attackStrategy = new WarriorAttack(45);
+      startTeleportOut();
+      teleportTimer = 0f;
       return;
     }
 
@@ -129,9 +203,8 @@ public class Oblivion extends AbstractEnemy {
         if (body != null) body.setLinearVelocity(0, 0);
         if (shootTimer <= 0) {
           prepareTripleShot(target.getPosition());
-          // readyToShoot = true; // Removed
           for (Vector2 t : shotTargets) {
-            notifyProjectileRequest(getPosition(), t, "fireball"); // Assuming fireball or default
+            notifyProjectileRequest(getPosition(), t, "fireball");
           }
           shootTimer = SHOOT_COOLDOWN;
         }
@@ -139,23 +212,45 @@ public class Oblivion extends AbstractEnemy {
 
       case CHASING:
         if (distance > STOP_DISTANCE) {
+          // troppo lontano: avvicinati
           moveTowards(target.getPosition(), deltaTime);
         } else {
-          if (body != null) body.setLinearVelocity(0, 0);
-          currentState = State.ATTACKING;
-          attackCooldown = 0.3f;
+          // sei in range per il melee, ma solo se il cooldown è finito
+          if (attackCooldown <= 0f) {
+            if (body != null) body.setLinearVelocity(0, 0);
+            currentState = State.ATTACKING;
+            attackTimer = 0f;
+            hasDealtMeleeDamage = false;
+          } else {
+            // aspetta fermo finché il cooldown non scende a 0
+            if (body != null) body.setLinearVelocity(0, 0);
+          }
         }
         break;
 
       case ATTACKING:
         if (body != null) body.setLinearVelocity(0, 0);
-        if (attackCooldown <= 0) {
+        attackTimer += deltaTime;
+
+        // qui parte il colpo (inizio fase swing)
+        if (!hasDealtMeleeDamage && attackTimer >= MELEE_WINDUP_TIME) {
           performBossMeleeAttack(target);
+          hasDealtMeleeDamage = true;
+        }
+
+        // fine animazione melee -> passa a RETREATING e setta cooldown
+        if (attackTimer >= MELEE_WINDUP_TIME + MELEE_ATTACK_TIME) {
           currentState = State.RETREATING;
           retreatTimer = RETREAT_DURATION;
-          attackCooldown = 0f;
-        } else if (distance > BOSS_ATTACK_RANGE + 20f) {
-          currentState = State.CHASING;
+          attackCooldown = MELEE_COOLDOWN;
+        } else {
+          // se il bersaglio scappa fuori range, consideriamo l'attacco "whiffato"
+          float distNow = getPosition().dst(target.getPosition());
+          if (distNow > BOSS_ATTACK_RANGE + 40f) {
+            currentState = State.RETREATING;
+            retreatTimer = RETREAT_DURATION;
+            attackCooldown = MELEE_COOLDOWN;
+          }
         }
         break;
 
@@ -163,6 +258,14 @@ public class Oblivion extends AbstractEnemy {
         moveAway(target.getPosition());
         if (retreatTimer <= 0) currentState = State.CHASING;
         break;
+    }
+  }
+
+  private void startTeleportOut() {
+    currentState = State.TELEPORT_OUT;
+    teleportAnimTime = 0f;
+    if (body != null) {
+      body.setLinearVelocity(0, 0);
     }
   }
 
@@ -178,12 +281,12 @@ public class Oblivion extends AbstractEnemy {
   }
 
   private void startPhaseTwo() {
-    this.isPhaseTwo = true;
+    isPhaseTwo = true;
     this.health = PHASE_2_HP;
     this.maxHealth = PHASE_2_HP;
-    this.speed = 170f;
-    this.isDead = false;
+    this.attackStrategy = new MageAttack(45);
     this.currentState = State.CHASING;
+    this.isDead = false;
   }
 
   // Logica del teletrasporto a destra e a sinistra del player
@@ -206,11 +309,20 @@ public class Oblivion extends AbstractEnemy {
       body.setLinearVelocity(0, 0);
       this.position.set(newX, newY);
     } else {
-      this.setPosition(newX, newY);
+      this.position.set(newX, newY);
     }
+  }
 
-    currentState = State.CHASING;
-    System.out.println("OBLIVION: Teleported Horizontal (Dir: " + direction + ")");
+  // deve rimanere public per non rompere l'override
+  public void moveTowards(Vector2 targetPos, float deltaTime) {
+    if (body != null) {
+      Vector2 direction = targetPos.cpy().sub(body.getPosition()).nor();
+      body.setLinearVelocity(direction.scl(speed));
+      this.position.set(body.getPosition());
+    } else {
+      Vector2 direction = targetPos.cpy().sub(position).nor();
+      this.position.add(direction.scl(speed * deltaTime));
+    }
   }
 
   @Override
@@ -220,10 +332,12 @@ public class Oblivion extends AbstractEnemy {
       direction.nor();
       body.setLinearVelocity(direction.scl(speed));
       this.position.set(body.getPosition());
+    } else {
+      Vector2 direction = position.cpy().sub(targetPos).nor();
+      this.position.add(direction.scl(speed * 0.016f));
     }
   }
 
-  // Spara attacchi a distanza in tre direzioni
   private void prepareTripleShot(Vector2 playerPos) {
     shotTargets.clear();
     Vector2 myPos = getPosition();
@@ -235,7 +349,46 @@ public class Oblivion extends AbstractEnemy {
     shotTargets.add(myPos.cpy().add(rightDir));
   }
 
+  // --- Getter usati dal rendering per scegliere le animazioni ---
+  public boolean isMeleeWindup() {
+    return currentState == State.ATTACKING && attackTimer < MELEE_WINDUP_TIME;
+  }
+
+  public boolean isMeleeAttacking() {
+    return currentState == State.ATTACKING
+        && attackTimer >= MELEE_WINDUP_TIME
+        && attackTimer < MELEE_WINDUP_TIME + MELEE_ATTACK_TIME;
+  }
+
+  public boolean isTeleportingOut() {
+    return currentState == State.TELEPORT_OUT;
+  }
+
+  public boolean isTeleportingIn() {
+    return currentState == State.TELEPORT_IN;
+  }
+
+  public float getTeleportAnimTime() {
+    return teleportAnimTime;
+  }
+
+  public static float getTeleportAnimDuration() {
+    return TELEPORT_ANIM_DURATION;
+  }
+
   public boolean isPhaseTwo() {
     return isPhaseTwo;
+  }
+
+  public boolean isDying() {
+    return isDying;
+  }
+
+  public float getDeathAnimTime() {
+    return deathAnimTime;
+  }
+
+  public static float getDeathAnimDuration() {
+    return DEATH_ANIM_DURATION;
   }
 }

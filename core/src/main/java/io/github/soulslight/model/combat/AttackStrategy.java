@@ -19,4 +19,14 @@ public interface AttackStrategy {
   String getSoundID();
 
   void executeAttack(Entity attacker, List<Entity> targets);
+
+  /**
+   * Checks if this strategy or any of its wrappers is of the specified type.
+   *
+   * @param type The class type to check for
+   * @return True if the strategy contains the decorator/type, false otherwise
+   */
+  default boolean hasDecorator(Class<?> type) {
+    return false;
+  }
 }

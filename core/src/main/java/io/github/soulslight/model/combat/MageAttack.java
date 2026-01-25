@@ -1,8 +1,6 @@
 package io.github.soulslight.model.combat;
 
 import com.badlogic.gdx.Gdx;
-import io.github.soulslight.model.entities.Entity;
-import java.util.List;
 
 /** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Mage). */
 public class MageAttack extends AbstractAttack {
@@ -14,8 +12,28 @@ public class MageAttack extends AbstractAttack {
   }
 
   @Override
+  protected java.util.List<io.github.soulslight.model.entities.Entity> selectTargets(
+      io.github.soulslight.model.entities.Entity attacker,
+      java.util.List<io.github.soulslight.model.entities.Entity> candidates) {
+    return findNearestTarget(attacker, candidates);
+  }
+
+  @Override
+  protected void performAttack(
+      io.github.soulslight.model.entities.Entity attacker,
+      io.github.soulslight.model.entities.Entity target) {
+
+    ((io.github.soulslight.model.entities.Player) attacker)
+        .notifyProjectileRequest(
+            attacker.getPosition(),
+            target, // Pass the Entity target for homing
+            "homing_fireball",
+            getDamage());
+  }
+
+  @Override
   public void attack() {
-    Gdx.app.log("MageAttack", "Attack executed");
+    Gdx.app.log("MageAttack", "Shooting Tracking Projectile");
   }
 
   @Override
@@ -30,22 +48,11 @@ public class MageAttack extends AbstractAttack {
 
   @Override
   public float getAttackSpeed() {
-    return 0.5f;
+    return 0.8f; // Slower than instant hit
   }
 
   @Override
   public String getSoundID() {
-    return "stick_sound";
-  }
-
-  @Override
-  public void executeAttack(Entity attacker, List<Entity> targets) {
-    // Logica colpisci il primo che è a tiro
-    for (Entity target : targets) {
-      // Verifica distanza
-      if (attacker.getPosition().dst(target.getPosition()) <= getRange()) {
-        target.takeDamage(getDamage());
-      }
-    }
+    return "fireball_sound";
   }
 }

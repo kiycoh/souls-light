@@ -21,18 +21,29 @@ public class Player extends Entity {
   private float invincibilityTimer = 0f;
   private final float INVINCIBILITY_DURATION = 0.1f;
   private float attackCooldown = 0f;
-  private static final float ATTACK_COOLDOWN_DURATION = 0.5f;
 
   private Vector2 currentKnockbackVelocity = new Vector2();
 
   // Debug mode invincibility
   private boolean debugInvincible = false;
 
+  // Special Ability
+  private SpecialAbilityStrategy specialAbility;
+  private float specialCooldownTimer = 0f;
+
+  // Revive Mechanic
+  private float reviveAttemptTimer = 0f;
+
   public enum PlayerClass {
     WARRIOR {
       @Override
       public AttackStrategy getStrategy() {
-        return new WarriorAttack(9000);
+        return new WarriorAttack(75);
+      }
+
+      @Override
+      public SpecialAbilityStrategy getSpecial() {
+        return new ShieldBashAbility();
       }
 
       @Override
@@ -57,6 +68,11 @@ public class Player extends Entity {
       }
 
       @Override
+      public SpecialAbilityStrategy getSpecial() {
+        return new EarthquakeAbility();
+      }
+
+      @Override
       public int getBaseHP() {
         return 350;
       }
@@ -75,6 +91,11 @@ public class Player extends Entity {
       @Override
       public AttackStrategy getStrategy() {
         return new ThiefAttack(20);
+      }
+
+      @Override
+      public SpecialAbilityStrategy getSpecial() {
+        return new ShadowStepAbility();
       }
 
       @Override
@@ -99,6 +120,11 @@ public class Player extends Entity {
       }
 
       @Override
+      public SpecialAbilityStrategy getSpecial() {
+        return new RainOfArrowsAbility();
+      }
+
+      @Override
       public int getBaseHP() {
         return 450;
       }
@@ -115,6 +141,8 @@ public class Player extends Entity {
     };
 
     public abstract AttackStrategy getStrategy();
+
+    public abstract SpecialAbilityStrategy getSpecial();
 
     public abstract int getBaseHP();
 
@@ -135,16 +163,18 @@ public class Player extends Entity {
     // this.speed= 100; al momento la speed è data da gamecontroller, da cambiare
     // evetualmente
     this.attackStrategy = type.getStrategy();
+    this.specialAbility = type.getSpecial();
+
     this.position = new Vector2(startX, startY);
     createBody(world, startX, startY);
   }
 
   @Override
   public void update(float delta) {
-
     if (invincibilityTimer > 0) invincibilityTimer -= delta;
     if (knockbackTimer > 0) knockbackTimer -= delta;
     if (attackCooldown > 0) attackCooldown -= delta;
+    if (specialCooldownTimer > 0) specialCooldownTimer -= delta;
 
     if (knockbackTimer > 0) {
       wasInKnockback = true;
@@ -209,14 +239,53 @@ public class Player extends Entity {
     shape.dispose();
   }
 
+  private List<ProjectileListener> projectileListeners = new java.util.ArrayList<>();
+
+  public void addProjectileListener(ProjectileListener listener) {
+    if (!projectileListeners.contains(listener)) {
+      projectileListeners.add(listener);
+    }
+  }
+
+  public void notifyProjectileRequest(Vector2 origin, Vector2 target, String type, float damage) {
+    for (ProjectileListener listener : projectileListeners) {
+      listener.onProjectileRequest(origin, target, type, damage);
+    }
+  }
+
+  public void notifyProjectileRequest(
+      Vector2 origin,
+      io.github.soulslight.model.entities.Entity target,
+      String type,
+      float damage) {
+    for (ProjectileListener listener : projectileListeners) {
+      listener.onProjectileRequest(origin, target, type, damage);
+    }
+  }
+
   public void attack(List<AbstractEnemy> enemies) {
     if (attackCooldown > 0) return;
-    attackCooldown = ATTACK_COOLDOWN_DURATION;
-    for (AbstractEnemy enemy : enemies) {
-      if (enemy == null || enemy.isDead()) continue;
-      if (this.getPosition().dst(enemy.getPosition()) <= attackStrategy.getRange()) {
-        enemy.takeDamage(attackStrategy.getDamage());
-      }
+    // Higher attackSpeed = lower cooldown (attacks per second)
+    attackCooldown = 1.0f / attackStrategy.getAttackSpeed();
+
+    // Cast strict typed list to raw Entity list for Strategy interface
+    // compatibility
+    // In a cleaner refactor, AbstractEnemy and Player would share a 'Combatant' or
+    // 'LivingEntity' base
+    // but here we just cast.
+    List<Entity> targets = new java.util.ArrayList<>(enemies);
+    attackStrategy.executeAttack(this, targets);
+  }
+
+  public void performSpecialAttack(List<AbstractEnemy> enemies) {
+    if (specialCooldownTimer > 0) {
+      com.badlogic.gdx.Gdx.app.log("Player", "Ability Cooldown: " + specialCooldownTimer);
+      return;
+    }
+
+    if (specialAbility != null) {
+      specialAbility.execute(this, enemies);
+      specialCooldownTimer = specialAbility.getCooldown();
     }
   }
 
@@ -268,5 +337,25 @@ public class Player extends Entity {
       body.setTransform(x, y, body.getAngle());
     }
     this.position.set(x, y);
+  }
+
+  /** Restores health to maximum and removes dead state. */
+  public void restoreMaxHealth() {
+    this.health = this.maxHealth;
+    this.isDead = false;
+  }
+
+  /** Revives the player with full health and 3 seconds of invincibility. */
+  public void revive() {
+    restoreMaxHealth();
+    this.invincibilityTimer = 3.0f;
+  }
+
+  public float getReviveAttemptTimer() {
+    return reviveAttemptTimer;
+  }
+
+  public void setReviveAttemptTimer(float reviveAttemptTimer) {
+    this.reviveAttemptTimer = reviveAttemptTimer;
   }
 }

@@ -1,6 +1,5 @@
 package io.github.soulslight.view;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -9,43 +8,44 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import io.github.soulslight.model.enemies.AbstractEnemy;
 import io.github.soulslight.model.entities.Player;
-import java.util.List;
 
 public class GameHUD {
 
   private final ShapeRenderer shapeRenderer;
   private final BitmapFont font;
   private final GlyphLayout layout;
-
-  /**
-   * Costruttore per DEPENDENCY INJECTION (Usato nei Test). Passando dei Mock qui, evitiamo il crash
-   * degli shader.
-   */
-  public GameHUD(ShapeRenderer shapeRenderer, BitmapFont font) {
-    this.shapeRenderer = shapeRenderer;
-    this.font = font;
+  private final Matrix4 uiMatrix;
 
     this.font.getData().setScale(2);
+    this.font.setUseIntegerPositions(false); // Smooth movement if needed
     this.layout = new GlyphLayout();
+
+    // Setup UI Matrix for Virtual Resolution
+    this.uiMatrix =
+        new Matrix4()
+            .setToOrtho2D(
+                0,
+                0,
+                io.github.soulslight.model.Constants.V_WIDTH,
+                io.github.soulslight.model.Constants.V_HEIGHT);
   }
 
-  /**
-   * Costruttore di DEFAULT (Usato nel Gioco reale). Crea le istanze reali di ShapeRenderer e
-   * BitmapFont.
-   */
-  public GameHUD() {
-    this(new ShapeRenderer(), new BitmapFont());
-  }
+  public void render(SpriteBatch batch, io.github.soulslight.model.GameModel model) {
+    if (model == null) return;
 
-  public void render(SpriteBatch batch, List<Player> players, List<AbstractEnemy> enemies) {
-    float screenW = Gdx.graphics.getWidth();
-    float screenH = Gdx.graphics.getHeight();
+    // Use Virtual Dimensions
+    float screenW = io.github.soulslight.model.Constants.V_WIDTH;
+    float screenH = io.github.soulslight.model.Constants.V_HEIGHT;
 
     Matrix4 worldMatrix = batch.getProjectionMatrix().cpy();
-    Matrix4 uiMatrix = new Matrix4().setToOrtho2D(0, 0, screenW, screenH);
+
+    // Matrice UI (Per l'interfaccia fissa sullo schermo) - Now a class field
 
     shapeRenderer.setProjectionMatrix(worldMatrix);
     shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+    java.util.List<Player> players = model.getPlayers();
+    java.util.List<AbstractEnemy> enemies = model.getActiveEnemies();
 
     for (AbstractEnemy enemy : enemies) {
       if (enemy.isDead()) continue;
@@ -55,10 +55,12 @@ public class GameHUD {
       float y = enemy.getPosition().y + 20f;
       float hpPercent = enemy.getHealth() / enemy.getMaxHealth();
 
-      shapeRenderer.setColor(Color.RED);
-      shapeRenderer.rect(x, y, width, 4);
+      // Sfondo (Nero/Grigio scuro)
+      shapeRenderer.setColor(0.1f, 0.1f, 0.1f, 1f);
+      shapeRenderer.rect(x - 1, y - 1, width + 2, 6);
 
-      shapeRenderer.setColor(Color.GREEN);
+      // Vita (Rosso)
+      shapeRenderer.setColor(0.8f, 0.1f, 0.1f, 1f);
       shapeRenderer.rect(x, y, width * Math.max(0, hpPercent), 4);
     }
     shapeRenderer.end();
@@ -66,45 +68,164 @@ public class GameHUD {
     shapeRenderer.setProjectionMatrix(uiMatrix);
     shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
+    // --- GLOBAL WILL BAR (Bottom Center) ---
+    float willW = 325; // Wider
+    float willH = 20; // Thickness 20
+    float willX = (screenW - willW) / 2;
+    float willY = 10;
+
+    // Sfondo Will
+    shapeRenderer.setColor(0.1f, 0.1f, 0.1f, 1f);
+    shapeRenderer.rect(willX - 2, willY - 2, willW + 4, willH + 4);
+
+    // Will Bar (Purple/Blue)
+    float willPercent = model.getCurrentWill() / io.github.soulslight.model.GameModel.MAX_WILL;
+    shapeRenderer.setColor(0.4f, 0.2f, 0.9f, 1f); // Purple
+    shapeRenderer.rect(willX, willY, willW * Math.max(0, willPercent), willH);
+
+    // --- PLAYER 1 (Bottom Left) ---
     if (!players.isEmpty()) {
       Player p1 = players.get(0);
-      float barX = 20;
-      float barY = screenH - 30;
-      float barW = 200;
-      float barH = 20;
-
-      shapeRenderer.setColor(Color.RED);
-      shapeRenderer.rect(barX, barY, barW, barH);
-
-      if (!p1.isDead()) {
-        float hpPercent = p1.getHealth() / p1.getMaxHealth();
-        shapeRenderer.setColor(Color.GREEN);
-        shapeRenderer.rect(barX, barY, barW * Math.max(0, hpPercent), barH);
-      }
+      drawPlayerHealthBar(p1, 20, 10, 140, 20, "P1"); // Same thickness (20), narrower width to fit
     }
 
+    // --- PLAYER 2 (Bottom Right) ---
     if (players.size() > 1) {
       Player p2 = players.get(1);
-      float barW = 200;
-      float barH = 20;
-      float barX = screenW - barW - 20;
-      float barY = screenH - 30;
-
-      shapeRenderer.setColor(Color.RED);
-      shapeRenderer.rect(barX, barY, barW, barH);
-
-      if (!p2.isDead()) {
-        float hpPercent = p2.getHealth() / p2.getMaxHealth();
-        shapeRenderer.setColor(Color.CYAN);
-        shapeRenderer.rect(barX, barY, barW * Math.max(0, hpPercent), barH);
-      }
+      drawPlayerHealthBar(p2, screenW - 160, 10, 140, 20, "P2"); // Same thickness (20)
     }
+
+    // --- MINIMAP (Top Left) ---
+    drawMinimap(model, screenW, screenH);
 
     shapeRenderer.end();
 
+    // --- TEXT LAYER ---
     batch.setProjectionMatrix(uiMatrix);
     batch.begin();
 
+    // Will Label
+    font.setColor(Color.WHITE);
+    font.getData().setScale(1.0f); // Smaller font for HUD
+    String willText = "WILL";
+    layout.setText(font, willText);
+    font.draw(batch, willText, screenW / 2 - layout.width / 2, willY + willH + 15);
+
+    // P1 Label
+    if (!players.isEmpty()) {
+      font.draw(batch, "P1", 20, 10 + 20 + 15);
+    }
+
+    // P2 Label
+    if (players.size() > 1) {
+      String p2Label = "P2";
+      layout.setText(font, p2Label);
+      font.draw(batch, p2Label, screenW - 160 + 140 - layout.width, 10 + 20 + 15);
+    }
+
+    // Game Over / Dead Labels
+    checkDeadLabels(batch, screenW, screenH, players);
+
+    batch.end();
+    font.getData().setScale(2); // Reset scale
+  }
+
+  private void drawPlayerHealthBar(Player p, float x, float y, float w, float h, String label) {
+    // Sfondo (Border)
+    shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 1f);
+    shapeRenderer.rect(x - 2, y - 2, w + 4, h + 4);
+
+    // Background Bar (Empty portion)
+    shapeRenderer.setColor(0.1f, 0.0f, 0.0f, 1f); // Dark Red
+    shapeRenderer.rect(x, y, w, h);
+
+    // Vita (Red)
+    if (!p.isDead()) {
+      float hpPercent = p.getHealth() / p.getMaxHealth();
+      shapeRenderer.setColor(0.9f, 0.1f, 0.1f, 1f);
+      shapeRenderer.rect(x, y, w * Math.max(0, hpPercent), h);
+
+      // Shine/Highlight
+      shapeRenderer.setColor(1f, 0.3f, 0.3f, 0.3f);
+      shapeRenderer.rect(x, y + h / 2, w * Math.max(0, hpPercent), h / 2);
+    }
+  }
+
+  private void drawMinimap(
+      io.github.soulslight.model.GameModel model, float screenW, float screenH) {
+    if (model.getMap() == null) return;
+
+    com.badlogic.gdx.maps.MapProperties prop = model.getMap().getProperties();
+    int mapWidth = prop.get("width", Integer.class);
+    int mapHeight = prop.get("height", Integer.class);
+    int tileWidth = prop.get("tilewidth", Integer.class);
+    int tileHeight = prop.get("tileheight", Integer.class);
+
+    float worldW = mapWidth * tileWidth;
+    float worldH = mapHeight * tileHeight;
+
+    float mapSize = 100f; // Smaller minimap for 720p scale
+    float mapX = 20;
+    float mapY = screenH - mapSize - 20;
+
+    // Background
+    shapeRenderer.setColor(0f, 0f, 0f, 0.5f);
+    shapeRenderer.rect(mapX, mapY, mapSize, mapSize);
+
+    // Border
+    shapeRenderer.setColor(Color.GRAY);
+    // shapeRenderer.rect(mapX, mapY, mapSize, mapSize); // Simple border
+    // Better border with lines
+    shapeRenderer.rect(mapX, mapY, mapSize, 2); // Bottom
+    shapeRenderer.rect(mapX, mapY + mapSize - 2, mapSize, 2); // Top
+    shapeRenderer.rect(mapX, mapY, 2, mapSize); // Left
+    shapeRenderer.rect(mapX + mapSize - 2, mapY, 2, mapSize); // Right
+
+    // Dots
+    float scaleX = mapSize / worldW;
+    float scaleY = mapSize / worldH;
+
+    // Players (Green)
+    shapeRenderer.setColor(Color.GREEN);
+    for (Player p : model.getPlayers()) {
+      if (!p.isDead()) {
+        shapeRenderer.circle(
+            mapX + p.getPosition().x * scaleX, mapY + p.getPosition().y * scaleY, 2);
+      }
+    }
+
+    // Enemies (Red)
+    shapeRenderer.setColor(Color.RED);
+    for (AbstractEnemy e : model.getActiveEnemies()) {
+      if (!e.isDead()) {
+        shapeRenderer.circle(
+            mapX + e.getPosition().x * scaleX, mapY + e.getPosition().y * scaleY, 2);
+      }
+    }
+
+    // Portal (Purple)
+    if (model.getLevel() != null && model.getLevel().getCavePortal() != null) {
+      io.github.soulslight.model.room.Portal portal = model.getLevel().getCavePortal();
+      shapeRenderer.setColor(Color.PURPLE);
+      shapeRenderer.circle(
+          mapX + portal.getPosition().x * scaleX, mapY + portal.getPosition().y * scaleY, 3);
+    }
+
+    // Dungeon Portal Room
+    if (model.getLevel() != null && model.getLevel().getRoomManager() != null) {
+      io.github.soulslight.model.room.PortalRoom pr =
+          model.getLevel().getRoomManager().getPortalRoom();
+      if (pr != null && pr.getPortal() != null) {
+        io.github.soulslight.model.room.Portal portal = pr.getPortal();
+        shapeRenderer.setColor(Color.PURPLE);
+        shapeRenderer.circle(
+            mapX + portal.getPosition().x * scaleX, mapY + portal.getPosition().y * scaleY, 3);
+      }
+    }
+  }
+
+  private void checkDeadLabels(
+      SpriteBatch batch, float screenW, float screenH, java.util.List<Player> players) {
     boolean allDead = true;
     for (Player p : players) {
       if (!p.isDead()) {
@@ -117,21 +238,22 @@ public class GameHUD {
       String text1 = "GAME OVER";
       font.setColor(Color.RED);
       layout.setText(font, text1);
-      font.draw(batch, text1, (screenW - layout.width) / 2, (screenH / 2) + 50);
+      font.draw(batch, text1, (screenW - layout.width) / 2, (screenH / 2) + 20);
     } else {
+      // Show "P1 Dead" or "P2 Dead" small text
+      font.getData().setScale(1.5f);
       if (!players.isEmpty() && players.get(0).isDead()) {
         font.setColor(Color.RED);
-        font.draw(batch, "P1 DEAD", 20, screenH - 40);
+        font.draw(batch, "DEAD", 20 + 20, 10 + 20 + 15);
       }
       if (players.size() > 1 && players.get(1).isDead()) {
         font.setColor(Color.RED);
-        String txt = "P2 DEAD";
+        String txt = "DEAD";
         layout.setText(font, txt);
-        font.draw(batch, txt, screenW - layout.width - 20, screenH - 40);
+        font.draw(batch, txt, screenW - 160 + 120 - layout.width, 10 + 20 + 15);
       }
+      font.getData().setScale(2f);
     }
-
-    batch.end();
   }
 
   public void dispose() {

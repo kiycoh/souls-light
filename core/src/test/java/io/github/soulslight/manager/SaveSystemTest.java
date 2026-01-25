@@ -98,4 +98,95 @@ class SaveSystemTest {
     saveFile.delete();
     assertFalse(saveManager.hasSaveFile(), "Should not have save file after deletion");
   }
+
+  @Test
+  void testLoadFromBackup() {
+    SaveManager saveManager = new SaveManager();
+
+    // Creiamo un salvataggio di BACKUP valido
+    FileHandle backup = Gdx.files.local("savegame.bak");
+
+    // Creiamo un memento vuoto ma valido
+    GameStateMemento validMemento =
+        new GameStateMemento(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 123L, 1);
+
+    Json json = new Json();
+    String validJson = json.toJson(validMemento);
+
+    // Scriviamo nel backup codificato correttamente
+    String encodedBackup = com.badlogic.gdx.utils.Base64Coder.encodeString(validJson);
+    backup.writeString(encodedBackup, false);
+
+    // Creiamo un salvataggio primario corrotto
+    FileHandle primary = Gdx.files.local("savegame.sav");
+    // "INVALID" non è Base64 valido, ma il SaveManager ora dovrebbe gestirlo e passare al backup
+    primary.writeString("INVALID_CONTENT_NOT_BASE64", false);
+
+    // Proviamo a caricare
+    GameModel mockModel = Mockito.mock(GameModel.class);
+    saveManager.loadGame(mockModel);
+
+    // Verifica: Il model deve aver chiamato restoreMemento
+    Mockito.verify(mockModel, Mockito.times(1)).restoreMemento(Mockito.any(GameStateMemento.class));
+
+    // Pulizia
+    backup.delete();
+    primary.delete();
+  }
+
+  @Test
+  void testBackupCreationOnSave() {
+    SaveManager saveManager = new SaveManager();
+    GameModel mockModel = Mockito.mock(GameModel.class);
+
+    // Primo salvataggio
+    GameStateMemento m1 =
+        new GameStateMemento(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 1L, 1);
+    Mockito.when(mockModel.createMemento()).thenReturn(m1);
+    saveManager.saveGame(mockModel);
+
+    // Secondo salvataggio
+    GameStateMemento m2 =
+        new GameStateMemento(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 2L, 2);
+    Mockito.when(mockModel.createMemento()).thenReturn(m2);
+    saveManager.saveGame(mockModel);
+
+    // Verifica esistenza file
+    FileHandle save = Gdx.files.local("savegame.sav");
+    FileHandle backup = Gdx.files.local("savegame.bak"); //
+
+    assertTrue(save.exists());
+    assertTrue(backup.exists(), "Il file di backup deve esistere dopo il secondo salvataggio"); //
+
+    save.delete();
+    backup.delete();
+  }
+
+  @Test
+  void testCorruptedSaveNoCrash() {
+    SaveManager saveManager = new SaveManager();
+    FileHandle save = Gdx.files.local("savegame.sav");
+    FileHandle backup = Gdx.files.local("savegame.bak"); // 1. Riferimento al backup
+
+    // Cancelliamo eventuali residui di altri test
+    if (backup.exists()) {
+      backup.delete();
+    }
+    if (save.exists()) {
+      save.delete();
+    }
+
+    // Scriviamo dati spazzatura nel file principale
+    save.writeString("!!! QUESTA STRINGA NON E' BASE64 !!!", false);
+
+    GameModel mockModel = Mockito.mock(GameModel.class);
+
+    assertDoesNotThrow(() -> saveManager.loadGame(mockModel));
+
+    // restoreMemento non deve essere mai stato chiamato perché entrambi i tentativi sono falliti
+    Mockito.verify(mockModel, Mockito.never()).restoreMemento(Mockito.any());
+
+    // Pulizia finale
+    if (save.exists()) save.delete();
+  }
 }

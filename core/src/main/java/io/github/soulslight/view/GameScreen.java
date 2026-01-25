@@ -61,18 +61,34 @@ public final class GameScreen implements GameState {
   private static final float ENEMY_FLIP_EPS = 0.35f;
   private final Map<AbstractEnemy, Boolean> enemyFacingRight = new IdentityHashMap<>();
 
+  private static final float OBLIVION_HEIGHT = 96f * 5f;
+  private static final float OBLIVION_WIDTH = 173f * 5f; // may have to be tweaked later
+
+  private static final float OBLIVION_Y_OFFSET = 80f;
+
   // Debug menu components
   private DebugMenuController debugMenuController;
   private DebugMenuOverlay debugMenuOverlay;
+
+  private PauseMenuOverlay pauseMenuOverlay;
+
+  private Texture blankTexture;
 
   public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
     this.batch = batch;
     this.model = model;
     this.controller = controller;
 
+    // Pass GameScreen instance to controller so it can trigger pause UI switch
+    this.controller.setGameScreen(this);
+
     // Camera + viewport: what you see on screen (not map size)
     this.camera = new OrthographicCamera();
-    this.viewport = new FitViewport(720, 480, camera);
+    this.viewport =
+        new FitViewport(
+            io.github.soulslight.model.Constants.V_WIDTH,
+            io.github.soulslight.model.Constants.V_HEIGHT,
+            camera);
 
     // Map renderer
     this.mapRenderer = new OrthogonalTiledMapRenderer(model.getMap(), batch);
@@ -80,6 +96,9 @@ public final class GameScreen implements GameState {
     // HUD and Debug
     this.hud = new GameHUD();
     this.debugRenderer = new Box2DDebugRenderer();
+
+    // Pause Menu
+    this.pauseMenuOverlay = new PauseMenuOverlay(batch, this);
 
     // Debug Menu Setup (only when DEBUG_MODE is enabled)
     if (GameManager.DEBUG_MODE) {
@@ -153,6 +172,16 @@ public final class GameScreen implements GameState {
 
       boolean flipX = shouldFlipXStable(enemy);
 
+      if (enemy instanceof Oblivion) {
+        TextureRegion frame = computeOblivionFrame((Oblivion) enemy);
+        if (frame != null) {
+          // Oblivion spritesheet needs to be flipped
+          boolean flipOblivion = !flipX;
+          drawOblivion(frame, enemy.getPosition(), flipOblivion);
+          continue;
+        }
+      }
+
       if (enemy instanceof Chaser) {
         TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.CHASER);
         if (frame != null) {
@@ -172,7 +201,7 @@ public final class GameScreen implements GameState {
       if (enemy instanceof Shielder) {
         TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.SHIELDER);
         if (frame != null) {
-          drawEntity(frame, enemy.getPosition(), 32, 54, flipX); // 27px -> 54px
+          drawEntity(frame, enemy.getPosition(), 32, 54, flipX);
           continue;
         }
       }
@@ -195,7 +224,8 @@ public final class GameScreen implements GameState {
       }
 
       Texture tex = TextureManager.getEnemyTexture(enemy);
-      float size = (enemy instanceof Oblivion) ? 64 : 32;
+      float size =
+          (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
       drawEntity(tex, enemy.getPosition(), size, size);
     }
 
@@ -227,10 +257,17 @@ public final class GameScreen implements GameState {
 
     batch.end();
 
-    hud.render(batch, model.getPlayers(), model.getActiveEnemies());
+    hud.render(batch, model);
 
     // Draw portal prompt (on HUD layer)
     drawPortalPrompt();
+
+    // Pause Menu Overlay
+    // Only show if paused AND Debug Menu is NOT visible
+    boolean debugVisible = debugMenuController != null && debugMenuController.isVisible();
+    if (model.isPaused() && !debugVisible && pauseMenuOverlay != null) {
+      pauseMenuOverlay.render(delta);
+    }
 
     if (GameManager.DEBUG_MODE && GameManager.SHOW_HITBOXES) {
       debugRenderer.render(model.getWorld(), camera.combined);
@@ -381,8 +418,98 @@ public final class GameScreen implements GameState {
     }
   }
 
+  private TextureRegion computeOblivionFrame(Oblivion boss) {
+    if (boss.isDying()) {
+      float t = boss.getDeathAnimTime();
+      float duration = Oblivion.getDeathAnimDuration();
+      if (t > duration) t = duration;
+      return TextureManager.getOblivionDeathFrame(t);
+    }
+
+    if (boss.isTeleportingOut() || boss.isTeleportingIn()) {
+      float t = boss.getTeleportAnimTime();
+      float duration = Oblivion.getTeleportAnimDuration();
+      if (t > duration) t = duration;
+
+      float animTime;
+      if (boss.isTeleportingOut()) {
+        animTime = Math.max(0f, duration - t);
+      } else {
+        animTime = t;
+      }
+
+      return TextureManager.getOblivionTeleportFrame(animTime);
+    }
+
+    float offset = enemyAnimOffset.computeIfAbsent(boss, e -> MathUtils.random(0f, 10f));
+    float time = enemyAnimTime + offset;
+
+    if (boss.isMeleeWindup()) {
+      return TextureManager.getOblivionMeleeWindupFrame(time);
+    }
+
+    if (boss.isMeleeAttacking()) {
+      return TextureManager.getOblivionMeleeAttackFrame(time);
+    }
+
+    boolean isIdle = true;
+    if (boss.getBody() != null) {
+      Vector2 vel = boss.getBody().getLinearVelocity();
+      isIdle = vel.len2() < IDLE_VELOCITY_EPS * IDLE_VELOCITY_EPS;
+    }
+
+    if (isIdle) {
+      if (boss.isPhaseTwo()) {
+        return TextureManager.getOblivionSpellFrame(time);
+      } else {
+        return TextureManager.getOblivionIdleFrame(time);
+      }
+    } else {
+      return TextureManager.getOblivionWalkFrame(time);
+    }
+  }
+
   private boolean shouldFlipXStable(AbstractEnemy enemy) {
     boolean facingRight = enemyFacingRight.computeIfAbsent(enemy, e -> true);
+
+    if (enemy instanceof Oblivion) {
+      Oblivion ob = (Oblivion) enemy;
+
+      // Locks animation direction in set states
+      if (ob.isMeleeWindup()
+          || ob.isMeleeAttacking()
+          || ob.isTeleportingOut()
+          || ob.isTeleportingIn()
+          || ob.isDying()) {
+        return !facingRight;
+      }
+
+      // else, flips towards neaest player
+      java.util.List<Player> players = model.getPlayers();
+      if (!players.isEmpty()) {
+        Player nearest = players.get(0);
+        float bestDist2 = nearest.getPosition().dst2(ob.getPosition());
+        for (int i = 1; i < players.size(); i++) {
+          Player p = players.get(i);
+          float d2 = p.getPosition().dst2(ob.getPosition());
+          if (d2 < bestDist2) {
+            bestDist2 = d2;
+            nearest = p;
+          }
+        }
+
+        float dx = nearest.getPosition().x - ob.getPosition().x;
+        float EPS_X = 4f;
+        if (dx > EPS_X) {
+          facingRight = true;
+        } else if (dx < -EPS_X) {
+          facingRight = false;
+        }
+        enemyFacingRight.put(enemy, facingRight);
+      }
+
+      return !facingRight;
+    }
 
     if (enemy.getBody() == null) {
       return !facingRight;
@@ -461,6 +588,23 @@ public final class GameScreen implements GameState {
     mapPixelHeight = mapHeight * tileHeight;
   }
 
+  public void resumeGame() {
+    model.setPaused(false);
+    Gdx.input.setInputProcessor(controller);
+  }
+
+  public SpriteBatch getBatch() {
+    return batch;
+  }
+
+  public void updateInputMode() {
+    if (model.isPaused()) {
+      Gdx.input.setInputProcessor(pauseMenuOverlay.getStage());
+    } else {
+      Gdx.input.setInputProcessor(controller);
+    }
+  }
+
   // Center draw
   private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
     if (tex != null) {
@@ -482,9 +626,27 @@ public final class GameScreen implements GameState {
     }
   }
 
+  private void drawOblivion(TextureRegion region, Vector2 pos, boolean flipX) {
+    if (region == null) return;
+
+    float width = OBLIVION_WIDTH;
+    float height = OBLIVION_HEIGHT;
+
+    float x = pos.x - width / 2f;
+    // Matching sprite to hitbox
+    float y = pos.y - height / 2f + OBLIVION_Y_OFFSET;
+
+    if (!flipX) {
+      batch.draw(region, x, y, width, height);
+    } else {
+      batch.draw(region, x + width, y, -width, height);
+    }
+  }
+
   @Override
   public void resize(int width, int height) {
     viewport.update(width, height, true);
+    if (pauseMenuOverlay != null) pauseMenuOverlay.resize(width, height);
   }
 
   @Override
@@ -502,6 +664,7 @@ public final class GameScreen implements GameState {
     if (debugRenderer != null) debugRenderer.dispose();
     if (hud != null) hud.dispose();
     if (debugMenuOverlay != null) debugMenuOverlay.dispose();
+    if (pauseMenuOverlay != null) pauseMenuOverlay.dispose();
     enemyAnimOffset.clear();
     enemyFacingRight.clear();
   }

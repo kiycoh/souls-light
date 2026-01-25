@@ -20,8 +20,11 @@ public class ProjectileManager {
     projectiles.add(p);
   }
 
-  // metodo che controlla tutto il movimento della freccia
-  public void update(float deltaTime, List<Player> players) {
+  // Controls the movement of all projectiles
+  public void update(
+      float deltaTime,
+      List<Player> players,
+      List<io.github.soulslight.model.enemies.AbstractEnemy> enemies) {
     Iterator<Projectile> iter = projectiles.iterator();
     while (iter.hasNext()) {
       Projectile p = iter.next();
@@ -54,7 +57,14 @@ public class ProjectileManager {
           p.getPosition());
 
       if (!hitWall[0]) {
-        checkPlayersCollision(p, players);
+        // Only check player collision if it's NOT a player projectile (Friendly Fire
+        // Check)
+        if (!p.isPlayerProjectile()) {
+          checkPlayersCollision(p, players);
+        } else {
+          // Check enemy collision if it IS a player projectile
+          checkEnemiesCollision(p, enemies);
+        }
       }
       // Distrugge le frecce al contatto con una parete
       if (p.shouldDestroy()) {
@@ -84,6 +94,30 @@ public class ProjectileManager {
         }
         p.markDestroy();
         return; // Destroy projectile after first hit
+      }
+    }
+  }
+
+  private void checkEnemiesCollision(
+      Projectile p, List<io.github.soulslight.model.enemies.AbstractEnemy> enemies) {
+    if (enemies == null) return;
+    float hitRadiusSq = 14f * 14f; // Similar radius to player
+
+    for (io.github.soulslight.model.enemies.AbstractEnemy enemy : enemies) {
+      if (enemy.isDead()) continue;
+
+      boolean closeEnough = p.getPosition().dst2(enemy.getPosition()) < hitRadiusSq;
+      boolean intersect =
+          Intersector.intersectSegmentCircle(
+              p.getLastPosition(), p.getPosition(), enemy.getPosition(), hitRadiusSq);
+
+      if (closeEnough || intersect) {
+        enemy.takeDamage(p.getDamage());
+        if (enemy.getBody() != null && p.getBody() != null) {
+          enemy.applyKnockback(p.getBody().getLinearVelocity().cpy().nor(), 800f, 0.15f);
+        }
+        p.markDestroy();
+        return;
       }
     }
   }
