@@ -71,6 +71,7 @@ public final class GameScreen implements GameState {
   private DebugMenuOverlay debugMenuOverlay;
 
   private PauseMenuOverlay pauseMenuOverlay;
+  private final BitmapFont promptFont;
 
   private Texture blankTexture;
 
@@ -96,6 +97,7 @@ public final class GameScreen implements GameState {
     // HUD and Debug
     this.hud = new GameHUD();
     this.debugRenderer = new Box2DDebugRenderer();
+    this.promptFont = new BitmapFont();
 
     // Pause Menu
     this.pauseMenuOverlay = new PauseMenuOverlay(batch, this);
@@ -112,7 +114,7 @@ public final class GameScreen implements GameState {
   /** Initializes the debug menu with all available commands. */
   private void initializeDebugMenu() {
     this.debugMenuController = new DebugMenuController();
-    this.debugMenuOverlay = new DebugMenuOverlay(debugMenuController);
+    this.debugMenuOverlay = new DebugMenuOverlay(debugMenuController, model);
 
     // Register all debug commands
     debugMenuController.registerCommand(new SkipRoomCommand(model));
@@ -337,15 +339,13 @@ public final class GameScreen implements GameState {
 
     // Simple text prompt at top-center of screen
     batch.begin();
-    BitmapFont font = new BitmapFont();
-    font.setColor(Color.YELLOW);
-    font.draw(
+    promptFont.setColor(Color.YELLOW);
+    promptFont.draw(
         batch,
         "[E] Enter Portal",
         viewport.getWorldWidth() / 2 - 60,
         viewport.getWorldHeight() - 20);
     batch.end();
-    font.dispose();
   }
 
   private void checkLevelTransition() {
@@ -666,6 +666,7 @@ public final class GameScreen implements GameState {
     if (hud != null) hud.dispose();
     if (debugMenuOverlay != null) debugMenuOverlay.dispose();
     if (pauseMenuOverlay != null) pauseMenuOverlay.dispose();
+    if (promptFont != null) promptFont.dispose();
     enemyAnimOffset.clear();
     enemyFacingRight.clear();
   }

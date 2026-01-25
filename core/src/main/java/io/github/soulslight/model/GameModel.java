@@ -39,6 +39,8 @@ public class GameModel implements Disposable, ProjectileListener {
   // Level completion flag for portal transition
   private boolean levelCompleted = false;
 
+  private int totalEnemiesKilled = 0;
+
   private final ProjectileManager projectileManager;
 
   public GameModel() {
@@ -390,6 +392,7 @@ public class GameModel implements Disposable, ProjectileListener {
       AbstractEnemy e = it.next();
       if (e.isDead()) {
         e.destroyBody(physicsWorld);
+        totalEnemiesKilled++;
         it.remove();
       }
     }
@@ -559,6 +562,10 @@ public class GameModel implements Disposable, ProjectileListener {
 
   public void setLevelCompleted(boolean completed) {
     this.levelCompleted = completed;
+  }
+
+  public int getTotalEnemiesKilled() {
+    return totalEnemiesKilled;
   }
 
   @Override
