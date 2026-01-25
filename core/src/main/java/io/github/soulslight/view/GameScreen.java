@@ -1,6 +1,7 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -28,6 +29,7 @@ import io.github.soulslight.debug.commands.TeleportToPortalCommand;
 import io.github.soulslight.debug.commands.ToggleHitboxesCommand;
 import io.github.soulslight.debug.commands.ToggleInvincibilityCommand;
 import io.github.soulslight.manager.GameManager;
+import io.github.soulslight.manager.SettingsManager;
 import io.github.soulslight.manager.TextureManager;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.enemies.AbstractEnemy;
@@ -38,6 +40,7 @@ import io.github.soulslight.model.enemies.Shielder;
 import io.github.soulslight.model.enemies.SpikedBall;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
+import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.room.Portal;
 import io.github.soulslight.model.room.PortalRoom;
 import java.util.IdentityHashMap;
@@ -54,6 +57,14 @@ public final class GameScreen implements GameState {
   private final Viewport viewport;
   private final OrthogonalTiledMapRenderer mapRenderer;
   private final Box2DDebugRenderer debugRenderer;
+
+  private static Music explorationMusic;
+  private static Music bossMusic;
+
+  private static boolean bossCrossfadeStarted = false;
+  private static boolean bossCrossfadeCompleted = false;
+  private static float bossCrossfadeTime = 0f;
+  private static final float BOSS_FADE_DURATION = 5f; // seconds
 
   // Map size in pixel (used for camera clamp)
   private float mapPixelWidth = 0f;
@@ -118,6 +129,16 @@ public final class GameScreen implements GameState {
 
     // Assets
     TextureManager.load();
+
+    // Background music (shared across GameScreens)
+    if (explorationMusic == null) {
+      explorationMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/exploration.mp3"));
+      explorationMusic.setLooping(true);
+    }
+    if (bossMusic == null) {
+      bossMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/bossfight.mp3"));
+      bossMusic.setLooping(true);
+    }
   }
 
   /** Initializes the debug menu with all available commands. */
@@ -145,6 +166,35 @@ public final class GameScreen implements GameState {
     Gdx.input.setInputProcessor(controller);
     cacheMapSizeInPixels();
     centerCameraOnPlayer();
+
+    boolean isBossLevel =
+        GameManager.getInstance().getCurrentLevelIndex() == LevelFactory.getStoryModeLevelCount();
+
+    if (isBossLevel && !bossCrossfadeStarted && !bossCrossfadeCompleted) {
+      bossCrossfadeStarted = true;
+      bossCrossfadeTime = 0f;
+    }
+
+    float baseVolume = SettingsManager.getInstance().getMusicVolume();
+
+    if (explorationMusic != null) {
+      if (!explorationMusic.isPlaying()) {
+        explorationMusic.play();
+      }
+    }
+    if (bossMusic != null) {
+      if (!bossMusic.isPlaying()) {
+        bossMusic.play();
+      }
+    }
+
+    if (!bossCrossfadeStarted && !bossCrossfadeCompleted) {
+      if (explorationMusic != null) explorationMusic.setVolume(baseVolume);
+      if (bossMusic != null) bossMusic.setVolume(0f);
+    } else if (bossCrossfadeCompleted) {
+      if (explorationMusic != null) explorationMusic.setVolume(0f);
+      if (bossMusic != null) bossMusic.setVolume(baseVolume);
+    }
   }
 
   @Override
@@ -155,6 +205,8 @@ public final class GameScreen implements GameState {
     }
 
     enemyAnimTime += delta;
+
+    updateBossCrossfade(delta);
 
     // --- CAMERA CENTERED ON PLAYERS (WITH OOB CLASP) ---
     followPlayersCamera();
@@ -386,6 +438,21 @@ public final class GameScreen implements GameState {
             // Return to main menu on victory
             if (Gdx.app.getApplicationListener()
                 instanceof io.github.soulslight.SoulsLightGame game) {
+
+              if (explorationMusic != null) {
+                explorationMusic.stop();
+                explorationMusic.dispose();
+                explorationMusic = null;
+              }
+              if (bossMusic != null) {
+                bossMusic.stop();
+                bossMusic.dispose();
+                bossMusic = null;
+              }
+              bossCrossfadeStarted = false;
+              bossCrossfadeCompleted = false;
+              bossCrossfadeTime = 0f;
+
               game.setScreen(new MainMenuScreen(game, batch));
             }
           }
@@ -679,7 +746,29 @@ public final class GameScreen implements GameState {
     if (debugMenuOverlay != null) debugMenuOverlay.dispose();
     if (pauseMenuOverlay != null) pauseMenuOverlay.dispose();
     if (promptFont != null) promptFont.dispose();
+
     enemyAnimOffset.clear();
     enemyFacingRight.clear();
+  }
+
+  // Crossfade logic between exploration and boss music
+  private void updateBossCrossfade(float delta) {
+    if (!bossCrossfadeStarted || bossCrossfadeCompleted) return;
+    if (explorationMusic == null && bossMusic == null) return;
+
+    bossCrossfadeTime += delta;
+    float t = MathUtils.clamp(bossCrossfadeTime / BOSS_FADE_DURATION, 0f, 1f);
+    float baseVolume = SettingsManager.getInstance().getMusicVolume();
+
+    if (explorationMusic != null) {
+      explorationMusic.setVolume(baseVolume * (1f - t));
+    }
+    if (bossMusic != null) {
+      bossMusic.setVolume(baseVolume * t);
+    }
+
+    if (bossCrossfadeTime >= BOSS_FADE_DURATION) {
+      bossCrossfadeCompleted = true;
+    }
   }
 }
