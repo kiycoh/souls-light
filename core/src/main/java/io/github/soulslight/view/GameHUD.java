@@ -45,9 +45,7 @@ public class GameHUD {
 
     // Matrice UI (Per l'interfaccia fissa sullo schermo) - Now a class field
 
-    // =================================================================
-    // FASE 1: BARRE VITA NEMICI (Coordinate MONDO)
-    // =================================================================
+    // BARRE VITA NEMICI (Coordinate MONDO)
     shapeRenderer.setProjectionMatrix(worldMatrix);
     shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
@@ -72,9 +70,29 @@ public class GameHUD {
     }
     shapeRenderer.end();
 
-    // =================================================================
-    // FASE 2: HUD GIOCATORI (Coordinate SCHERMO / PIXEL)
-    // =================================================================
+    // BAR REVIVE
+
+    shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+    for (Player p : players) {
+      if (p.getReviveAttemptTimer() > 0) {
+        float width = 40f;
+        float x = p.getPosition().x - (width / 2);
+        float y = p.getPosition().y + 35f; // Above head
+        float progress = Math.min(1.0f, p.getReviveAttemptTimer() / 5.0f);
+
+        // Background
+        shapeRenderer.setColor(0.1f, 0.1f, 0.1f, 1f);
+        shapeRenderer.rect(x - 1, y - 1, width + 2, 6);
+
+        // Progress (Yellow/Gold)
+        shapeRenderer.setColor(1f, 0.8f, 0.2f, 1f);
+        shapeRenderer.rect(x, y, width * progress, 4);
+      }
+    }
+    shapeRenderer.end();
+
+    // HUD GIOCATORI (Coordinate SCHERMO / PIXEL)
+
     shapeRenderer.setProjectionMatrix(uiMatrix);
     shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 

@@ -7,10 +7,7 @@ import io.github.soulslight.manager.ResourceManager;
 import io.github.soulslight.manager.TextureManager;
 import io.github.soulslight.view.SplashScreen;
 
-/**
- * {@link com.badlogic.gdx.ApplicationListener} implementation shared by all
- * platforms.
- */
+/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class SoulsLightGame extends Game {
 
   private SpriteBatch batch;
