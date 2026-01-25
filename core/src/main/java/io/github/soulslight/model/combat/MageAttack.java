@@ -12,8 +12,28 @@ public class MageAttack extends AbstractAttack {
   }
 
   @Override
+  protected java.util.List<io.github.soulslight.model.entities.Entity> selectTargets(
+      io.github.soulslight.model.entities.Entity attacker,
+      java.util.List<io.github.soulslight.model.entities.Entity> candidates) {
+    return findNearestTarget(attacker, candidates);
+  }
+
+  @Override
+  protected void performAttack(
+      io.github.soulslight.model.entities.Entity attacker,
+      io.github.soulslight.model.entities.Entity target) {
+
+    ((io.github.soulslight.model.entities.Player) attacker)
+        .notifyProjectileRequest(
+            attacker.getPosition(),
+            target, // Pass the Entity target for homing
+            "homing_fireball",
+            getDamage());
+  }
+
+  @Override
   public void attack() {
-    Gdx.app.log("MageAttack", "Attack executed");
+    Gdx.app.log("MageAttack", "Shooting Tracking Projectile");
   }
 
   @Override
@@ -28,11 +48,11 @@ public class MageAttack extends AbstractAttack {
 
   @Override
   public float getAttackSpeed() {
-    return 0.5f;
+    return 0.8f; // Slower than instant hit
   }
 
   @Override
   public String getSoundID() {
-    return "stick_sound";
+    return "fireball_sound";
   }
 }

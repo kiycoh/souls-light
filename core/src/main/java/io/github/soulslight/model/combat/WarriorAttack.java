@@ -5,7 +5,10 @@ import com.badlogic.gdx.math.Vector2;
 import io.github.soulslight.model.enemies.AbstractEnemy;
 import io.github.soulslight.model.entities.Entity;
 
-/** Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior (Warrior). */
+/**
+ * Pattern: Strategy (Concrete Strategy) Implements a specific attack behavior
+ * (Warrior).
+ */
 public class WarriorAttack extends AbstractAttack {
 
   private final float damage;
@@ -21,7 +24,30 @@ public class WarriorAttack extends AbstractAttack {
 
   @Override
   public float getRange() {
-    return 45.0f;
+    return 60.0f; // Increased range for cleave
+  }
+
+  @Override
+  protected boolean isInRange(Entity attacker, Entity target) {
+    // Distance Check
+    if (attacker.getPosition().dst(target.getPosition()) > getRange())
+      return false;
+
+    // Direction Check (Cone)
+    if (attacker.getBody() != null) {
+      Vector2 facing = attacker.getBody().getLinearVelocity().cpy();
+      if (facing.len2() < 0.01f) {
+        return true;
+      }
+      facing.nor();
+
+      Vector2 toTarget = target.getPosition().cpy().sub(attacker.getPosition()).nor();
+      float dot = facing.dot(toTarget);
+
+      // dot > 0.5 (~60 degrees total arc), dot > 0.707 (45 degrees / 90 total)
+      return dot > 0.5f; // 0.5 is pretty wide
+    }
+    return true;
   }
 
   @Override
@@ -31,7 +57,7 @@ public class WarriorAttack extends AbstractAttack {
 
   @Override
   public float getAttackSpeed() {
-    return 1.0f;
+    return 1.3f;
   }
 
   @Override

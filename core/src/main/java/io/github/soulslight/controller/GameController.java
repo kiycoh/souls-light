@@ -10,7 +10,6 @@ import io.github.soulslight.debug.DebugMenuController;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.SaveManager;
 import io.github.soulslight.model.GameModel;
-import io.github.soulslight.model.combat.FireDamageDecorator;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.room.PortalRoom;
 import java.util.List;
@@ -72,12 +71,7 @@ public class GameController extends InputAdapter implements ControllerListener {
         return true;
       case Input.Keys.O:
         if (p1 != null) {
-          if (!p1.getAttackStrategy().hasDecorator(FireDamageDecorator.class)) {
-            p1.setAttackStrategy(new FireDamageDecorator(p1.getAttackStrategy()));
-            Gdx.app.log("Controller", "P1 Fire Damage Activated!");
-          } else {
-            Gdx.app.log("Controller", "P1 Fire Damage Already Active!");
-          }
+          p1.performSpecialAttack(model.getActiveEnemies());
         }
         return true;
       case Input.Keys.P:

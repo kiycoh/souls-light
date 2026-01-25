@@ -57,10 +57,12 @@ public class Ranger extends AbstractEnemy {
 
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
-    if (players == null || players.isEmpty() || this.health <= 0) return;
+    if (players == null || players.isEmpty() || this.health <= 0)
+      return;
 
     Player target = getNearestTarget(players);
-    if (target == null) return;
+    if (target == null)
+      return;
 
     // Feature Logic: RoomIdleState check
     if (getCurrentState() instanceof io.github.soulslight.model.enemies.ai.RoomIdleState) {
@@ -71,7 +73,8 @@ public class Ranger extends AbstractEnemy {
     syncBody();
 
     // gestione timer
-    if (attackTimer > 0) attackTimer -= deltaTime;
+    if (attackTimer > 0)
+      attackTimer -= deltaTime;
 
     // controlla se vede il nemico
     boolean canSee = canSeePlayer(target, body.getWorld());
@@ -108,7 +111,8 @@ public class Ranger extends AbstractEnemy {
       moveTowards(target.getPosition(), deltaTime);
     } else {
       // Distanza perfetta:si ferma
-      if (body != null) body.setLinearVelocity(0, 0);
+      if (body != null)
+        body.setLinearVelocity(0, 0);
     }
 
     // Se i giocatori sono entro il range attacca
@@ -119,7 +123,7 @@ public class Ranger extends AbstractEnemy {
         System.out.println("RANGER: Fire!");
 
         if (target != null) {
-          notifyProjectileRequest(getPosition(), target.getPosition(), "arrow");
+          notifyProjectileRequest(getPosition(), target.getPosition(), "enemy_arrow");
         }
       }
     }
@@ -132,7 +136,8 @@ public class Ranger extends AbstractEnemy {
       // Si muove per ricercare
       moveTowards(lastKnownPlayerPos, deltaTime);
     } else {
-      if (body != null) body.setLinearVelocity(0, 0);
+      if (body != null)
+        body.setLinearVelocity(0, 0);
     }
   }
 

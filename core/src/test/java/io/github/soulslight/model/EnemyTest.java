@@ -155,7 +155,7 @@ public class EnemyTest {
     public List<Vector2> targets = new ArrayList<>();
 
     @Override
-    public void onProjectileRequest(Vector2 origin, Vector2 target, String type) {
+    public void onProjectileRequest(Vector2 origin, Vector2 target, String type, float damage) {
       callCount++;
       targets.add(target);
     }

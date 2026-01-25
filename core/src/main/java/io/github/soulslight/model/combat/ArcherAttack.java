@@ -12,13 +12,34 @@ public class ArcherAttack extends AbstractAttack {
   }
 
   @Override
+  protected java.util.List<io.github.soulslight.model.entities.Entity> selectTargets(
+      io.github.soulslight.model.entities.Entity attacker,
+      java.util.List<io.github.soulslight.model.entities.Entity> candidates) {
+    // Also uses single nearest target, like Mage
+    return findNearestTarget(attacker, candidates);
+  }
+
+  @Override
+  protected void performAttack(
+      io.github.soulslight.model.entities.Entity attacker,
+      io.github.soulslight.model.entities.Entity target) {
+
+    ((io.github.soulslight.model.entities.Player) attacker)
+        .notifyProjectileRequest(
+            attacker.getPosition(),
+            target.getPosition(), // Target Position (non-homing)
+            "fast_arrow",
+            getDamage());
+  }
+
+  @Override
   public void attack() {
-    Gdx.app.log("ArcherAttack", "Attack executed");
+    Gdx.app.log("ArcherAttack", "Shooting Fast Arrow");
   }
 
   @Override
   public float getRange() {
-    return 100.0f;
+    return 300.0f;
   }
 
   @Override
