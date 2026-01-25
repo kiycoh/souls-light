@@ -125,7 +125,7 @@ public final class ClassSelectionScreen implements GameState {
     Label.LabelStyle statStyle = new Label.LabelStyle(font, Color.WHITE);
 
     font.getData().setScale(2.0f);
-    classNameLabel = new Label(" Who were you?", titleStyle);
+    classNameLabel = new Label(" Who are you?", titleStyle);
     classNameLabel.setFontScale(2.0f);
     panel.add(classNameLabel).row();
 
@@ -222,7 +222,7 @@ public final class ClassSelectionScreen implements GameState {
     hoveredClass = null;
 
     // Reset stats panel
-    classNameLabel.setText(" Who were you?");
+    classNameLabel.setText(" Who are you?");
     hpLabel.setText("HP: ---");
     willLabel.setText("Will: ---");
     abilityLabel.setText("Special: ---");

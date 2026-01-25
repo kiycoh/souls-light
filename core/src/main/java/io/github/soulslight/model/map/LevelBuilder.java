@@ -403,8 +403,13 @@ public class LevelBuilder {
       }
 
       // Create doors at actual corridor connection points (from map generation)
-      float doorThickness = 32f; // Corridor width blocked
-      float doorLength = 128f; // Door spans corridor opening (corridor_width + 1 tile)
+      // Create doors at actual corridor connection points (from map generation)
+      MapProperties prop = level.getMap().getProperties();
+      int tileW = prop.get("tilewidth", Integer.class);
+
+      float doorThickness = (float) tileW; // Corridor width blocked
+      float doorLength =
+          tileW * 3f; // Door spans corridor opening (corridor_width + 2 tiles for safety)
 
       for (DoorPosition doorPos : data.doorPositions()) {
         Door.Direction doorDir =

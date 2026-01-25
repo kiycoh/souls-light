@@ -167,10 +167,7 @@ public final class MainMenuScreen implements GameState {
     Table dialogTable = new Table();
     dialogTable.setFillParent(true);
     dialogTable.center();
-    // Make the dialog modal:
-    // 1. Enable touch events so the table itself (background) can be hit.
-    // 2. Add an event listener to consume all clicks, interfering with buttons
-    // below.
+    // Make the dialog modal
     dialogTable.setTouchable(Touchable.enabled);
     dialogTable.addListener(
         new ClickListener() {
