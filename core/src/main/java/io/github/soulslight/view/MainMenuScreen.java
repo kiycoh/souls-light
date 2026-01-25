@@ -1,7 +1,6 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
@@ -20,10 +19,10 @@ import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
+import io.github.soulslight.manager.AudioManager;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.GameMode;
 import io.github.soulslight.manager.SaveManager;
-import io.github.soulslight.manager.SettingsManager;
 import io.github.soulslight.model.GameModel;
 
 public final class MainMenuScreen implements GameState {
@@ -33,7 +32,8 @@ public final class MainMenuScreen implements GameState {
   private final Stage stage;
   private final BitmapFont font;
   private Texture backgroundTexture;
-  private Music menuMusic;
+
+  // private Music menuMusic; // Removed in favor of AudioManager
 
   public MainMenuScreen(SoulsLightGame game, SpriteBatch batch) {
     this.game = game;
@@ -46,10 +46,7 @@ public final class MainMenuScreen implements GameState {
   public void show() {
     Gdx.input.setInputProcessor(stage);
 
-    menuMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/no escape.mp3"));
-    menuMusic.setLooping(true);
-    menuMusic.setVolume(SettingsManager.getInstance().getMusicVolume());
-    menuMusic.play();
+    AudioManager.getInstance().playMusic("audio/no escape.mp3", true);
 
     setupBackground();
     setupUI();
@@ -136,7 +133,7 @@ public final class MainMenuScreen implements GameState {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            game.setScreen(new SettingsScreen(game, batch));
+            game.setScreen(new SettingsScreen(game, batch, MainMenuScreen.this));
           }
         });
 
@@ -279,16 +276,21 @@ public final class MainMenuScreen implements GameState {
   public void resume() {}
 
   @Override
-  public void hide() {}
+  public void hide() {
+    dispose();
+  }
 
   @Override
   public void dispose() {
     stage.dispose();
     font.dispose();
-    backgroundTexture.dispose();
-    if (menuMusic != null) {
-      menuMusic.stop();
-      menuMusic.dispose();
+
+    if (backgroundTexture != null) {
+      backgroundTexture.dispose();
+      backgroundTexture = null;
     }
+
+    // AudioManager.getInstance().stopMusic(); // Removed to allow seamless
+    // transition to ClassSelection
   }
 }

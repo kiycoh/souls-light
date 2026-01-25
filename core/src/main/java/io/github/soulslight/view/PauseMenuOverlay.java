@@ -156,14 +156,9 @@ public class PauseMenuOverlay {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            // gameScreen.openSettings(); // If implemented
-            Gdx.app.log("PauseMenu", "Options clicked (Placeholder)");
-            // Ideally switch to SettingsScreen, passing "this" as parent?
-            // For simple pause, maybe just log for now or overlay settings.
             SoulsLightGame game = (SoulsLightGame) Gdx.app.getApplicationListener();
-            game.setScreen(
-                new SettingsScreen(game, gameScreen.getBatch())); // Note: return path might be lost
-            // unless handled
+            // Pass 'gameScreen' as the parent screen so we can return to it later
+            game.setScreen(new SettingsScreen(game, gameScreen.getBatch(), gameScreen));
           }
         });
 
@@ -171,8 +166,7 @@ public class PauseMenuOverlay {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            SoulsLightGame game = (SoulsLightGame) Gdx.app.getApplicationListener();
-            game.setScreen(new MainMenuScreen(game, gameScreen.getBatch()));
+            gameScreen.returnToMainMenu();
           }
         });
 

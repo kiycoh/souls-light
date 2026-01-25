@@ -416,6 +416,11 @@ public class GameModel implements Disposable, ProjectileListener {
     while (it.hasNext()) {
       AbstractEnemy e = it.next();
       if (e.isDead()) {
+        // Feature: Boss Death triggers level completion
+        if (e instanceof Oblivion && ((Oblivion) e).isPhaseTwo()) {
+          this.levelCompleted = true;
+        }
+
         e.destroyBody(physicsWorld);
         totalEnemiesKilled++;
         it.remove();

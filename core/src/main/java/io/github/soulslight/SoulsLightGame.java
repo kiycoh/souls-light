@@ -18,11 +18,14 @@ public class SoulsLightGame extends Game {
 
   @Override
   public void setScreen(Screen screen) {
-    // Dispose the previous screen if it exists to free resources
-    if (this.screen != null) {
-      this.screen.dispose();
-    }
     super.setScreen(screen);
+  }
+
+  @Override
+  public void render() {
+    io.github.soulslight.manager.AudioManager.getInstance()
+        .update(com.badlogic.gdx.Gdx.graphics.getDeltaTime());
+    super.render();
   }
 
   @Override

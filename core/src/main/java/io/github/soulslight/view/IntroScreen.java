@@ -2,15 +2,16 @@ package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
+import io.github.soulslight.manager.AudioManager;
 import io.github.soulslight.model.GameModel;
 
 public final class IntroScreen implements GameState {
@@ -18,7 +19,7 @@ public final class IntroScreen implements GameState {
   private static final float INTRO_DELAY = 1.2f;
   private static final float LINE_FADE_DURATION = 2.5f;
   private static final float LINE_DELAY = 2.1f;
-  private static final float TRANSITION_DURATION = 7f;
+  private static final float TRANSITION_DURATION = 7.2f;
 
   private final SoulsLightGame game;
   private final SpriteBatch batch;
@@ -39,7 +40,7 @@ public final class IntroScreen implements GameState {
   private boolean transitioning = false;
   private float transitionTime = 0f;
 
-  private final Music transitionMusic;
+  // private Music transitionMusic; // Removed in favor of AudioManager
 
   public IntroScreen(
       SoulsLightGame game, SpriteBatch batch, GameModel model, GameController controller) {
@@ -73,23 +74,23 @@ public final class IntroScreen implements GameState {
           "searching for a way to escape...",
           "",
           "",
-          "[Click to continue]"
+          "Click to continue..."
         };
 
     this.lineSpacing = font.getLineHeight() * 1.2f;
 
     this.totalDuration = INTRO_DELAY + (lines.length - 1) * LINE_DELAY + LINE_FADE_DURATION;
-
-    this.transitionMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/toExploration.mp3"));
-    this.transitionMusic.setLooping(false);
   }
 
   private void goToGame() {
+    AudioManager.getInstance().setNextFadeDuration(6.0f);
     game.setScreen(new GameScreen(batch, model, controller));
   }
 
   @Override
-  public void show() {}
+  public void show() {
+    Gdx.input.setInputProcessor(null);
+  }
 
   @Override
   public void render(float delta) {
@@ -120,7 +121,7 @@ public final class IntroScreen implements GameState {
           // Start game once full text is on screen
           transitioning = true;
           transitionTime = 0f;
-          transitionMusic.play();
+          AudioManager.getInstance().playMusic("audio/toExploration_reverbered.mp3", false);
         }
       }
     }
@@ -192,6 +193,6 @@ public final class IntroScreen implements GameState {
   @Override
   public void dispose() {
     font.dispose();
-    transitionMusic.dispose();
+    // AudioManager.getInstance().stopMusic(); // Optional cleanup if needed
   }
 }

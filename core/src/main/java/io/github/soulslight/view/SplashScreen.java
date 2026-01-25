@@ -2,7 +2,6 @@ package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -12,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.soulslight.SoulsLightGame;
+import io.github.soulslight.manager.AudioManager;
 
 public final class SplashScreen implements GameState {
 
@@ -34,7 +34,6 @@ public final class SplashScreen implements GameState {
   private float stateTime = 0f;
 
   // audio
-  private Music introMusic;
   private Sound slashSound;
   private boolean slashPlayed = false;
 
@@ -56,11 +55,9 @@ public final class SplashScreen implements GameState {
     loadFrame(0);
 
     // audio
-    introMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/intro.mp3"));
-    introMusic.setLooping(false);
-    introMusic.play();
+    AudioManager.getInstance().playMusic("audio/intro.mp3", false);
 
-    slashSound = Gdx.audio.newSound(Gdx.files.internal("audio/slash.mp3"));
+    slashSound = AudioManager.getInstance().loadSound("audio/slash.mp3");
   }
 
   // loads one frame onto disk
@@ -124,6 +121,7 @@ public final class SplashScreen implements GameState {
   }
 
   private void goToMenu() {
+    this.dispose();
     game.setScreen(new MainMenuScreen(game, batch));
   }
 
@@ -151,8 +149,10 @@ public final class SplashScreen implements GameState {
     if (slashSound != null) {
       slashSound.dispose();
     }
-    if (introMusic != null) {
-      introMusic.dispose();
-    }
+
+    // Don't dispose AudioManager here as it is a singleton, just stop the specific
+    // music if needed,
+    // but typically Splash -> MainMenu might want new music anyway.
+    AudioManager.getInstance().stopMusic();
   }
 }

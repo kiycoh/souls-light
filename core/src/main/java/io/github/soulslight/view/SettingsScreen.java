@@ -1,7 +1,6 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
@@ -20,6 +19,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.soulslight.SoulsLightGame;
+import io.github.soulslight.manager.AudioManager;
 import io.github.soulslight.manager.SettingsManager;
 
 public final class SettingsScreen implements GameState {
@@ -36,28 +36,37 @@ public final class SettingsScreen implements GameState {
   private Texture toggleOnTexture;
   private Texture toggleOffTexture;
 
-  private Music optionsMusic;
+  // private Music optionsMusic; // Removed in favor of AudioManager
 
-  public SettingsScreen(SoulsLightGame game, SpriteBatch batch) {
+  private final com.badlogic.gdx.Screen previousScreen;
+
+  public SettingsScreen(
+      SoulsLightGame game, SpriteBatch batch, com.badlogic.gdx.Screen previousScreen) {
     this.game = game;
     this.batch = batch;
+    this.previousScreen = previousScreen;
 
     this.stage = new Stage(new FitViewport(1280, 720), batch);
     this.font = new BitmapFont();
+  }
+
+  // Backward compatibility constructor (defaults to MainMenu if needed, though we
+  // should avoid using this)
+  public SettingsScreen(SoulsLightGame game, SpriteBatch batch) {
+    this(game, batch, null);
   }
 
   @Override
   public void show() {
     Gdx.input.setInputProcessor(stage);
 
-    optionsMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/saffron.mp3"));
-    optionsMusic.setLooping(true);
-    optionsMusic.setVolume(SettingsManager.getInstance().getMusicVolume());
-    optionsMusic.play();
+    AudioManager.getInstance().playMusic("audio/saffron.mp3", true);
 
     setupBackground();
     setupUI();
   }
+
+  // ... (setupBackground remains effectively same, setupUI needs button update)
 
   private void setupBackground() {
     backgroundTexture = new Texture(Gdx.files.internal("ui/options.png"));
@@ -68,6 +77,7 @@ public final class SettingsScreen implements GameState {
   }
 
   private void setupUI() {
+    // ... (UI setup code)
     toggleOnTexture = new Texture(Gdx.files.internal("ui/ToggleOn.png"));
     toggleOffTexture = new Texture(Gdx.files.internal("ui/ToggleOff.png"));
     toggleOnTexture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
@@ -140,7 +150,7 @@ public final class SettingsScreen implements GameState {
             var s = SettingsManager.getInstance();
             s.setMusicVolume(Math.max(0f, s.getMusicVolume() - 0.1f));
             volumeLabel.setText(getVolumeText());
-            if (optionsMusic != null) optionsMusic.setVolume(s.getMusicVolume());
+            // AudioManager handles volume update via SettingsManager notification
           }
         });
 
@@ -151,7 +161,7 @@ public final class SettingsScreen implements GameState {
             var s = SettingsManager.getInstance();
             s.setMusicVolume(Math.min(1f, s.getMusicVolume() + 0.1f));
             volumeLabel.setText(getVolumeText());
-            if (optionsMusic != null) optionsMusic.setVolume(s.getMusicVolume());
+            // AudioManager handles volume update via SettingsManager notification
           }
         });
 
@@ -161,7 +171,11 @@ public final class SettingsScreen implements GameState {
         new ClickListener() {
           @Override
           public void clicked(InputEvent event, float x, float y) {
-            game.setScreen(new MainMenuScreen(game, batch));
+            if (previousScreen != null) {
+              game.setScreen(previousScreen);
+            } else {
+              game.setScreen(new MainMenuScreen(game, batch));
+            }
           }
         });
 
@@ -221,9 +235,6 @@ public final class SettingsScreen implements GameState {
     if (toggleOnTexture != null) toggleOnTexture.dispose();
     if (toggleOffTexture != null) toggleOffTexture.dispose();
 
-    if (optionsMusic != null) {
-      optionsMusic.stop();
-      optionsMusic.dispose();
-    }
+    AudioManager.getInstance().stopMusic();
   }
 }

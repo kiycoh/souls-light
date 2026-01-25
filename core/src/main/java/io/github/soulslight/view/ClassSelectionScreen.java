@@ -21,6 +21,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.soulslight.SoulsLightGame;
 import io.github.soulslight.controller.GameController;
+import io.github.soulslight.manager.AudioManager;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.entities.Player.PlayerClass;
@@ -57,6 +58,7 @@ public final class ClassSelectionScreen implements GameState {
 
   @Override
   public void show() {
+    AudioManager.getInstance().playMusic("audio/saffron.mp3", true);
     Gdx.input.setInputProcessor(stage);
     createMockupTextures();
     setupUI();

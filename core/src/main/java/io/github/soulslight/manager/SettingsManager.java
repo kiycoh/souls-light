@@ -42,6 +42,9 @@ public class SettingsManager {
     float v = Math.max(0f, Math.min(1f, volume));
     preferences.putFloat(KEY_MUSIC_VOL, v);
     preferences.flush();
+
+    // Notify Audio Manager to update currently playing music
+    AudioManager.getInstance().updateMusicVolume();
   }
 
   public boolean isFullscreen() {

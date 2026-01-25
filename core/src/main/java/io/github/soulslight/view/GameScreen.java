@@ -28,6 +28,7 @@ import io.github.soulslight.debug.commands.SkipToBossCommand;
 import io.github.soulslight.debug.commands.TeleportToPortalCommand;
 import io.github.soulslight.debug.commands.ToggleHitboxesCommand;
 import io.github.soulslight.debug.commands.ToggleInvincibilityCommand;
+import io.github.soulslight.manager.AudioManager;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.SettingsManager;
 import io.github.soulslight.manager.TextureManager;
@@ -97,6 +98,10 @@ public final class GameScreen implements GameState {
 
   private final LightingRenderer lightingRenderer;
 
+  // Outro Overlay
+  private OutroOverlay outroOverlay;
+  private boolean showingOutro = false;
+
   public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
     this.batch = batch;
     this.model = model;
@@ -124,6 +129,9 @@ public final class GameScreen implements GameState {
 
     // Pause Menu
     this.pauseMenuOverlay = new PauseMenuOverlay(batch, this);
+
+    // Outro Overlay
+    this.outroOverlay = new OutroOverlay(batch);
 
     // Debug Menu Setup (only when DEBUG_MODE is enabled)
     if (GameManager.DEBUG_MODE) {
@@ -166,6 +174,7 @@ public final class GameScreen implements GameState {
 
   @Override
   public void show() {
+    AudioManager.getInstance().stopMusic(); // Ensure menu music stops
     Gdx.input.setInputProcessor(controller);
     cacheMapSizeInPixels();
     centerCameraOnPlayer();
@@ -202,7 +211,7 @@ public final class GameScreen implements GameState {
 
   @Override
   public void render(float delta) {
-    if (!model.isPaused()) {
+    if (!model.isPaused() && !showingOutro) {
       controller.update(delta);
       model.update(delta);
     }
@@ -211,6 +220,9 @@ public final class GameScreen implements GameState {
     playerAnimTime += delta;
 
     updateBossCrossfade(delta);
+    if (showingOutro) {
+      updateMusicFadeOut(delta);
+    }
 
     // --- CAMERA CENTERED ON PLAYERS (WITH OOB CLASP) ---
     followPlayersCamera();
@@ -349,7 +361,7 @@ public final class GameScreen implements GameState {
     // Pause Menu Overlay
     // Only show if paused AND Debug Menu is NOT visible
     boolean debugVisible = debugMenuController != null && debugMenuController.isVisible();
-    if (model.isPaused() && !debugVisible && pauseMenuOverlay != null) {
+    if (model.isPaused() && !debugVisible && pauseMenuOverlay != null && !showingOutro) {
       pauseMenuOverlay.render(delta);
     }
 
@@ -362,8 +374,16 @@ public final class GameScreen implements GameState {
       debugMenuOverlay.render(batch);
     }
 
-    // Check for level completion
-    checkLevelTransition();
+    // Outro Overlay
+    if (showingOutro) {
+      boolean outroDone = outroOverlay.render(delta);
+      if (outroDone) {
+        returnToMainMenu();
+      }
+    } else {
+      // Only check for level completion if NOT already showing outro
+      checkLevelTransition();
+    }
   }
 
   private void drawPortal() {
@@ -452,29 +472,42 @@ public final class GameScreen implements GameState {
               game.setScreen(new GameScreen(batch, newModel, newController));
             }
           } else {
-            Gdx.app.log("GameScreen", "Campaign complete! All levels finished.");
-            // Return to main menu on victory
-            if (Gdx.app.getApplicationListener()
-                instanceof io.github.soulslight.SoulsLightGame game) {
+            Gdx.app.log("GameScreen", "Campaign complete! Triggering Outro.");
+            // Campaign Finished -> Trigger Outro Overlay
+            model.setPaused(true); // Stop game logic
+            outroOverlay.start();
+            showingOutro = true;
 
-              if (explorationMusic != null) {
-                explorationMusic.stop();
-                explorationMusic.dispose();
-                explorationMusic = null;
-              }
-              if (bossMusic != null) {
-                bossMusic.stop();
-                bossMusic.dispose();
-                bossMusic = null;
-              }
-              bossCrossfadeStarted = false;
-              bossCrossfadeCompleted = false;
-              bossCrossfadeTime = 0f;
-
-              game.setScreen(new MainMenuScreen(game, batch));
+            // Feature: Stop boss music immediately on victory
+            if (bossMusic != null) {
+              bossMusic.stop();
+            }
+            if (explorationMusic != null) {
+              explorationMusic.stop();
             }
           }
         });
+  }
+
+  public void returnToMainMenu() {
+    if (Gdx.app.getApplicationListener() instanceof io.github.soulslight.SoulsLightGame game) {
+
+      if (explorationMusic != null) {
+        explorationMusic.stop();
+        explorationMusic.dispose();
+        explorationMusic = null;
+      }
+      if (bossMusic != null) {
+        bossMusic.stop();
+        bossMusic.dispose();
+        bossMusic = null;
+      }
+      bossCrossfadeStarted = false;
+      bossCrossfadeCompleted = false;
+      bossCrossfadeTime = 0f;
+
+      game.setScreen(new MainMenuScreen(game, batch));
+    }
   }
 
   private enum EnemyAnimType {
@@ -752,6 +785,31 @@ public final class GameScreen implements GameState {
   private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
     if (tex != null) {
       batch.draw(tex, pos.x - width / 2, pos.y - height / 2, width, height);
+    }
+  }
+
+  private void updateMusicFadeOut(float delta) {
+    float fadeSpeed = 0.5f; // Volume per second (2 seconds to fade out)
+    boolean active = false;
+
+    if (bossMusic != null && bossMusic.isPlaying()) {
+      float v = bossMusic.getVolume();
+      if (v > 0) {
+        bossMusic.setVolume(Math.max(0f, v - fadeSpeed * delta));
+        active = true;
+      } else {
+        bossMusic.stop();
+      }
+    }
+
+    if (explorationMusic != null && explorationMusic.isPlaying()) {
+      float v = explorationMusic.getVolume();
+      if (v > 0) {
+        explorationMusic.setVolume(Math.max(0f, v - fadeSpeed * delta));
+        active = true;
+      } else {
+        explorationMusic.stop();
+      }
     }
   }
 
