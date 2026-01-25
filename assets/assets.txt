@@ -1,10 +1,12 @@
 .gitkeep
 audio/button.mp3
+audio/end.mp3
 audio/intro.mp3
 audio/no escape.mp3
 audio/saffron.mp3
 audio/slash.mp3
 audio/toExploration.mp3
+hs_err_pid15156.log
 images/0x72_DungeonTilesetII_v1.7.png
 images/archer.png
 images/arrow.png
@@ -15,6 +17,7 @@ images/class_selection/default.png
 images/class_selection/mage.png
 images/class_selection/thief.png
 images/class_selection/warrior.png
+images/oblivionDeath.png
 images/oblivionIdle.png
 images/oblivionMeleeAttack.png
 images/oblivionMeleeWindup.png
