@@ -33,7 +33,6 @@ public abstract class Entity {
   // metodo per sincronizzare grafica e fisica
   public void update(float delta) {
     if (body != null) {
-
       this.position.set(body.getPosition());
     }
   }

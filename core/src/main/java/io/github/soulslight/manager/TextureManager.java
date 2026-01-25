@@ -21,8 +21,10 @@ public class TextureManager {
   private static Animation<TextureRegion> rangerWalkAnim;
   private static Animation<TextureRegion> shielderWalkAnim;
   private static Animation<TextureRegion> spikedBallWalkAnim;
-
   private static Animation<TextureRegion> spikedBallChargeAnim;
+
+  private static Animation<TextureRegion> p1WalkAnim;
+  private static Animation<TextureRegion> p2WalkAnim;
 
   private static Animation<TextureRegion> oblivionIdleAnim;
   private static Animation<TextureRegion> oblivionWalkAnim;
@@ -71,6 +73,12 @@ public class TextureManager {
 
     buildAnimIfExists("spikedBallCharge", 32, 34);
     spikedBallChargeAnim = getBuiltAnim("spikedBallCharge");
+
+    buildAnimIfExists("p1Walk", 16, 23);
+    p1WalkAnim = getBuiltAnim("p1Walk");
+
+    buildAnimIfExists("p2Walk", 16, 23);
+    p2WalkAnim = getBuiltAnim("p2Walk");
 
     buildAnimIfExists("oblivionIdle", 288, 160);
     oblivionIdleAnim = getBuiltAnim("oblivionIdle");
@@ -152,6 +160,16 @@ public class TextureManager {
     return spikedBallChargeAnim.getKeyFrame(stateTime, true);
   }
 
+  public static TextureRegion getP1WalkFrame(float stateTime) {
+    if (p1WalkAnim == null) return null;
+    return p1WalkAnim.getKeyFrame(stateTime, true);
+  }
+
+  public static TextureRegion getP2WalkFrame(float stateTime) {
+    if (p2WalkAnim == null) return null;
+    return p2WalkAnim.getKeyFrame(stateTime, true);
+  }
+
   public static TextureRegion getOblivionIdleFrame(float stateTime) {
     if (oblivionIdleAnim == null) return null;
     return oblivionIdleAnim.getKeyFrame(stateTime, true);
@@ -196,6 +214,9 @@ public class TextureManager {
     shielderWalkAnim = null;
     spikedBallWalkAnim = null;
     spikedBallChargeAnim = null;
+
+    p1WalkAnim = null;
+    p2WalkAnim = null;
 
     oblivionIdleAnim = null;
     oblivionWalkAnim = null;
