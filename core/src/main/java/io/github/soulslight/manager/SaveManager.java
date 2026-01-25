@@ -63,33 +63,33 @@ public class SaveManager {
     }
   }
 
-    private boolean loadFromFile(FileHandle file, GameModel model) {
-        if (!file.exists()) return false;
+  private boolean loadFromFile(FileHandle file, GameModel model) {
+    if (!file.exists()) return false;
 
-        try {
-            String encodedContent = file.readString();
-            if (encodedContent == null || encodedContent.trim().isEmpty()) {
-                return false;
-            }
-
-            // Decode Base64
-            String jsonString = Base64Coder.decodeString(encodedContent);
-
-            GameStateMemento memento = json.fromJson(GameStateMemento.class, jsonString);
-
-            if (memento != null && memento.players != null) {
-                model.restoreMemento(memento);
-                return true;
-            }
-        } catch (SerializationException e) {
-            Gdx.app.error("SaveManager", "Corrupted JSON in file: " + file.name(), e);
-        } catch (IllegalArgumentException e) {
-            Gdx.app.error("SaveManager", "Invalid Base64 content in file: " + file.name(), e);
-        } catch (Exception e) {
-            Gdx.app.error("SaveManager", "General error loading file: " + file.name(), e);
-        }
+    try {
+      String encodedContent = file.readString();
+      if (encodedContent == null || encodedContent.trim().isEmpty()) {
         return false;
+      }
+
+      // Decode Base64
+      String jsonString = Base64Coder.decodeString(encodedContent);
+
+      GameStateMemento memento = json.fromJson(GameStateMemento.class, jsonString);
+
+      if (memento != null && memento.players != null) {
+        model.restoreMemento(memento);
+        return true;
+      }
+    } catch (SerializationException e) {
+      Gdx.app.error("SaveManager", "Corrupted JSON in file: " + file.name(), e);
+    } catch (IllegalArgumentException e) {
+      Gdx.app.error("SaveManager", "Invalid Base64 content in file: " + file.name(), e);
+    } catch (Exception e) {
+      Gdx.app.error("SaveManager", "General error loading file: " + file.name(), e);
     }
+    return false;
+  }
 
   public boolean hasSaveFile() {
     return Gdx.files.local(SAVE_FILE).exists();
