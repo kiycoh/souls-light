@@ -11,11 +11,13 @@ public class Projectile extends Entity {
 
   // Memorizza la posizione precedente per calcolare la traiettoria
   private final Vector2 lastPosition = new Vector2();
+  private boolean isPlayerProjectile = false;
 
-  public Projectile(World world, float x, float y, Vector2 targetPos) {
+  public Projectile(World world, float x, float y, Vector2 targetPos, boolean isPlayerProjectile) {
     super();
     this.position = new Vector2(x, y);
     this.lastPosition.set(x, y); // Inizializza la posizione precedente
+    this.isPlayerProjectile = isPlayerProjectile;
 
     // Calcola direzione
     Vector2 direction = new Vector2(targetPos).sub(x, y).nor();
@@ -25,6 +27,11 @@ public class Projectile extends Entity {
 
     this.body.setLinearVelocity(direction.scl(speed));
     this.body.setTransform(this.body.getPosition(), direction.angleRad());
+  }
+
+  // Costruttore per compatibilità (default nemici)
+  public Projectile(World world, float x, float y, Vector2 targetPos) {
+    this(world, x, y, targetPos, false);
   }
 
   private void createBody(World world, float x, float y) {
@@ -79,5 +86,9 @@ public class Projectile extends Entity {
 
   public Vector2 getLastPosition() {
     return lastPosition;
+  }
+
+  public boolean isPlayerProjectile() {
+    return isPlayerProjectile;
   }
 }

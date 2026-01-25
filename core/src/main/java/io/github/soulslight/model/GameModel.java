@@ -200,7 +200,7 @@ public class GameModel implements Disposable, ProjectileListener {
       physicsWorld.step(1 / 60f, 6, 2);
       // Update projectiles for all players
       if (!players.isEmpty()) {
-        projectileManager.update(1 / 60f, players);
+        projectileManager.update(1 / 60f, players, getActiveEnemies());
       }
       physicsAccumulator -= 1 / 60f;
     }
