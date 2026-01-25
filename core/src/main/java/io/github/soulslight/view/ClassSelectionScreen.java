@@ -121,13 +121,13 @@ public final class ClassSelectionScreen implements GameState {
 
   private Table createStatsPanel() {
     Table panel = new Table();
-    panel.defaults().left().padBottom(10);
+    panel.defaults().left().padBottom(10).padLeft(50);
 
     Label.LabelStyle titleStyle = new Label.LabelStyle(font, Color.GOLD);
     Label.LabelStyle statStyle = new Label.LabelStyle(font, Color.WHITE);
 
     font.getData().setScale(2.0f);
-    classNameLabel = new Label(" Who are you?", titleStyle);
+    classNameLabel = new Label("Who are you,\n Player 1?", titleStyle);
     classNameLabel.setFontScale(2.0f);
     panel.add(classNameLabel).row();
 
@@ -199,6 +199,9 @@ public final class ClassSelectionScreen implements GameState {
     };
   }
 
+  // Current player index (0 = Player 1, 1 = Player 2)
+  private int currentPlayerIndex = 0;
+
   private void onClassHover(PlayerClass playerClass) {
     hoveredClass = playerClass;
 
@@ -224,7 +227,7 @@ public final class ClassSelectionScreen implements GameState {
     hoveredClass = null;
 
     // Reset stats panel
-    classNameLabel.setText(" Who are you?");
+    updateTitle();
     hpLabel.setText("HP: ---");
     willLabel.setText("Will: ---");
     abilityLabel.setText("Special: ---");
@@ -241,13 +244,35 @@ public final class ClassSelectionScreen implements GameState {
   }
 
   private void onClassSelected(PlayerClass playerClass) {
-    // Store selected class in GameManager
-    GameManager.getInstance().setSelectedPlayerClass(playerClass);
+    if (currentPlayerIndex == 0) {
+      // Player 1 Selected
+      GameManager.getInstance().setPlayerClass(0, playerClass);
 
-    // Start the game
-    GameModel model = new GameModel();
-    GameController controller = new GameController(model);
-    game.setScreen(new IntroScreen(game, batch, model, controller));
+      // Advance to Player 2
+      currentPlayerIndex = 1;
+      updateTitle();
+
+      // Feedback (optional sound or flash, for now just UI update)
+      // Maybe reset background or keep selected until hover?
+      // Since hover logic overrides, it should be fine.
+
+    } else {
+      // Player 2 Selected
+      GameManager.getInstance().setPlayerClass(1, playerClass);
+
+      // Start the game
+      GameModel model = new GameModel();
+      GameController controller = new GameController(model);
+      game.setScreen(new IntroScreen(game, batch, model, controller));
+    }
+  }
+
+  private void updateTitle() {
+    if (currentPlayerIndex == 0) {
+      classNameLabel.setText("Who are you,\n Player 1?");
+    } else {
+      classNameLabel.setText("Who are you,\n Player 2?");
+    }
   }
 
   @Override

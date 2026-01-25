@@ -48,7 +48,7 @@ public class MageAttack extends AbstractAttack {
 
   @Override
   public float getAttackSpeed() {
-    return 0.8f; // Slower than instant hit
+    return 1.5f;
   }
 
   @Override

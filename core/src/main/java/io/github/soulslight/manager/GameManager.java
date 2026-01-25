@@ -25,9 +25,6 @@ public class GameManager {
   private int currentLevelIndex = 1;
   private long campaignSeed;
 
-  // Selected player class (default: WARRIOR)
-  private Player.PlayerClass selectedPlayerClass = Player.PlayerClass.WARRIOR;
-
   private GameManager() {
     this.players = new java.util.ArrayList<>();
     this.campaignSeed = System.currentTimeMillis();
@@ -155,14 +152,33 @@ public class GameManager {
     this.currentLevelIndex = index;
   }
 
+  // Selected player classes (Default: WARRIOR for P1, ARCHER for P2)
+  private Player.PlayerClass[] playerClasses = {
+    Player.PlayerClass.WARRIOR, Player.PlayerClass.ARCHER
+  };
+
   // --- Player Class Selection ---
 
+  public void setPlayerClass(int index, Player.PlayerClass playerClass) {
+    if (index >= 0 && index < playerClasses.length) {
+      this.playerClasses[index] = playerClass;
+    }
+  }
+
+  public Player.PlayerClass getPlayerClass(int index) {
+    if (index >= 0 && index < playerClasses.length) {
+      return playerClasses[index];
+    }
+    return Player.PlayerClass.WARRIOR; // Fallback
+  }
+
+  /** Legacy support / Convenience for single player or primary player. */
   public void setSelectedPlayerClass(Player.PlayerClass playerClass) {
-    this.selectedPlayerClass = playerClass;
+    setPlayerClass(0, playerClass);
   }
 
   public Player.PlayerClass getSelectedPlayerClass() {
-    return selectedPlayerClass;
+    return getPlayerClass(0);
   }
 
   // --- Cleanup ---

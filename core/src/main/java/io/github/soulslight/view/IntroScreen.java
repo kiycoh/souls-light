@@ -18,7 +18,7 @@ public final class IntroScreen implements GameState {
   private static final float INTRO_DELAY = 1.2f;
   private static final float LINE_FADE_DURATION = 2.5f;
   private static final float LINE_DELAY = 2.1f;
-  private static final float TRANSITION_DURATION = 7.2f;
+  private static final float TRANSITION_DURATION = 7.1f;
 
   private final SoulsLightGame game;
   private final SpriteBatch batch;

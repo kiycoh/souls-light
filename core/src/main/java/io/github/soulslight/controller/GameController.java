@@ -94,10 +94,9 @@ public class GameController extends InputAdapter implements ControllerListener {
     if (players.isEmpty()) return false;
 
     Player p1 = players.get(0);
-    Player p2 = players.size() > 1 ? players.get(1) : null;
 
     switch (keycode) {
-      // --- PLAYER 1 (Keyboard) ---
+      // --- PLAYER 1 (Keyboard Only) ---
       case Input.Keys.SPACE:
         if (p1 != null && !p1.isDead()) p1.attack(model.getActiveEnemies());
         return true;
@@ -108,12 +107,6 @@ public class GameController extends InputAdapter implements ControllerListener {
         return true;
       case Input.Keys.P:
         if (p1 != null) p1.doAnAttack();
-        return true;
-
-      // --- PLAYER 2 (Keyboard) ---
-      case Input.Keys.ENTER:
-      case Input.Keys.NUMPAD_0:
-        if (p2 != null && !p2.isDead()) p2.attack(model.getActiveEnemies());
         return true;
 
       // --- SYSTEM ---
@@ -168,48 +161,33 @@ public class GameController extends InputAdapter implements ControllerListener {
     List<Player> players = model.getPlayers();
     if (players.isEmpty()) return;
 
-    // --- PLAYER 1 MOVEMENT ---
+    // --- PLAYER 1 MOVEMENT (Keyboard Only) ---
     Player p1 = players.get(0);
     if (p1 != null && !p1.isDead()) {
       float velX = 0;
       float velY = 0;
 
-      // Keyboard
+      // Keyboard WASD
       if (Gdx.input.isKeyPressed(Input.Keys.W)) velY = SPEED;
       if (Gdx.input.isKeyPressed(Input.Keys.S)) velY = -SPEED;
       if (Gdx.input.isKeyPressed(Input.Keys.A)) velX = -SPEED;
       if (Gdx.input.isKeyPressed(Input.Keys.D)) velX = SPEED;
-
-      // Controller 0 Override
-      if (Controllers.getControllers().size > 0) {
-        Controller c1 = Controllers.getControllers().get(0);
-        float axisX = c1.getAxis(c1.getMapping().axisLeftX);
-        float axisY = c1.getAxis(c1.getMapping().axisLeftY);
-        if (Math.abs(axisX) > 0.2f) velX = axisX * SPEED;
-        if (Math.abs(axisY) > 0.2f) velY = -axisY * SPEED; // Y is usually inverted on controllers
-      }
 
       p1.move(velX, velY);
     } else if (p1 != null && p1.getBody() != null) {
       p1.getBody().setLinearVelocity(0, 0);
     }
 
-    // --- PLAYER 2 MOVEMENT ---
+    // --- PLAYER 2 MOVEMENT (Controller Only) ---
     if (players.size() > 1) {
       Player p2 = players.get(1);
       if (p2 != null && !p2.isDead()) {
         float velX = 0;
         float velY = 0;
 
-        // Keyboard
-        if (Gdx.input.isKeyPressed(Input.Keys.UP)) velY = SPEED;
-        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) velY = -SPEED;
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) velX = -SPEED;
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) velX = SPEED;
-
-        // Controller 1 Override
-        if (Controllers.getControllers().size > 1) {
-          Controller c2 = Controllers.getControllers().get(1);
+        // Controller 0 (First Player Controller maps to Player 2 Entity)
+        if (Controllers.getControllers().size > 0) {
+          Controller c2 = Controllers.getControllers().get(0);
           float axisX = c2.getAxis(c2.getMapping().axisLeftX);
           float axisY = c2.getAxis(c2.getMapping().axisLeftY);
           if (Math.abs(axisX) > 0.2f) velX = axisX * SPEED;
@@ -230,19 +208,22 @@ public class GameController extends InputAdapter implements ControllerListener {
     List<Player> players = model.getPlayers();
     int controllerIndex = Controllers.getControllers().indexOf(controller, true);
 
-    // Check mapping. Usually 0 is A (Xbox).
-    // Let's assume button 0 (A) is attack.
-    // Use controller.getMapping().buttonA if available (gdx-controllers 2.x)
-
+    // Check mapping. usually 0 is A (Xbox).
     int attackBtn = controller.getMapping().buttonA;
+    int specialBtn = controller.getMapping().buttonY;
 
     if (buttonCode == attackBtn) {
-      if (controllerIndex == 0 && !players.isEmpty()) {
-        Player p1 = players.get(0);
-        if (p1 != null && !p1.isDead()) p1.attack(model.getActiveEnemies());
-      } else if (controllerIndex == 1 && players.size() > 1) {
+      // Controller 0 maps to Player 2
+      if (controllerIndex == 0 && players.size() > 1) {
         Player p2 = players.get(1);
         if (p2 != null && !p2.isDead()) p2.attack(model.getActiveEnemies());
+      }
+      return true;
+    } else if (buttonCode == specialBtn) {
+      // Controller 0 maps to Player 2
+      if (controllerIndex == 0 && players.size() > 1) {
+        Player p2 = players.get(1);
+        if (p2 != null) p2.performSpecialAttack(model.getActiveEnemies());
       }
       return true;
     }

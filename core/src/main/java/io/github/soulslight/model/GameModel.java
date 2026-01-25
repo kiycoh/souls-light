@@ -65,14 +65,15 @@ public class GameModel implements Disposable, ProjectileListener {
     Vector2 spawn = findFirstFloorSpawn(myMap, roomData);
 
     // Player 1: Uses class selected in ClassSelectionScreen
-    Player.PlayerClass selectedClass = GameManager.getInstance().getSelectedPlayerClass();
-    Player p1 = new Player(selectedClass, this.physicsWorld, spawn.x, spawn.y);
+    Player.PlayerClass p1Class = GameManager.getInstance().getPlayerClass(0);
+    Player p1 = new Player(p1Class, this.physicsWorld, spawn.x, spawn.y);
     p1.addProjectileListener(this); // Register listener
     players.add(p1);
     GameManager.getInstance().addPlayer(p1);
 
-    // Player 2 (spawn slightly offset) - for co-op testing
-    Player p2 = new Player(Player.PlayerClass.ARCHER, this.physicsWorld, spawn.x + 20, spawn.y);
+    // Player 2 (spawn slightly offset)
+    Player.PlayerClass p2Class = GameManager.getInstance().getPlayerClass(1);
+    Player p2 = new Player(p2Class, this.physicsWorld, spawn.x + 20, spawn.y);
     p2.addProjectileListener(this); // Register listener
     players.add(p2);
     GameManager.getInstance().addPlayer(p2);
