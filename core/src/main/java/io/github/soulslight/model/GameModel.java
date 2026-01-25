@@ -56,7 +56,8 @@ public class GameModel implements Disposable, ProjectileListener {
     TiledMap myMap = strategy.generate();
 
     // ---- PLAYERS: spawn on valid flood tile ----
-    Vector2 spawn = findFirstFloorSpawn(myMap);
+    List<RoomData> roomData = DungeonMapStrategy.extractRoomData(myMap);
+    Vector2 spawn = findFirstFloorSpawn(myMap, roomData);
 
     // Player 1: Uses class selected in ClassSelectionScreen
     Player.PlayerClass selectedClass = GameManager.getInstance().getSelectedPlayerClass();
@@ -75,7 +76,6 @@ public class GameModel implements Disposable, ProjectileListener {
     EnemyFactory factory = new DungeonEnemyFactory();
 
     // ---- MAP TYPE DETECTION: Dungeon (rooms) vs Cave (roomless) ----
-    List<RoomData> roomData = DungeonMapStrategy.extractRoomData(myMap);
     boolean hasCavePortal = myMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
 
     if (!roomData.isEmpty()) {
@@ -150,8 +150,19 @@ public class GameModel implements Disposable, ProjectileListener {
     GameManager.getInstance().setCurrentLevel(this.level);
   }
 
-  /** Finds a valid spawn point ("floor" tile) and returns pixel coordinates */
-  private Vector2 findFirstFloorSpawn(TiledMap map) {
+  /** Finds a valid spawn point ("floor" tile) prioritizing start rooms over portal rooms. */
+  private Vector2 findFirstFloorSpawn(TiledMap map, List<RoomData> roomData) {
+    // 1. Smart Search: If we have room data, pick the first room (Start Room)
+    if (roomData != null && !roomData.isEmpty()) {
+      for (RoomData room : roomData) {
+        if (!room.isPortalRoom()) {
+          Vector2 spawn = findSpawnInRoom(map, room);
+          if (spawn != null) return spawn;
+        }
+      }
+    }
+
+    // 2. Fallback: Naive bottom-up scan (for caves or legacy maps)
     if (map == null || map.getLayers().getCount() == 0) {
       return new Vector2(17, 17);
     }
@@ -167,7 +178,6 @@ public class GameModel implements Disposable, ProjectileListener {
         if (cell == null || cell.getTile() == null) continue;
 
         var props = cell.getTile().getProperties();
-
         boolean isFloor;
         if (props.containsKey("type")) {
           isFloor = "floor".equals(props.get("type", String.class));
@@ -184,6 +194,32 @@ public class GameModel implements Disposable, ProjectileListener {
     }
 
     return new Vector2(17, 17);
+  }
+
+  private Vector2 findSpawnInRoom(TiledMap map, RoomData room) {
+    TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(0);
+    float tileSize = layer.getTileWidth();
+
+    // Convert world bounds to tile coordinates
+    int startX = (int) (room.bounds().x / tileSize);
+    int startY = (int) (room.bounds().y / tileSize);
+    int endX = (int) ((room.bounds().x + room.bounds().width) / tileSize);
+    int endY = (int) ((room.bounds().y + room.bounds().height) / tileSize);
+
+    for (int y = startY; y < endY; y++) {
+      for (int x = startX; x < endX; x++) {
+        TiledMapTileLayer.Cell cell = layer.getCell(x, y);
+        if (cell != null && cell.getTile() != null) {
+          String type = cell.getTile().getProperties().get("type", String.class);
+          if ("floor".equals(type)) {
+            float px = x * tileSize + tileSize / 2f;
+            float py = y * tileSize + tileSize / 2f;
+            return new Vector2(px, py);
+          }
+        }
+      }
+    }
+    return null;
   }
 
   public void update(float deltaTime) {
