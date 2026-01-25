@@ -15,7 +15,9 @@ public class Oblivion extends AbstractEnemy {
         CHASING,
         ATTACKING,
         RETREATING,
-        CASTING
+        CASTING,
+        TELEPORT_OUT,
+        TELEPORT_IN
     }
 
     private State currentState = State.CHASING;
@@ -50,10 +52,13 @@ public class Oblivion extends AbstractEnemy {
     private static final float BOSS_DAMAGE = 40f;
     private static final float RETREAT_DURATION = 1.5f;
 
-    // tempi per le fasi dell'animazione melee
     private static final float MELEE_WINDUP_TIME = 0.3f;
     private static final float MELEE_ATTACK_TIME = 0.4f;
     private static final float MELEE_COOLDOWN = 1.0f; // tempo minimo tra due melee completi
+
+    private static final float TELEPORT_ANIM_DURATION = 1.8f;
+
+    private float teleportAnimTime = 0f;
 
     private AttackStrategy meleeStrategy;
 
@@ -107,6 +112,27 @@ public class Oblivion extends AbstractEnemy {
             return;
         }
 
+        if (currentState == State.TELEPORT_OUT || currentState == State.TELEPORT_IN) {
+            // sta fermo durante il teleport
+            if (body != null) body.setLinearVelocity(0, 0);
+
+            teleportAnimTime += deltaTime;
+
+            if (teleportAnimTime >= TELEPORT_ANIM_DURATION) {
+                if (currentState == State.TELEPORT_OUT) {
+                    teleportToPlayer(target);
+                    teleportAnimTime = 0f;
+                    currentState = State.TELEPORT_IN;
+                    this.attackStrategy = new WarriorAttack(45);
+                } else {
+                    teleportAnimTime = 0f;
+                    currentState = State.CHASING;
+                }
+            }
+
+            return;
+        }
+
         Vector2 myPos = (body != null) ? body.getPosition() : this.position;
         float distance = myPos.dst(target.getPosition());
 
@@ -116,10 +142,8 @@ public class Oblivion extends AbstractEnemy {
         if (shootTimer > 0) shootTimer -= deltaTime;
 
         if (teleportTimer >= TELEPORT_COOLDOWN) {
-            teleportToPlayer(target);
-            teleportTimer = 0;
-            currentState = State.CHASING;
-            this.attackStrategy = new WarriorAttack(45);
+            startTeleportOut();
+            teleportTimer = 0f;
             return;
         }
 
@@ -194,6 +218,14 @@ public class Oblivion extends AbstractEnemy {
                 moveAway(target.getPosition());
                 if (retreatTimer <= 0) currentState = State.CHASING;
                 break;
+        }
+    }
+
+    private void startTeleportOut() {
+        currentState = State.TELEPORT_OUT;
+        teleportAnimTime = 0f;
+        if (body != null) {
+            body.setLinearVelocity(0, 0);
         }
     }
 
@@ -276,7 +308,7 @@ public class Oblivion extends AbstractEnemy {
         shotTargets.add(myPos.cpy().add(rightDir));
     }
 
-    // --- Getter usati dal rendering per scegliere l'animazione melee ---
+    // --- Getter usati dal rendering per scegliere le animazioni ---
     public boolean isMeleeWindup() {
         return currentState == State.ATTACKING && attackTimer < MELEE_WINDUP_TIME;
     }
@@ -285,6 +317,22 @@ public class Oblivion extends AbstractEnemy {
         return currentState == State.ATTACKING
             && attackTimer >= MELEE_WINDUP_TIME
             && attackTimer < MELEE_WINDUP_TIME + MELEE_ATTACK_TIME;
+    }
+
+    public boolean isTeleportingOut() {
+        return currentState == State.TELEPORT_OUT;
+    }
+
+    public boolean isTeleportingIn() {
+        return currentState == State.TELEPORT_IN;
+    }
+
+    public float getTeleportAnimTime() {
+        return teleportAnimTime;
+    }
+
+    public static float getTeleportAnimDuration() {
+        return TELEPORT_ANIM_DURATION;
     }
 
     public boolean isPhaseTwo() {

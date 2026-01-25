@@ -62,7 +62,7 @@ public final class GameScreen implements GameState {
     private final Map<AbstractEnemy, Boolean> enemyFacingRight = new IdentityHashMap<>();
 
     private static final float OBLIVION_HEIGHT = 96f * 5f;
-    private static final float OBLIVION_WIDTH = 173f * 5f;  // may have to be tweaked later
+    private static final float OBLIVION_WIDTH = 173f * 5f; // may have to be tweaked later
 
     private static final float OBLIVION_Y_OFFSET = 80f;
 
@@ -210,7 +210,7 @@ public final class GameScreen implements GameState {
             }
 
             Texture tex = TextureManager.getEnemyTexture(enemy);
-            float size = (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f;
+            float size = (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
             drawEntity(tex, enemy.getPosition(), size, size);
         }
 
@@ -397,6 +397,21 @@ public final class GameScreen implements GameState {
     }
 
     private TextureRegion computeOblivionFrame(Oblivion boss) {
+        if (boss.isTeleportingOut() || boss.isTeleportingIn()) {
+            float t = boss.getTeleportAnimTime();
+            float duration = Oblivion.getTeleportAnimDuration();
+            if (t > duration) t = duration;
+
+            float animTime;
+            if (boss.isTeleportingOut()) {
+                animTime = Math.max(0f, duration - t);
+            } else {
+                animTime = t;
+            }
+
+            return TextureManager.getOblivionTeleportFrame(animTime);
+        }
+
         float offset = enemyAnimOffset.computeIfAbsent(boss, e -> MathUtils.random(0f, 10f));
         float time = enemyAnimTime + offset;
 
@@ -414,24 +429,60 @@ public final class GameScreen implements GameState {
             isIdle = vel.len2() < IDLE_VELOCITY_EPS * IDLE_VELOCITY_EPS;
         }
 
-        return isIdle
-            ? TextureManager.getOblivionIdleFrame(time)
-            : TextureManager.getOblivionWalkFrame(time);
+        if (isIdle) {
+            if (boss.isPhaseTwo()) {
+                return TextureManager.getOblivionSpellFrame(time);
+            } else {
+                return TextureManager.getOblivionIdleFrame(time);
+            }
+        } else {
+            return TextureManager.getOblivionWalkFrame(time);
+        }
     }
 
-    // locking attack and windup animation direction
     private boolean shouldFlipXStable(AbstractEnemy enemy) {
         boolean facingRight = enemyFacingRight.computeIfAbsent(enemy, e -> true);
 
-        if (enemy.getBody() == null) {
+        if (enemy instanceof Oblivion) {
+            Oblivion ob = (Oblivion) enemy;
+
+            // Locks animation direction in set states
+            if (ob.isMeleeWindup()
+                || ob.isMeleeAttacking()
+                || ob.isTeleportingOut()
+                || ob.isTeleportingIn()) {
+                return !facingRight;
+            }
+
+            //else, flips towards neaest player
+            java.util.List<Player> players = model.getPlayers();
+            if (!players.isEmpty()) {
+                Player nearest = players.get(0);
+                float bestDist2 = nearest.getPosition().dst2(ob.getPosition());
+                for (int i = 1; i < players.size(); i++) {
+                    Player p = players.get(i);
+                    float d2 = p.getPosition().dst2(ob.getPosition());
+                    if (d2 < bestDist2) {
+                        bestDist2 = d2;
+                        nearest = p;
+                    }
+                }
+
+                float dx = nearest.getPosition().x - ob.getPosition().x;
+                float EPS_X = 4f;
+                if (dx > EPS_X) {
+                    facingRight = true;
+                } else if (dx < -EPS_X) {
+                    facingRight = false;
+                }
+                enemyFacingRight.put(enemy, facingRight);
+            }
+
             return !facingRight;
         }
 
-        if (enemy instanceof Oblivion) {
-            Oblivion ob = (Oblivion) enemy;
-            if (ob.isMeleeWindup() || ob.isMeleeAttacking()) {
-                return !facingRight;
-            }
+        if (enemy.getBody() == null) {
+            return !facingRight;
         }
 
         float vx = enemy.getBody().getLinearVelocity().x;
@@ -527,7 +578,6 @@ public final class GameScreen implements GameState {
             batch.draw(region, x + width, y, -width, height);
         }
     }
-
 
     private void drawOblivion(TextureRegion region, Vector2 pos, boolean flipX) {
         if (region == null) return;
