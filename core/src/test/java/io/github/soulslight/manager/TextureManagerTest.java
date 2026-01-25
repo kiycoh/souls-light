@@ -59,46 +59,67 @@ class TextureManagerTest {
     assertEquals(34, frame.getRegionHeight(), "Altezza frame spiked ball charge errata");
   }
 
-    @Test
-    void testGetMissingTextureReturnsFallback() {
-        // Chiediamo una texture che sicuramente non esiste
-        Texture missing = TextureManager.get("non_esiste");
-        Texture fallback = TextureManager.get("player");
+  @Test
+  void testGetMissingTextureReturnsFallback() {
+    // Chiediamo una texture che sicuramente non esiste
+    Texture missing = TextureManager.get("non_esiste");
+    Texture fallback = TextureManager.get("player");
 
-        assertNotNull(missing, "Il metodo get non deve mai restituire null");
-        assertNotNull(fallback, "La texture di fallback (player) deve esistere");
+    assertNotNull(missing, "Il metodo get non deve mai restituire null");
+    assertNotNull(fallback, "La texture di fallback (player) deve esistere");
 
-        // Verifichiamo che siano lo stesso oggetto
-        assertSame(fallback, missing, "Se manca una texture, deve restituire quella del player per evitare crash");
-    }
+    // Verifichiamo che siano lo stesso oggetto
+    assertSame(
+        fallback,
+        missing,
+        "Se manca una texture, deve restituire quella del player per evitare crash");
+  }
 
-    @Test
-    void testEnemyTextureMapping() {
-        // Mockiamo le classi per evitare di dover istanziare Box2D World
-        Ranger mockRanger = Mockito.mock(Ranger.class);
-        SpikedBall mockBall = Mockito.mock(SpikedBall.class);
-        Shielder mockShielder = Mockito.mock(Shielder.class);
-        Oblivion mockBoss = Mockito.mock(Oblivion.class);
+  @Test
+  void testEnemyTextureMapping() {
+    // Mockiamo le classi per evitare di dover istanziare Box2D World
+    Ranger mockRanger = Mockito.mock(Ranger.class);
+    SpikedBall mockBall = Mockito.mock(SpikedBall.class);
+    Shielder mockShielder = Mockito.mock(Shielder.class);
+    Oblivion mockBoss = Mockito.mock(Oblivion.class);
 
-        assertEquals(TextureManager.get("archer"), TextureManager.getEnemyTexture(mockRanger), "Ranger deve usare texture 'archer'");
-        assertEquals(TextureManager.get("slime"), TextureManager.getEnemyTexture(mockBall), "SpikedBall deve usare texture 'slime'");
-        assertEquals(TextureManager.get("shielder"), TextureManager.getEnemyTexture(mockShielder), "Shielder deve usare texture 'shielder'");
-        assertEquals(TextureManager.get("boss"), TextureManager.getEnemyTexture(mockBoss), "Oblivion deve usare texture 'boss'");
-    }
+    assertEquals(
+        TextureManager.get("archer"),
+        TextureManager.getEnemyTexture(mockRanger),
+        "Ranger deve usare texture 'archer'");
+    assertEquals(
+        TextureManager.get("slime"),
+        TextureManager.getEnemyTexture(mockBall),
+        "SpikedBall deve usare texture 'slime'");
+    assertEquals(
+        TextureManager.get("shielder"),
+        TextureManager.getEnemyTexture(mockShielder),
+        "Shielder deve usare texture 'shielder'");
+    assertEquals(
+        TextureManager.get("boss"),
+        TextureManager.getEnemyTexture(mockBoss),
+        "Oblivion deve usare texture 'boss'");
+  }
 
-    @Test
-    void testTextureFiltersAreNearest() {
-        Texture playerTex = TextureManager.get("player");
+  @Test
+  void testTextureFiltersAreNearest() {
+    Texture playerTex = TextureManager.get("player");
 
-        assertEquals(Texture.TextureFilter.Nearest, playerTex.getMinFilter(), "Il filtro Minification deve essere Nearest");
-        assertEquals(Texture.TextureFilter.Nearest, playerTex.getMagFilter(), "Il filtro Magnification deve essere Nearest");
-    }
+    assertEquals(
+        Texture.TextureFilter.Nearest,
+        playerTex.getMinFilter(),
+        "Il filtro Minification deve essere Nearest");
+    assertEquals(
+        Texture.TextureFilter.Nearest,
+        playerTex.getMagFilter(),
+        "Il filtro Magnification deve essere Nearest");
+  }
 
-    @Test
-    void testStaticTexturesLoaded() {
-        assertNotNull(TextureManager.get("player"));
-        assertNotNull(TextureManager.get("skeleton"));
-        assertNotNull(TextureManager.get("boss"));
-        assertNotNull(TextureManager.get("arrow"));
-    }
+  @Test
+  void testStaticTexturesLoaded() {
+    assertNotNull(TextureManager.get("player"));
+    assertNotNull(TextureManager.get("skeleton"));
+    assertNotNull(TextureManager.get("boss"));
+    assertNotNull(TextureManager.get("arrow"));
+  }
 }
