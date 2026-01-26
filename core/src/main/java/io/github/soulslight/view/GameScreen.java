@@ -39,6 +39,7 @@ import io.github.soulslight.model.enemies.Oblivion;
 import io.github.soulslight.model.enemies.Ranger;
 import io.github.soulslight.model.enemies.Shielder;
 import io.github.soulslight.model.enemies.SpikedBall;
+import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
 import io.github.soulslight.model.map.LevelFactory;
@@ -331,6 +332,20 @@ public final class GameScreen implements GameState {
       float size =
           (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
       drawEntity(tex, enemy.getPosition(), size, size);
+    }
+
+    // ITEM RENDERING
+    if (model.getLevel() != null) {
+      for (ItemEntity item : model.getLevel().getItems()) {
+        if (item.getBody() != null
+            && item.getItem() instanceof io.github.soulslight.model.items.IRenderableItem) {
+          TextureRegion reg =
+              ((io.github.soulslight.model.items.IRenderableItem) item.getItem()).getTexture();
+          if (reg != null) {
+            drawEntity(reg, item.getPosition(), 24f, 24f, false);
+          }
+        }
+      }
     }
 
     Texture tArrow = TextureManager.get("arrow");

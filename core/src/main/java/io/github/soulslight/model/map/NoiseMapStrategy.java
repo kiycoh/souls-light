@@ -34,6 +34,7 @@ public record NoiseMapStrategy(
     map.getProperties().put("tileheight", TILE_SIZE);
 
     var layer = new TiledMapTileLayer(width, height, TILE_SIZE, TILE_SIZE);
+    layer.setName("Ground");
 
     ResourceManager rm = ResourceManager.getInstance();
 

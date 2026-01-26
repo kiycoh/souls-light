@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Disposable;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Pattern: Singleton Ensures only one instance of ResourceManager exists to manage game assets. */
 public class ResourceManager implements Disposable {
@@ -33,6 +35,10 @@ public class ResourceManager implements Disposable {
   private TextureRegion innerNwWallRegion;
   private TextureRegion innerSeWallRegion;
   private TextureRegion innerSwWallRegion;
+
+  private Texture inventorySlotTexture;
+  private TextureRegion inventorySlotRegion;
+  private Map<String, Texture> itemTextures = new HashMap<>();
 
   private ResourceManager() {}
 
@@ -99,7 +105,8 @@ public class ResourceManager implements Disposable {
           // Loads the original 16x16 PNG as a Pixmap
           src = new Pixmap(Gdx.files.internal(path));
         } else {
-          // Fallback: Generate a placeholder 16x16 pixmap if file is missing (e.g. in tests)
+          // Fallback: Generate a placeholder 16x16 pixmap if file is missing (e.g. in
+          // tests)
           src = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
           src.setColor(Color.LIGHT_GRAY);
           src.fill();
@@ -232,6 +239,75 @@ public class ResourceManager implements Disposable {
     return innerSwWallRegion;
   }
 
+  public TextureRegion getInventorySlotTexture() {
+    if (inventorySlotRegion == null) {
+      Pixmap pixmap = new Pixmap(32, 32, Pixmap.Format.RGBA8888);
+      pixmap.setColor(Color.BLACK); // Border
+      pixmap.fill();
+      pixmap.setColor(Color.GRAY); // Inner
+      pixmap.fillRectangle(2, 2, 28, 28);
+      inventorySlotTexture = new Texture(pixmap);
+      inventorySlotRegion = new TextureRegion(inventorySlotTexture);
+      pixmap.dispose();
+    }
+    return inventorySlotRegion;
+  }
+
+  public Texture getItemTexture(String name) {
+    if (itemTextures.containsKey(name)) {
+      return itemTextures.get(name);
+    }
+
+    // Try treating 'name' as a full internal path first
+    String path = name;
+    if (Gdx.files.internal(path).exists()) {
+      try {
+        Texture t = new Texture(Gdx.files.internal(path));
+        itemTextures.put(name, t);
+        return t;
+      } catch (Exception e) {
+        Gdx.app.error("ResourceManager", "Failed to load item texture: " + path, e);
+      }
+    }
+
+    // Fallback to legacy behavior: items/name.png
+    path = "items/" + name + ".png";
+    Texture texture;
+
+    if (Gdx.files.internal(path).exists()) {
+      texture = new Texture(Gdx.files.internal(path));
+    } else {
+
+      // Fallback generation
+      Pixmap pixmap = new Pixmap(32, 32, Pixmap.Format.RGBA8888);
+      // Transparent background
+      pixmap.setColor(0, 0, 0, 0);
+      pixmap.fill();
+
+      if ("item_potion".equals(name)) {
+        pixmap.setColor(Color.RED);
+        pixmap.fillCircle(16, 16, 12);
+        // Slight shine
+        pixmap.setColor(1f, 1f, 1f, 0.4f);
+        pixmap.fillCircle(12, 12, 4);
+      } else if ("item_key".equals(name)) {
+        pixmap.setColor(Color.GOLD);
+        pixmap.fillRectangle(14, 6, 4, 16);
+        pixmap.fillRectangle(14, 22, 6, 4);
+        pixmap.fillRectangle(14, 26, 6, 4);
+      } else {
+        pixmap.setColor(Color.MAGENTA);
+        pixmap.fillRectangle(8, 8, 16, 16);
+      }
+
+      texture = new Texture(pixmap);
+      pixmap.dispose();
+    }
+
+    itemTextures.put(name, texture);
+    return texture;
+  }
+
   @Override
   public void dispose() {
     if (playerTexture != null) playerTexture.dispose();
@@ -257,9 +333,15 @@ public class ResourceManager implements Disposable {
     if (innerNwWallTexture != null) innerNwWallTexture.dispose();
     if (innerSeWallTexture != null) innerSeWallTexture.dispose();
     if (innerSwWallTexture != null) innerSwWallTexture.dispose();
+    if (inventorySlotTexture != null) inventorySlotTexture.dispose();
+    for (Texture t : itemTextures.values()) {
+      t.dispose();
+    }
+    itemTextures.clear();
 
     floorVariantTextures = null;
     floorVariantRegions = null;
+
     wallMaskTextures = null;
     wallMaskRegions = null;
 

@@ -4,6 +4,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import io.github.soulslight.model.Constants;
 import io.github.soulslight.model.enemies.SpikedBall;
+import io.github.soulslight.model.entities.ItemEntity;
+import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.room.Portal;
 import io.github.soulslight.model.room.RoomSensor;
 import io.github.soulslight.utils.LogHelper;
@@ -28,6 +30,10 @@ public class GameContactListener implements ContactListener {
     checkPortalContact(fa, fb, true);
     checkPortalContact(fb, fa, true);
 
+    // Feature Logic: Item Pickup
+    checkItemContact(fa, fb);
+    checkItemContact(fb, fa);
+
     // Feature Logic: SpikedBall
     Vector2 normal = contact.getWorldManifold().getNormal();
     checkSpikedBallWallHit(fa, fb, normal, false);
@@ -42,8 +48,28 @@ public class GameContactListener implements ContactListener {
     if ((category & Constants.BIT_WALL) != 0) return "Wall";
     if ((category & Constants.BIT_SENSOR) != 0) return "RoomSensor";
     if ((category & Constants.BIT_DOOR) != 0) return "Door";
+    if ((category & Constants.BIT_ITEM) != 0) return "Item";
 
     return "Unknown";
+  }
+
+  private void checkItemContact(Fixture potentialPlayer, Fixture potentialItem) {
+    short playerCategory = potentialPlayer.getFilterData().categoryBits;
+    short itemCategory = potentialItem.getFilterData().categoryBits;
+
+    if ((playerCategory & Constants.BIT_PLAYER) != 0 && (itemCategory & Constants.BIT_ITEM) != 0) {
+      Object userDataItem = potentialItem.getBody().getUserData();
+      Object userDataPlayer = potentialPlayer.getBody().getUserData();
+
+      if (userDataItem instanceof ItemEntity && userDataPlayer instanceof Player) {
+        ItemEntity itemEntity = (ItemEntity) userDataItem;
+        Player player = (Player) userDataPlayer;
+
+        if (player.pickUpItem(itemEntity.getItem())) {
+          itemEntity.kill();
+        }
+      }
+    }
   }
 
   /**
