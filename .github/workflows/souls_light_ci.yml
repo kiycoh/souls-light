@@ -1,0 +1,44 @@
+name: Souls Light Engine CI
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Validate Gradle Wrapper
+      uses: gradle/wrapper-validation-action@v1
+
+    - name: Setup Java 21 (Modern Syntax Support)
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+        cache: 'gradle'
+
+    - name: Grant Execute Permission
+      run: chmod +x gradlew
+
+    - name: Enforce Formatting (Spotless)
+      run: ./gradlew spotlessCheck
+
+    - name: Compile Project (Assemble)
+      run: ./gradlew assemble
+
+    - name: Run Unit Tests
+      run: ./gradlew test
+
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v4
+      if: failure() # Only runs if the previous step (tests) failed
+      with:
+        name: test-report
+        path: '**/build/reports/tests/test/'
