@@ -5,6 +5,11 @@ import com.badlogic.gdx.physics.box2d.*;
 import io.github.soulslight.model.Constants;
 import io.github.soulslight.model.combat.*;
 import io.github.soulslight.model.enemies.AbstractEnemy;
+import io.github.soulslight.model.inventory.IPickable;
+import io.github.soulslight.model.inventory.Inventory;
+import io.github.soulslight.model.inventory.InventorySlot;
+import io.github.soulslight.model.items.AbstractItem;
+import io.github.soulslight.model.items.HealthPotion;
 import java.util.List;
 
 public class Player extends Entity {
@@ -33,6 +38,8 @@ public class Player extends Entity {
 
   // Revive Mechanic
   private float reviveAttemptTimer = 0f;
+
+  private final Inventory inventory;
 
   public enum PlayerClass {
     WARRIOR {
@@ -167,6 +174,7 @@ public class Player extends Entity {
 
     this.position = new Vector2(startX, startY);
     createBody(world, startX, startY);
+    this.inventory = new Inventory(3);
   }
 
   @Override
@@ -232,7 +240,11 @@ public class Player extends Entity {
     fdef.restitution = 0.0f; // No bouncing
     fdef.filter.categoryBits = Constants.BIT_PLAYER;
     fdef.filter.maskBits =
-        Constants.BIT_WALL | Constants.BIT_ENEMY | Constants.BIT_DOOR | Constants.BIT_SENSOR;
+        Constants.BIT_WALL
+            | Constants.BIT_ENEMY
+            | Constants.BIT_DOOR
+            | Constants.BIT_SENSOR
+            | Constants.BIT_ITEM;
 
     this.body.createFixture(fdef);
     this.body.setUserData(this);
@@ -367,5 +379,39 @@ public class Player extends Entity {
 
   public void setReviveAttemptTimer(float reviveAttemptTimer) {
     this.reviveAttemptTimer = reviveAttemptTimer;
+  }
+
+  public Inventory getInventory() {
+    return inventory;
+  }
+
+  public boolean pickUpItem(AbstractItem item) {
+    if (inventory.addItem(item)) {
+      com.badlogic.gdx.Gdx.app.log("Player", "Picked up: " + item.getName());
+      return true;
+    }
+    com.badlogic.gdx.Gdx.app.log("Player", "Inventory full!");
+    return false;
+  }
+
+  public void consumeItem(int slotIndex) {
+    if (slotIndex < 0 || slotIndex >= inventory.getCapacity()) return;
+
+    InventorySlot slot = inventory.getSlot(slotIndex);
+    if (slot.isEmpty()) return;
+
+    IPickable item = slot.peek();
+
+    if (item instanceof HealthPotion) {
+      if (health < maxHealth) {
+        health = Math.min(maxHealth, health + 50);
+        slot.removeItem();
+        com.badlogic.gdx.Gdx.app.log("Player", "Consumed Health Potion. HP: " + health);
+      } else {
+        com.badlogic.gdx.Gdx.app.log("Player", "Health is already full!");
+      }
+    } else {
+      com.badlogic.gdx.Gdx.app.log("Player", "Item cannot be consumed.");
+    }
   }
 }

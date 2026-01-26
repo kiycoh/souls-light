@@ -3,6 +3,7 @@ package io.github.soulslight.model.map;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.utils.Disposable;
 import io.github.soulslight.model.enemies.AbstractEnemy;
+import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.room.Portal;
 import io.github.soulslight.model.room.RoomManager;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ public class Level implements Disposable {
   private TiledMap map;
 
   private List<AbstractEnemy> enemies;
+  private List<ItemEntity> items;
   private RoomManager roomManager;
 
   // Cave-style levels (NoiseMapStrategy) use a direct portal instead of
@@ -25,6 +27,7 @@ public class Level implements Disposable {
 
   public Level() {
     this.enemies = new ArrayList<>();
+    this.items = new ArrayList<>();
     this.roomManager = new RoomManager();
   }
 
@@ -42,6 +45,14 @@ public class Level implements Disposable {
 
   public List<AbstractEnemy> getEnemies() {
     return enemies;
+  }
+
+  public void addItem(ItemEntity item) {
+    this.items.add(item);
+  }
+
+  public List<ItemEntity> getItems() {
+    return items;
   }
 
   public RoomManager getRoomManager() {
@@ -81,6 +92,8 @@ public class Level implements Disposable {
     if (map != null) map.dispose();
     if (roomManager != null) roomManager.dispose();
     // Note: cavePortal body should be destroyed via physicsWorld.dispose()
+    // Note: cavePortal body should be destroyed via physicsWorld.dispose()
     enemies.clear();
+    items.clear();
   }
 }

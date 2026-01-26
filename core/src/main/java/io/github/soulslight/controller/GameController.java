@@ -109,6 +109,17 @@ public class GameController extends InputAdapter implements ControllerListener {
         if (p1 != null) p1.doAnAttack();
         return true;
 
+      // --- INVENTORY ---
+      case Input.Keys.NUM_1:
+        if (p1 != null) p1.consumeItem(0);
+        return true;
+      case Input.Keys.NUM_2:
+        if (p1 != null) p1.consumeItem(1);
+        return true;
+      case Input.Keys.NUM_3:
+        if (p1 != null) p1.consumeItem(2);
+        return true;
+
       // --- SYSTEM ---
       case Input.Keys.F5: // RESTORE (Load)
         if (saveManager.hasSaveFile()) {
@@ -158,7 +169,9 @@ public class GameController extends InputAdapter implements ControllerListener {
   }
 
   public void update(float delta) {
+
     List<Player> players = model.getPlayers();
+
     if (players.isEmpty()) return;
 
     // --- PLAYER 1 MOVEMENT (Keyboard Only) ---
@@ -179,7 +192,9 @@ public class GameController extends InputAdapter implements ControllerListener {
     }
 
     // --- PLAYER 2 MOVEMENT (Controller Only) ---
+
     if (players.size() > 1) {
+
       Player p2 = players.get(1);
       if (p2 != null && !p2.isDead()) {
         float velX = 0;
@@ -208,25 +223,24 @@ public class GameController extends InputAdapter implements ControllerListener {
     List<Player> players = model.getPlayers();
     int controllerIndex = Controllers.getControllers().indexOf(controller, true);
 
-    // Check mapping. usually 0 is A (Xbox).
+    // Check mapping
     int attackBtn = controller.getMapping().buttonA;
     int specialBtn = controller.getMapping().buttonY;
 
     if (buttonCode == attackBtn) {
-      // Controller 0 maps to Player 2
       if (controllerIndex == 0 && players.size() > 1) {
         Player p2 = players.get(1);
         if (p2 != null && !p2.isDead()) p2.attack(model.getActiveEnemies());
       }
       return true;
     } else if (buttonCode == specialBtn) {
-      // Controller 0 maps to Player 2
       if (controllerIndex == 0 && players.size() > 1) {
         Player p2 = players.get(1);
         if (p2 != null) p2.performSpecialAttack(model.getActiveEnemies());
       }
       return true;
     }
+
     return false;
   }
 

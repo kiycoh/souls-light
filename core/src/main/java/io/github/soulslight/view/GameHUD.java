@@ -6,8 +6,14 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
+import io.github.soulslight.manager.ResourceManager;
 import io.github.soulslight.model.enemies.AbstractEnemy;
 import io.github.soulslight.model.entities.Player;
+import io.github.soulslight.model.inventory.IPickable;
+import io.github.soulslight.model.inventory.IStackable;
+import io.github.soulslight.model.inventory.Inventory;
+import io.github.soulslight.model.inventory.InventorySlot;
+import io.github.soulslight.model.items.IRenderableItem;
 
 public class GameHUD {
 
@@ -154,8 +160,66 @@ public class GameHUD {
     // Game Over / Dead Labels
     checkDeadLabels(batch, screenW, screenH, players);
 
+    // Inventory Rendering
+    drawInventories(batch, players, screenW);
+
     batch.end();
     font.getData().setScale(2); // Reset scale
+  }
+
+  private void drawInventories(SpriteBatch batch, java.util.List<Player> players, float screenW) {
+    if (players.isEmpty()) return;
+
+    // P1 Inventory (Bottom Left, above Health Bar)
+    // HP Bar Y=10, H=20. Y_Inv = 10 + 20 + 20 = 50.
+    float p1X = 20;
+    float p1Y = 50;
+    drawInventory(batch, players.get(0).getInventory(), p1X, p1Y);
+
+    // P2 Inventory (Bottom Right, above Health Bar)
+    if (players.size() > 1) {
+      // HP Bar X = screenW - 160.
+      float p2X = screenW - 160;
+      float p2Y = 50;
+      drawInventory(batch, players.get(1).getInventory(), p2X, p2Y);
+    }
+  }
+
+  private void drawInventory(SpriteBatch batch, Inventory inventory, float startX, float startY) {
+    if (inventory == null) return;
+
+    float slotSize = 32f;
+    float gap = 4f;
+
+    com.badlogic.gdx.utils.Array<InventorySlot> slots = inventory.getItemSlots();
+    for (int i = 0; i < slots.size; i++) {
+      InventorySlot slot = slots.get(i);
+      float x = startX + i * (slotSize + gap);
+      float y = startY;
+
+      // Background
+      batch.draw(ResourceManager.getInstance().getInventorySlotTexture(), x, y, slotSize, slotSize);
+
+      if (!slot.isEmpty()) {
+        IPickable item = slot.peek();
+
+        // Item Texture
+        if (item instanceof IRenderableItem) {
+          IRenderableItem renderable = (IRenderableItem) item;
+          if (renderable.getTexture() != null) {
+            batch.draw(renderable.getTexture(), x, y, slotSize, slotSize);
+          }
+        }
+
+        // Stack Count
+        if (item instanceof IStackable && slot.getAmount() > 1) {
+          font.getData().setScale(1.0f);
+          font.setColor(Color.WHITE);
+          // Draw bottom-right corner of slot
+          font.draw(batch, String.valueOf(slot.getAmount()), x + slotSize - 12, y + 12);
+        }
+      }
+    }
   }
 
   private void drawPlayerHealthBar(Player p, float x, float y, float w, float h, String label) {

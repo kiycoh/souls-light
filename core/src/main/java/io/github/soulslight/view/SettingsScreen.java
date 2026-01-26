@@ -244,28 +244,22 @@ public final class SettingsScreen implements GameState {
   }
 
   @Override
-  public void pause() {
-  }
+  public void pause() {}
 
   @Override
-  public void resume() {
-  }
+  public void resume() {}
 
   @Override
-  public void hide() {
-  }
+  public void hide() {}
 
   @Override
   public void dispose() {
     stage.dispose();
     font.dispose();
 
-    if (backgroundTexture != null)
-      backgroundTexture.dispose();
-    if (toggleOnTexture != null)
-      toggleOnTexture.dispose();
-    if (toggleOffTexture != null)
-      toggleOffTexture.dispose();
+    if (backgroundTexture != null) backgroundTexture.dispose();
+    if (toggleOnTexture != null) toggleOnTexture.dispose();
+    if (toggleOffTexture != null) toggleOffTexture.dispose();
 
     AudioManager.getInstance().stopMusic();
   }

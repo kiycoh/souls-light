@@ -2,6 +2,7 @@ package io.github.soulslight.model;
 
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Disposable;
@@ -9,8 +10,10 @@ import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.ProjectileManager;
 import io.github.soulslight.model.combat.ProjectileListener;
 import io.github.soulslight.model.enemies.*;
+import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
+import io.github.soulslight.model.items.HealthPotion;
 import io.github.soulslight.model.map.DungeonMapStrategy;
 import io.github.soulslight.model.map.Level;
 import io.github.soulslight.model.map.LevelBuilder;
@@ -152,6 +155,9 @@ public class GameModel implements Disposable, ProjectileListener {
       }
     }
 
+    // Spawn Items
+    spawnItems(this.level);
+
     // Wire player reference for teleportation on combat start
     if (this.level.getRoomManager() != null && !players.isEmpty()) {
       this.level.getRoomManager().setPlayers(players);
@@ -232,6 +238,65 @@ public class GameModel implements Disposable, ProjectileListener {
     return null;
   }
 
+  private void spawnItems(Level level) {
+    if (level.getRoomManager() == null) {
+      com.badlogic.gdx.Gdx.app.log("GameModel", "spawnItems: RoomManager is null");
+      return;
+    }
+
+    int totalSpawned = 0;
+    for (io.github.soulslight.model.room.Room room : level.getRoomManager().getRooms()) {
+      for (int i = 0; i < 2; i++) {
+        Vector2 pos = getRandomFloorPosition(level.getMap(), room);
+        if (pos != null) {
+          ItemEntity item = new ItemEntity(new HealthPotion(), physicsWorld, pos.x, pos.y);
+          level.addItem(item);
+          totalSpawned++;
+          com.badlogic.gdx.Gdx.app.log("GameModel", "Spawned Item at " + pos);
+        } else {
+          com.badlogic.gdx.Gdx.app.log(
+              "GameModel", "Failed to find floor for item in room " + room.getId());
+        }
+      }
+    }
+    com.badlogic.gdx.Gdx.app.log("GameModel", "Total items spawned: " + totalSpawned);
+  }
+
+  private Vector2 getRandomFloorPosition(TiledMap map, io.github.soulslight.model.room.Room room) {
+    // Check layer name "Ground" or index 0
+    TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get("Ground");
+    if (layer == null) {
+      // Fallback to index 0 if "Ground" not found
+      if (map.getLayers().getCount() > 0) {
+        layer = (TiledMapTileLayer) map.getLayers().get(0);
+      } else {
+        com.badlogic.gdx.Gdx.app.log("GameModel", "No layers found in map!");
+        return null;
+      }
+    }
+
+    float startX = room.getBounds().x;
+    float startY = room.getBounds().y;
+    float width = room.getBounds().width;
+    float height = room.getBounds().height;
+
+    // Try 10 times to find a valid floor
+    for (int k = 0; k < 10; k++) {
+      float randX = startX + MathUtils.random(2, width - 2);
+      float randY = startY + MathUtils.random(2, height - 2);
+
+      int cellX = (int) (randX / Constants.PPM);
+      int cellY = (int) (randY / Constants.PPM);
+
+      if (cellX >= 0 && cellX < layer.getWidth() && cellY >= 0 && cellY < layer.getHeight()) {
+        // Assuming all tiles in Ground layer inside room are walkable
+        // Ideally check for walls but walls shouldn't be in room interior generally
+        return new Vector2(randX, randY);
+      }
+    }
+    return null;
+  }
+
   public void update(float deltaTime) {
     if (isPaused) return;
 
@@ -299,6 +364,7 @@ public class GameModel implements Disposable, ProjectileListener {
     }
 
     cleanDeadEnemies();
+    cleanPickedUpItems();
 
     // Update room states (lock/unlock, clear checks)
     if (level != null && level.getRoomManager() != null) {
@@ -426,6 +492,20 @@ public class GameModel implements Disposable, ProjectileListener {
 
         e.destroyBody(physicsWorld);
         totalEnemiesKilled++;
+        it.remove();
+      }
+    }
+  }
+
+  private void cleanPickedUpItems() {
+    if (level == null) return;
+
+    Iterator<ItemEntity> it = level.getItems().iterator();
+    while (it.hasNext()) {
+      ItemEntity item = it.next();
+      item.update(0); // Update pos if dynamic
+      if (item.isMarkedForRemoval()) {
+        physicsWorld.destroyBody(item.getBody());
         it.remove();
       }
     }

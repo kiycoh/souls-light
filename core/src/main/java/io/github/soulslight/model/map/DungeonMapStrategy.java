@@ -36,6 +36,7 @@ public record DungeonMapStrategy(long seed, int width, int height)
     map.getProperties().put("tileheight", TILE_SIZE);
 
     var layer = new TiledMapTileLayer(width, height, TILE_SIZE, TILE_SIZE);
+    layer.setName("Ground");
 
     ResourceManager rm = ResourceManager.getInstance();
 
