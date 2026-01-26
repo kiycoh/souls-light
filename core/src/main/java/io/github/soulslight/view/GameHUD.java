@@ -103,19 +103,22 @@ public class GameHUD {
     shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
     // --- GLOBAL WILL BAR (Bottom Center) ---
-    float willW = 325; // Wider
-    float willH = 20; // Thickness 20
-    float willX = (screenW - willW) / 2;
-    float willY = 10;
-
-    // Sfondo Will
-    shapeRenderer.setColor(0.1f, 0.1f, 0.1f, 1f);
-    shapeRenderer.rect(willX - 2, willY - 2, willW + 4, willH + 4);
-
-    // Will Bar (Purple/Blue)
-    float willPercent = model.getCurrentWill() / io.github.soulslight.model.GameModel.MAX_WILL;
-    shapeRenderer.setColor(0.4f, 0.2f, 0.9f, 1f); // Purple
-    shapeRenderer.rect(willX, willY, willW * Math.max(0, willPercent), willH);
+    /*
+     * float willW = 325; // Wider
+     * float willH = 20; // Thickness 20
+     * float willX = (screenW - willW) / 2;
+     * float willY = 10;
+     *
+     * // Sfondo Will
+     * shapeRenderer.setColor(0.1f, 0.1f, 0.1f, 1f);
+     * shapeRenderer.rect(willX - 2, willY - 2, willW + 4, willH + 4);
+     *
+     * // Will Bar (Purple/Blue)
+     * float willPercent = model.getCurrentWill() /
+     * io.github.soulslight.model.GameModel.MAX_WILL;
+     * shapeRenderer.setColor(0.4f, 0.2f, 0.9f, 1f); // Purple
+     * shapeRenderer.rect(willX, willY, willW * Math.max(0, willPercent), willH);
+     */
 
     // --- PLAYER 1 (Bottom Left) ---
     if (!players.isEmpty()) {
@@ -139,11 +142,14 @@ public class GameHUD {
     batch.begin();
 
     // Will Label
-    font.setColor(Color.WHITE);
-    font.getData().setScale(1.0f); // Smaller font for HUD
-    String willText = "WILL";
-    layout.setText(font, willText);
-    font.draw(batch, willText, screenW / 2 - layout.width / 2, willY + willH + 15);
+    /*
+     * font.setColor(Color.WHITE);
+     * font.getData().setScale(1.0f); // Smaller font for HUD
+     * String willText = "WILL";
+     * layout.setText(font, willText);
+     * font.draw(batch, willText, screenW / 2 - layout.width / 2, willY + willH +
+     * 15);
+     */
 
     // P1 Label
     if (!players.isEmpty()) {
