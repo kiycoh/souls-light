@@ -6,21 +6,28 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.ControllerListener;
 import com.badlogic.gdx.controllers.Controllers;
+import com.badlogic.gdx.utils.Disposable;
+import io.github.soulslight.controller.commands.AttackCommand;
+import io.github.soulslight.controller.commands.Command;
+import io.github.soulslight.controller.commands.ConsumeItemCommand;
+import io.github.soulslight.controller.commands.InteractCommand;
+import io.github.soulslight.controller.commands.SpecialAttackCommand;
+import io.github.soulslight.controller.strategies.ControllerMovementStrategy;
+import io.github.soulslight.controller.strategies.InputStrategy;
+import io.github.soulslight.controller.strategies.KeyboardMovementStrategy;
 import io.github.soulslight.debug.DebugMenuController;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.SaveManager;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.entities.Player;
-import io.github.soulslight.model.room.PortalRoom;
 import java.util.List;
 
-public class GameController extends InputAdapter implements ControllerListener {
+public class GameController extends InputAdapter implements ControllerListener, Disposable {
 
   private final GameModel model;
   private final SaveManager saveManager;
   private DebugMenuController debugMenuController;
   private io.github.soulslight.view.GameScreen gameScreen;
-  private static final float SPEED = 160f;
 
   public GameController(GameModel model) {
     this.model = model;
@@ -33,22 +40,26 @@ public class GameController extends InputAdapter implements ControllerListener {
     // --- DEBUG MENU CONTROLS (when menu is visible) ---
     if (debugMenuController != null && debugMenuController.isVisible()) {
       switch (keycode) {
-        case Input.Keys.UP:
+        case Input.Keys.UP -> {
           debugMenuController.selectPrevious();
           return true;
-        case Input.Keys.DOWN:
+        }
+        case Input.Keys.DOWN -> {
           debugMenuController.selectNext();
           return true;
-        case Input.Keys.ENTER:
+        }
+        case Input.Keys.ENTER -> {
           debugMenuController.executeSelected();
           return true;
-        case Input.Keys.F1:
-        case Input.Keys.ESCAPE:
+        }
+        case Input.Keys.F1, Input.Keys.ESCAPE -> {
           debugMenuController.closeMenu();
           model.setPaused(false);
           return true;
-        default:
+        }
+        default -> {
           return true; // Consume all other keys when menu is open
+        }
       }
     }
 
@@ -59,14 +70,6 @@ public class GameController extends InputAdapter implements ControllerListener {
         // Pause game when debug menu is open (as per user request)
         if (debugMenuController.isVisible()) {
           model.setPaused(true);
-          // Note: Debug menu handles its own input processor usually, or overlaps?
-          // DebugMenuController usually takes over input?
-          // In GameController.keyDown, if (debugMenuController.isVisible()) block runs
-          // first.
-          // So input stays on GameController but it delegates to DebugMenuController.
-          // That works for Debug.
-
-          // For standard Pause, we want separate processor (Scene2D Stage).
         } else {
           model.setPaused(false);
         }
@@ -76,11 +79,7 @@ public class GameController extends InputAdapter implements ControllerListener {
 
     // --- PAUSE MENU TOGGLE ---
     if (keycode == Input.Keys.ESCAPE) {
-      // If debug menu is open, ESC closes it (handled above in top block, or here if
-      // we missed it)
-      // trace: top block handles ESC if debug visible. So we are here only if debug
-      // NOT visible.
-
+      // If debug menu is open, ESC closes it
       boolean newState = !model.isPaused();
       model.setPaused(newState);
 
@@ -90,82 +89,50 @@ public class GameController extends InputAdapter implements ControllerListener {
       return true;
     }
 
+    // --- COMMAND MAPPING ---
+    Command command = null;
     List<Player> players = model.getPlayers();
-    if (players.isEmpty()) return false;
-
-    Player p1 = players.get(0);
 
     switch (keycode) {
-      // --- PLAYER 1 (Keyboard Only) ---
-      case Input.Keys.SPACE:
-        if (p1 != null && !p1.isDead()) p1.attack(model.getActiveEnemies());
-        return true;
-      case Input.Keys.O:
-        if (p1 != null) {
-          p1.performSpecialAttack(model.getActiveEnemies());
-        }
-        return true;
-      case Input.Keys.P:
-        if (p1 != null) p1.doAnAttack();
-        return true;
-
-      // --- INVENTORY ---
-      case Input.Keys.NUM_1:
-        if (p1 != null) p1.consumeItem(0);
-        return true;
-      case Input.Keys.NUM_2:
-        if (p1 != null) p1.consumeItem(1);
-        return true;
-      case Input.Keys.NUM_3:
-        if (p1 != null) p1.consumeItem(2);
-        return true;
-
-      // --- SYSTEM ---
-      case Input.Keys.F5: // RESTORE (Load)
+      case Input.Keys.SPACE -> command = new AttackCommand(0); // Player 0
+      case Input.Keys.O -> command = new SpecialAttackCommand(0);
+      case Input.Keys.P -> {
+        if (!players.isEmpty()) players.get(0).doAnAttack();
+      }
+      case Input.Keys.NUM_1 -> command = new ConsumeItemCommand(0, 0);
+      case Input.Keys.NUM_2 -> command = new ConsumeItemCommand(0, 1);
+      case Input.Keys.NUM_3 -> command = new ConsumeItemCommand(0, 2);
+      case Input.Keys.F5 -> {
+        // RESTORE (Load)
         if (saveManager.hasSaveFile()) {
           saveManager.loadGame(model);
         } else {
           Gdx.app.log("Controller", "No save file found!");
         }
-        return true;
-      case Input.Keys.F6: // SAVE
+      }
+      case Input.Keys.F6 -> {
+        // SAVE
         saveManager.saveGame(model);
         Gdx.app.log("Controller", "Game Saved (F6)");
-        return true;
-      case Input.Keys.NUM_0: // Debug toggles with 0 (top row)
+      }
+      case Input.Keys.NUM_0 -> {
+        // Debug toggles with 0 (top row)
         GameManager.DEBUG_MODE = !GameManager.DEBUG_MODE;
         Gdx.app.log("Controller", "Debug Mode: " + GameManager.DEBUG_MODE);
-        return true;
+      }
 
-      case Input.Keys.E: // Portal activation
-        if (model.getLevel() != null) {
-          boolean activated = false;
-
-          // Try dungeon-style PortalRoom first
-          if (model.getLevel().getRoomManager() != null) {
-            PortalRoom portalRoom = model.getLevel().getRoomManager().getPortalRoom();
-            if (portalRoom != null && portalRoom.tryActivatePortal()) {
-              activated = true;
-            }
-          }
-
-          // Try cave-style direct portal
-          if (!activated
-              && model.getLevel().getCavePortal() != null
-              && model.getLevel().getCavePortal().tryActivate()) {
-            activated = true;
-          }
-
-          if (activated) {
-            Gdx.app.log("Controller", "Portal activated! Advancing to next level.");
-            model.setLevelCompleted(true);
-          }
-        }
-        return true;
-
-      default:
-        return false;
+      case Input.Keys.E -> // Portal activation
+          command = new InteractCommand();
     }
+    // --- PLAYER 1 (Keyboard Only) ---
+    // --- INVENTORY ---
+
+    if (command != null) {
+      command.execute(model);
+      return true;
+    }
+
+    return false; // Not consumed if no command mapped (or specific system keys returned above)
   }
 
   public void update(float delta) {
@@ -174,45 +141,18 @@ public class GameController extends InputAdapter implements ControllerListener {
 
     if (players.isEmpty()) return;
 
-    // --- PLAYER 1 MOVEMENT (Keyboard Only) ---
-    Player p1 = players.get(0);
-    if (p1 != null && !p1.isDead()) {
-      float velX = 0;
-      float velY = 0;
+    // --- STRATEGY PATTERN FOR MOVEMENT ---
 
-      // Keyboard WASD
-      if (Gdx.input.isKeyPressed(Input.Keys.W)) velY = SPEED;
-      if (Gdx.input.isKeyPressed(Input.Keys.S)) velY = -SPEED;
-      if (Gdx.input.isKeyPressed(Input.Keys.A)) velX = -SPEED;
-      if (Gdx.input.isKeyPressed(Input.Keys.D)) velX = SPEED;
-
-      p1.move(velX, velY);
-    } else if (p1 != null && p1.getBody() != null) {
-      p1.getBody().setLinearVelocity(0, 0);
+    // Player 1: Keyboard
+    if (!players.isEmpty() && players.get(0) != null) {
+      InputStrategy p1Strategy = new KeyboardMovementStrategy();
+      p1Strategy.processInput(players.get(0), delta);
     }
 
-    // --- PLAYER 2 MOVEMENT (Controller Only) ---
-
-    if (players.size() > 1) {
-
-      Player p2 = players.get(1);
-      if (p2 != null && !p2.isDead()) {
-        float velX = 0;
-        float velY = 0;
-
-        // Controller 0 (First Player Controller maps to Player 2 Entity)
-        if (Controllers.getControllers().size > 0) {
-          Controller c2 = Controllers.getControllers().get(0);
-          float axisX = c2.getAxis(c2.getMapping().axisLeftX);
-          float axisY = c2.getAxis(c2.getMapping().axisLeftY);
-          if (Math.abs(axisX) > 0.2f) velX = axisX * SPEED;
-          if (Math.abs(axisY) > 0.2f) velY = -axisY * SPEED;
-        }
-
-        p2.move(velX, velY);
-      } else if (p2 != null && p2.getBody() != null) {
-        p2.getBody().setLinearVelocity(0, 0);
-      }
+    // Player 2: Controller
+    if (players.size() > 1 && players.get(1) != null) {
+      InputStrategy p2Strategy = new ControllerMovementStrategy(0);
+      p2Strategy.processInput(players.get(1), delta);
     }
   }
 
@@ -220,24 +160,26 @@ public class GameController extends InputAdapter implements ControllerListener {
 
   @Override
   public boolean buttonDown(Controller controller, int buttonCode) {
-    List<Player> players = model.getPlayers();
     int controllerIndex = Controllers.getControllers().indexOf(controller, true);
 
     // Check mapping
     int attackBtn = controller.getMapping().buttonA;
     int specialBtn = controller.getMapping().buttonY;
 
-    if (buttonCode == attackBtn) {
-      if (controllerIndex == 0 && players.size() > 1) {
-        Player p2 = players.get(1);
-        if (p2 != null && !p2.isDead()) p2.attack(model.getActiveEnemies());
+    // --- COMMAND MAPPING FOR CONTROLLER ---
+    Command command = null;
+
+    // Mapping: Controller 0 -> Player 2 (Index 1)
+    if (controllerIndex == 0) {
+      if (buttonCode == attackBtn) {
+        command = new AttackCommand(1);
+      } else if (buttonCode == specialBtn) {
+        command = new SpecialAttackCommand(1);
       }
-      return true;
-    } else if (buttonCode == specialBtn) {
-      if (controllerIndex == 0 && players.size() > 1) {
-        Player p2 = players.get(1);
-        if (p2 != null) p2.performSpecialAttack(model.getActiveEnemies());
-      }
+    }
+
+    if (command != null) {
+      command.execute(model);
       return true;
     }
 
@@ -284,5 +226,11 @@ public class GameController extends InputAdapter implements ControllerListener {
 
   public void setGameScreen(io.github.soulslight.view.GameScreen gameScreen) {
     this.gameScreen = gameScreen;
+  }
+
+  @Override
+  public void dispose() {
+    Controllers.removeListener(this);
+    Gdx.app.log("GameController", "Controller listener removed.");
   }
 }

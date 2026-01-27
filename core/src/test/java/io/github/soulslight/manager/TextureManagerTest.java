@@ -16,12 +16,12 @@ class TextureManagerTest {
 
   @BeforeAll
   static void init() {
-    TextureManager.load();
+    TextureManager.getInstance().load();
   }
 
   @Test
   void chaserWalkFramesHaveExpectedSize() {
-    TextureRegion frame = TextureManager.getChaserWalkFrame(0f);
+    TextureRegion frame = TextureManager.getInstance().getChaserWalkFrame(0f);
     assertNotNull(frame, "Animazione chaserWalk mancante (file o split errato)");
     assertEquals(16, frame.getRegionWidth(), "Larghezza frame chaser errata");
     assertEquals(23, frame.getRegionHeight(), "Altezza frame chaser errata");
@@ -29,7 +29,7 @@ class TextureManagerTest {
 
   @Test
   void rangerWalkFramesHaveExpectedSize() {
-    TextureRegion frame = TextureManager.getRangerWalkFrame(0f);
+    TextureRegion frame = TextureManager.getInstance().getRangerWalkFrame(0f);
     assertNotNull(frame, "Animazione rangerWalk mancante (file o split errato)");
     assertEquals(16, frame.getRegionWidth(), "Larghezza frame ranger errata");
     assertEquals(17, frame.getRegionHeight(), "Altezza frame ranger errata");
@@ -37,7 +37,7 @@ class TextureManagerTest {
 
   @Test
   void shielderWalkFramesHaveExpectedSize() {
-    TextureRegion frame = TextureManager.getShielderWalkFrame(0f);
+    TextureRegion frame = TextureManager.getInstance().getShielderWalkFrame(0f);
     assertNotNull(frame, "Animazione shielderWalk mancante (file o split errato)");
     assertEquals(16, frame.getRegionWidth(), "Larghezza frame shielder errata");
     assertEquals(27, frame.getRegionHeight(), "Altezza frame shielder errata");
@@ -45,7 +45,7 @@ class TextureManagerTest {
 
   @Test
   void spikedBallWalkFramesHaveExpectedSize() {
-    TextureRegion frame = TextureManager.getSpikedBallWalkFrame(0f);
+    TextureRegion frame = TextureManager.getInstance().getSpikedBallWalkFrame(0f);
     assertNotNull(frame, "Animazione spikedBallWalk mancante (file o split errato)");
     assertEquals(32, frame.getRegionWidth(), "Larghezza frame spiked ball walk errata");
     assertEquals(34, frame.getRegionHeight(), "Altezza frame spiked ball walk errata");
@@ -53,7 +53,7 @@ class TextureManagerTest {
 
   @Test
   void spikedBallChargeFramesHaveExpectedSize() {
-    TextureRegion frame = TextureManager.getSpikedBallChargeFrame(0f);
+    TextureRegion frame = TextureManager.getInstance().getSpikedBallChargeFrame(0f);
     assertNotNull(frame, "Animazione spikedBallCharge mancante (file o split errato)");
     assertEquals(32, frame.getRegionWidth(), "Larghezza frame spiked ball charge errata");
     assertEquals(34, frame.getRegionHeight(), "Altezza frame spiked ball charge errata");
@@ -62,8 +62,8 @@ class TextureManagerTest {
   @Test
   void testGetMissingTextureReturnsFallback() {
     // Chiediamo una texture che sicuramente non esiste
-    Texture missing = TextureManager.get("non_esiste");
-    Texture fallback = TextureManager.get("player");
+    Texture missing = TextureManager.getInstance().get("non_esiste");
+    Texture fallback = TextureManager.getInstance().get("player");
 
     assertNotNull(missing, "Il metodo get non deve mai restituire null");
     assertNotNull(fallback, "La texture di fallback (player) deve esistere");
@@ -84,26 +84,26 @@ class TextureManagerTest {
     Oblivion mockBoss = Mockito.mock(Oblivion.class);
 
     assertEquals(
-        TextureManager.get("archer"),
-        TextureManager.getEnemyTexture(mockRanger),
+        TextureManager.getInstance().get("archer"),
+        TextureManager.getInstance().getEnemyTexture(mockRanger),
         "Ranger deve usare texture 'archer'");
     assertEquals(
-        TextureManager.get("slime"),
-        TextureManager.getEnemyTexture(mockBall),
+        TextureManager.getInstance().get("slime"),
+        TextureManager.getInstance().getEnemyTexture(mockBall),
         "SpikedBall deve usare texture 'slime'");
     assertEquals(
-        TextureManager.get("shielder"),
-        TextureManager.getEnemyTexture(mockShielder),
+        TextureManager.getInstance().get("shielder"),
+        TextureManager.getInstance().getEnemyTexture(mockShielder),
         "Shielder deve usare texture 'shielder'");
     assertEquals(
-        TextureManager.get("boss"),
-        TextureManager.getEnemyTexture(mockBoss),
+        TextureManager.getInstance().get("boss"),
+        TextureManager.getInstance().getEnemyTexture(mockBoss),
         "Oblivion deve usare texture 'boss'");
   }
 
   @Test
   void testTextureFiltersAreNearest() {
-    Texture playerTex = TextureManager.get("player");
+    Texture playerTex = TextureManager.getInstance().get("player");
 
     assertEquals(
         Texture.TextureFilter.Nearest,
@@ -117,9 +117,9 @@ class TextureManagerTest {
 
   @Test
   void testStaticTexturesLoaded() {
-    assertNotNull(TextureManager.get("player"));
-    assertNotNull(TextureManager.get("skeleton"));
-    assertNotNull(TextureManager.get("boss"));
-    assertNotNull(TextureManager.get("arrow"));
+    assertNotNull(TextureManager.getInstance().get("player"));
+    assertNotNull(TextureManager.getInstance().get("skeleton"));
+    assertNotNull(TextureManager.getInstance().get("boss"));
+    assertNotNull(TextureManager.getInstance().get("arrow"));
   }
 }

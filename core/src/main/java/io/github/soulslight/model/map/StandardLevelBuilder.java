@@ -8,7 +8,11 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
 import io.github.soulslight.model.enemies.AbstractEnemy;
 import io.github.soulslight.model.enemies.EnemyFactory;
 import io.github.soulslight.model.enemies.Oblivion;
@@ -24,21 +28,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-public class LevelBuilder {
+/**
+ * GoF Pattern: Builder (ConcreteBuilder) Implements the Builder interface to construct and assemble
+ * parts of the Level.
+ */
+public class StandardLevelBuilder implements ILevelBuilder {
   private Level level;
 
-  public LevelBuilder() {
+  public StandardLevelBuilder() {
     this.level = new Level();
   }
 
-  public LevelBuilder buildMap(TiledMap map) {
+  @Override
+  public ILevelBuilder buildMap(TiledMap map) {
     level.setMap(map);
     return this;
   }
 
   // --- 1A. Enemy generation from tmx file (legacy method from InGameEnemies
   // branch) ---
-  public LevelBuilder spawnFromTiled(EnemyFactory factory, World world) {
+  @Override
+  public ILevelBuilder spawnFromTiled(EnemyFactory factory, World world) {
 
     // Boss room size calculations
     MapProperties prop = level.getMap().getProperties();
@@ -71,31 +81,14 @@ public class LevelBuilder {
       }
 
       String type = object.getProperties().get("enemyType", "melee", String.class);
-      AbstractEnemy enemy = null;
-
-      switch (type.toLowerCase()) {
-        case "ranger":
-        case "archer":
-          enemy = factory.createRanged();
-          break;
-        case "tank":
-        case "shielder":
-          enemy = factory.createTank();
-          break;
-        case "ball":
-        case "trap":
-          enemy = factory.createBall();
-          break;
-        case "boss":
-        case "oblivion":
-          enemy = factory.createBoss();
-          break;
-        case "melee":
-        case "chaser":
-        default:
-          enemy = factory.createMelee();
-          break;
-      }
+      AbstractEnemy enemy =
+          switch (type.toLowerCase()) {
+            case "ranger", "archer" -> factory.createRanged();
+            case "tank", "shielder" -> factory.createTank();
+            case "ball", "trap" -> factory.createBall();
+            case "boss", "oblivion" -> factory.createBoss();
+            default -> factory.createMelee();
+          };
 
       if (enemy != null) {
         enemy.createBody(world, x, y);
@@ -105,13 +98,22 @@ public class LevelBuilder {
           ((Oblivion) enemy).setMapBounds(totalMapWidth, totalMapHeight);
         }
         level.addEnemy(enemy);
+
+        // Fix: Also add to room to ensure death listeners are registered
+        if (level.getRoomManager() != null) {
+          Room room = level.getRoomManager().findRoomContaining(enemy.getPosition());
+          if (room != null) {
+            room.addEnemy(enemy);
+          }
+        }
       }
     }
     return this;
   }
 
   // --- 1B. Random enemy generation on generated map ---
-  public LevelBuilder spawnRandom(
+  @Override
+  public ILevelBuilder spawnRandom(
       EnemyFactory factory,
       World world,
       int meleeCount,
@@ -213,7 +215,7 @@ public class LevelBuilder {
     }
   }
 
-  // --- 1C. Room-based enemy spawning (4-7 enemies per room) ---
+  // --- Room-based enemy spawning (4-7 enemies per room) ---
   /**
    * Spawns enemies in each room. Each room gets 4-7 random enemies. Enemies start in RoomIdleState
    * and activate when player enters.
@@ -222,7 +224,8 @@ public class LevelBuilder {
    * @param world Box2D physics world
    * @return this builder for chaining
    */
-  public LevelBuilder spawnEnemiesInRooms(EnemyFactory factory, World world) {
+  @Override
+  public ILevelBuilder spawnEnemiesInRooms(EnemyFactory factory, World world) {
     TiledMap map = level.getMap();
     if (map == null || map.getLayers().getCount() == 0) {
       System.out.println("WARNING: Map is null. Cannot spawnEnemiesInRooms.");
@@ -313,8 +316,9 @@ public class LevelBuilder {
     room.addEnemy(enemy);
   }
 
-  // --- 2. Wall physics generation ---
-  public LevelBuilder buildPhysicsFromMap(World world) {
+  // --- Wall physics generation ---
+  @Override
+  public ILevelBuilder buildPhysicsFromMap(World world) {
     createCollisionFromProperties(world);
     return this;
   }
@@ -366,21 +370,23 @@ public class LevelBuilder {
     shape.dispose();
   }
 
-  // --- 3. ambient settings ---
-  public LevelBuilder setEnvironment(String musicTrack, float lightLevel) {
+  // --- ambient settings ---
+  @Override
+  public ILevelBuilder setEnvironment(String musicTrack, float lightLevel) {
     level.setMusicTrack(musicTrack);
     level.setAmbientLight(lightLevel);
     return this;
   }
 
-  // --- 4. Room building from generation data ---
+  // --- Room building from generation data ---
   /**
    * Builds Room objects from room metadata.
    *
    * @param roomDataList List of room metadata from map generation
    * @return this builder for chaining
    */
-  public LevelBuilder buildRooms(List<RoomData> roomDataList) {
+  @Override
+  public ILevelBuilder buildRooms(List<RoomData> roomDataList) {
     if (roomDataList == null) return this;
 
     for (RoomData data : roomDataList) {
@@ -445,7 +451,8 @@ public class LevelBuilder {
    * @param world The Box2D physics world
    * @return this builder for chaining
    */
-  public LevelBuilder initializeRoomManager(World world) {
+  @Override
+  public ILevelBuilder initializeRoomManager(World world) {
     level.getRoomManager().initialize(world);
     level.getRoomManager().initializeDoors();
 
@@ -465,7 +472,8 @@ public class LevelBuilder {
    * @param world The Box2D physics world
    * @return this builder for chaining
    */
-  public LevelBuilder spawnCavePortal(World world) {
+  @Override
+  public ILevelBuilder spawnCavePortal(World world) {
     TiledMap map = level.getMap();
     if (map == null) return this;
 
@@ -479,6 +487,7 @@ public class LevelBuilder {
     return this;
   }
 
+  @Override
   public Level build() {
     return level;
   }

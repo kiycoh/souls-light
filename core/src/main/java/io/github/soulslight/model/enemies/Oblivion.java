@@ -6,7 +6,6 @@ import io.github.soulslight.model.combat.AttackStrategy;
 import io.github.soulslight.model.combat.MageAttack;
 import io.github.soulslight.model.combat.WarriorAttack;
 import io.github.soulslight.model.entities.Player;
-import io.github.soulslight.model.room.EnemyDeathListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,8 +61,6 @@ public class Oblivion extends AbstractEnemy {
   private boolean deathAnimationFinished = false;
   private float deathAnimTime = 0f;
 
-  private EnemyDeathListener deathListenerCopy;
-
   private AttackStrategy meleeStrategy;
 
   public Oblivion() {
@@ -100,12 +97,6 @@ public class Oblivion extends AbstractEnemy {
     return this.health <= 0 && deathAnimationFinished;
   }
 
-  @Override
-  public void setDeathListener(EnemyDeathListener listener) {
-    super.setDeathListener(listener);
-    this.deathListenerCopy = listener;
-  }
-
   // setta i confini della mappa
   public void setMapBounds(float width, float height) {
     this.mapWidthBoundary = width;
@@ -135,9 +126,7 @@ public class Oblivion extends AbstractEnemy {
           deathAnimTime = DEATH_ANIM_DURATION;
           deathAnimationFinished = true;
 
-          if (deathListenerCopy != null) {
-            deathListenerCopy.onEnemyDied(this);
-          }
+          notifyDeathListeners();
         }
       }
       return;

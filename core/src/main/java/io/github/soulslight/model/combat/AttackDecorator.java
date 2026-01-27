@@ -1,44 +1,49 @@
 package io.github.soulslight.model.combat;
 
 import io.github.soulslight.model.entities.Entity;
-import java.util.*;
+import java.util.List;
 
-/** Pattern: Decorator Abstract decorator for AttackStrategy to add dynamic behaviors. */
+/**
+ * GoF Pattern: Decorator (Decorator) Wrapper for AttackStrategy that allows dynamic behavior
+ * extension (Buffs). Follows the ResponsibleWorker/Employee style where it delegates to the wrapped
+ * component.
+ */
 public abstract class AttackDecorator implements AttackStrategy {
-  protected AttackStrategy wrappedAttack;
 
-  public AttackDecorator(AttackStrategy attack) {
-    this.wrappedAttack = attack;
+  protected final AttackStrategy wrapped;
+
+  public AttackDecorator(AttackStrategy wrapped) {
+    this.wrapped = wrapped;
   }
 
   @Override
   public void attack() {
-    wrappedAttack.attack();
-  }
-
-  @Override
-  public void executeAttack(Entity attacker, List<Entity> targets) {
-    this.wrappedAttack.executeAttack(attacker, targets);
+    wrapped.attack();
   }
 
   @Override
   public float getRange() {
-    return wrappedAttack.getRange();
+    return wrapped.getRange();
   }
 
   @Override
   public float getDamage() {
-    return wrappedAttack.getDamage();
+    return wrapped.getDamage();
   }
 
   @Override
   public float getAttackSpeed() {
-    return wrappedAttack.getAttackSpeed();
+    return wrapped.getAttackSpeed();
   }
 
   @Override
   public String getSoundID() {
-    return wrappedAttack.getSoundID();
+    return wrapped.getSoundID();
+  }
+
+  @Override
+  public void executeAttack(Entity attacker, List<Entity> targets) {
+    wrapped.executeAttack(attacker, targets);
   }
 
   @Override
@@ -46,6 +51,6 @@ public abstract class AttackDecorator implements AttackStrategy {
     if (type.isInstance(this)) {
       return true;
     }
-    return wrappedAttack.hasDecorator(type);
+    return wrapped.hasDecorator(type);
   }
 }

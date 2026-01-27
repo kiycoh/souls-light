@@ -102,7 +102,7 @@ public class Room implements EnemyDeathListener {
    */
   public void addEnemy(AbstractEnemy enemy) {
     enemies.add(enemy);
-    enemy.setDeathListener(this);
+    enemy.addDeathListener(this);
   }
 
   /**

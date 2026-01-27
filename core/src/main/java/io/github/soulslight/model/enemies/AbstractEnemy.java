@@ -27,10 +27,26 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
   protected float wanderTimer = 0; // Timer per cambio direzione
   protected final float MAX_WANDER_DIST = 300f; // Raggio massimo dallo spawn
   // protected final float SENSOR_DIST = 50f;
-  protected float speed;
-
   private EnemyState aiState;
-  private EnemyDeathListener deathListener;
+  protected float speed;
+  private List<EnemyDeathListener> deathListeners = new ArrayList<>();
+
+  // ... (in notify section)
+
+  protected void notifyDeathListeners() {
+    for (EnemyDeathListener listener : deathListeners) {
+      listener.onEnemyDied(this);
+    }
+  }
+
+  /** Override to notify death listener when enemy dies. */
+  @Override
+  public void takeDamage(float amount) {
+    super.takeDamage(amount);
+    if (isDead()) {
+      notifyDeathListeners();
+    }
+  }
 
   // Knockback fields
   protected float knockbackTimer = 0f;
@@ -292,21 +308,18 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
   }
 
   /**
-   * Sets the death listener for this enemy (Observer pattern).
+   * Adds a death listener for this enemy (Observer pattern).
    *
    * @param listener The listener to notify on death
    */
-  public void setDeathListener(EnemyDeathListener listener) {
-    this.deathListener = listener;
+  public void addDeathListener(EnemyDeathListener listener) {
+    if (!deathListeners.contains(listener)) {
+      deathListeners.add(listener);
+    }
   }
 
-  /** Override to notify death listener when enemy dies. */
-  @Override
-  public void takeDamage(float amount) {
-    super.takeDamage(amount);
-    if (isDead() && deathListener != null) {
-      deathListener.onEnemyDied(this);
-    }
+  public void removeDeathListener(EnemyDeathListener listener) {
+    deathListeners.remove(listener);
   }
 
   public void applyKnockback(Vector2 direction, float speedForce, float duration) {
