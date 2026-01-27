@@ -101,7 +101,8 @@ public final class ActiveCombatState implements RoomState {
 
   @Override
   public void update(Room room, float deltaTime) {
-    // Could add periodic clear checks here if needed
+    // Failsafe: Check clear condition every frame in case a death event was missed
+    checkClearCondition(room);
   }
 
   @Override

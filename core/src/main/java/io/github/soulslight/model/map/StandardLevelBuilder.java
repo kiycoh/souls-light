@@ -247,6 +247,11 @@ public class StandardLevelBuilder implements ILevelBuilder {
         continue;
       }
 
+      // Skip Start Room (first room added) to prevent spawn-killing
+      if (level.getRoomManager().getRooms().indexOf(room) == 0) {
+        continue;
+      }
+
       // Spawn 4-7 enemies per room
       int enemyCount = 4 + rng.nextInt(4); // 4 to 7 inclusive
 

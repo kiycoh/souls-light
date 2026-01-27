@@ -2,13 +2,30 @@
 audio/bossfight.mp3
 audio/button.mp3
 audio/end.mp3
+audio/end_reverbered.mp3
 audio/exploration.mp3
 audio/intro.mp3
 audio/no escape.mp3
 audio/saffron.mp3
 audio/slash.mp3
 audio/toExploration.mp3
+audio/toExploration_reverbered.mp3
+audio/toExploration_short.mp3
+hs_err_pid12452.log
+hs_err_pid22572.log
+hs_err_pid23920.log
+hs_err_pid24504.log
+hs_err_pid25404.log
+hs_err_pid2576.log
+hs_err_pid25888.log
+hs_err_pid26224.log
+hs_err_pid27220.log
+hs_err_pid29456.log
+hs_err_pid4876.log
+hs_err_pid8532.log
+hs_err_pid9280.log
 images/0x72_DungeonTilesetII_v1.7.png
+images/Purple Portal.png
 images/archer.png
 images/arrow.png
 images/boss.png
@@ -476,9 +493,22 @@ intro/intro_0437.png
 intro/intro_0438.png
 intro/intro_0439.png
 intro/intro_0440.png
+inv_objects/artifact.png
+inv_objects/health_potion.png
+inv_objects/key.png
 maps/MAppa.tmx
 maps/MAppa2.tmx
 maps/MappaSoul'sLight.tiled-session
+particles/effects/Particle Park Pentagram Glitchy.p
+particles/images/pentagram-glow.png
+particles/images/pentagram.png
+particles/packs/Particle Park Pentagram Glitchy/Particle Park Pentagram Glitchy.p
+particles/packs/Particle Park Pentagram Glitchy/pentagram.png
+particles/packs/Particle Park Pentagram/pentagram-glow.png
+savegame.bak
+savegame.sav
+savegame_0.sav
+savegame_0.sav.bak
 tiles/floor1.png
 tiles/floor2.png
 tiles/floor3.png

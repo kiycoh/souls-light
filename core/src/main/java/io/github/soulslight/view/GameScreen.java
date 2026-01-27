@@ -446,15 +446,11 @@ public final class GameScreen implements GameState, Observer {
 
     Vector2 pos = portal.getPosition();
 
-    // Use a colored circle as mockup (will be replaced by artist)
-    Texture tex = TextureManager.getInstance().get("player"); // Fallback texture
-    if (portal.isPlayerInRange()) {
-      batch.setColor(Color.CYAN); // Highlight when player is nearby
-    } else {
-      batch.setColor(Color.PURPLE); // Normal portal color
+    // Use the portal's current frame from the state machine
+    TextureRegion frame = portal.getFrame();
+    if (frame != null) {
+      drawEntity(frame, pos, 64f, 64f, false);
     }
-    drawEntity(tex, pos, 48, 48);
-    batch.setColor(Color.WHITE);
   }
 
   private void drawPortalPrompt() {

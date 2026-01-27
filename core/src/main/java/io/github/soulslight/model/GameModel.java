@@ -373,6 +373,11 @@ public class GameModel extends Subject
       level.getRoomManager().update(deltaTime);
     }
 
+    // Update Cave Portal if exists
+    if (level != null && level.getCavePortal() != null) {
+      level.getCavePortal().update(deltaTime);
+    }
+
     // Update Lighting
     if (!players.isEmpty() && getMap() != null) {
       Player p = players.get(0); // Follow first player for now
@@ -395,6 +400,11 @@ public class GameModel extends Subject
       // Entity.update(delta) syncs graphics from physics.
       enemy.update(deltaTime);
       enemy.updateBehavior(players, deltaTime);
+
+      // Kill-Z: Cleanup enemies that fall out of the world (Ghost Enemy Fix)
+      if (enemy.getPosition().y < -100f) {
+        enemy.takeDamage(Float.MAX_VALUE); // Ensures death listeners are notified
+      }
 
       checkMeleeCollision(enemy);
     }
@@ -681,6 +691,9 @@ public class GameModel extends Subject
       GameManager.getInstance().addPlayer(newPlayer);
     }
 
+    // Update RoomManager with restored players so states can detect them
+    level.getRoomManager().setPlayers(players);
+
     // 3. Restore Map State (Rooms, Doors, Portals)
     if (level.getRoomManager() != null && memento.rooms != null) {
       List<io.github.soulslight.model.room.Room> currentRooms = level.getRoomManager().getRooms();
@@ -692,19 +705,13 @@ public class GameModel extends Subject
 
         if (rm.isCleared) {
           room.forceCleared(); // Marks cleared, kills enemies, unlocks doors
-          // Note: forceCleared() also kills enemies. Since we rebuild enemies below,
-          // we should NOT spawn enemies in cleared rooms.
-          // But wait! LevelBuilder creates enemies by default in dungeon strategy.
-          // In my constructor above, I used a PARTIAL build chain:
-          // .buildMap().buildPhysics()...
-          // MISSING: .buildRooms().spawnEnemiesIsRooms().
-          // I need to replicate the FULL build chain but conditional on saved state.
-        }
-
-        // Apply door locks
-        // Logic: if room was saved as locked, we lock doors.
-        if (rm.doorsLocked) {
-          room.setDoorsLocked(true);
+        } else if (rm.doorsLocked) {
+          // If doors are locked and not cleared, we were in combat.
+          // Force transition to ActiveCombatState.
+          room.transitionTo(io.github.soulslight.model.room.ActiveCombatState.INSTANCE);
+        } else {
+          // Default is PassiveState. Ensure doors are unlocked.
+          room.setDoorsLocked(false);
         }
       }
 
@@ -749,13 +756,8 @@ public class GameModel extends Subject
       }
     }
 
-    // 4. Recreate Enemies
+    // Recreate Enemies
     // CRITICAL: We only want to spawn enemies that were alive.
-    // Level generation usually spawns fresh enemies.
-    // Instead of letting LevelFactory spawn them, we explicitly respawn from
-    // Memento only.
-    // That's why I removed `.spawnEnemiesInRooms` from the builder chain above!
-
     if (memento.enemies != null) {
       for (EnemyMemento em : memento.enemies) {
         AbstractEnemy enemy = EnemyRegistry.getEnemy(em.type);
@@ -769,6 +771,16 @@ public class GameModel extends Subject
       for (AbstractEnemy e : this.level.getEnemies()) {
         e.addProjectileListener(this); // Register listener
         e.addDeathListener(this); // Register death listener
+
+        // Fix: Add enemy to containing room so RoomState logic works!
+        if (this.level.getRoomManager() != null) {
+          io.github.soulslight.model.room.Room room =
+              this.level.getRoomManager().findRoomContaining(e.getPosition());
+          if (room != null) {
+            room.addEnemy(e);
+          }
+        }
+
         if (e instanceof Shielder) {
           ((Shielder) e).setAllies(this.level.getEnemies());
         }

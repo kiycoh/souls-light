@@ -138,6 +138,12 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     float dist = this.getPosition().dst(player.getPosition());
     if (dist > aggroRange) return false;
 
+    // Fix: Prevent zero-length raycast assertion (Box2D crash)
+    if (dist < 0.1f) {
+      lastKnownPlayerPos.set(player.getPosition());
+      return true; // Too close, definitely visible
+    }
+
     final boolean[] hitWall = {false};
     world.rayCast(
         (fixture, point, normal, fraction) -> {

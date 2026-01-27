@@ -84,10 +84,19 @@ public class PortalRoom extends Room {
     return portal;
   }
 
+  @Override
+  public void update(float dt) {
+    super.update(dt);
+    if (portal != null) {
+      portal.update(dt);
+    }
+  }
+
   /** Cleans up the portal. */
   public void dispose() {
     if (portal != null && world != null) {
       portal.destroyBody(world);
+      portal.dispose();
       portal = null;
     }
   }
