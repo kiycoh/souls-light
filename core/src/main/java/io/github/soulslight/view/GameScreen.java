@@ -43,12 +43,13 @@ import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
 import io.github.soulslight.model.map.LevelFactory;
+import io.github.soulslight.model.observer.Observer;
 import io.github.soulslight.model.room.Portal;
 import io.github.soulslight.model.room.PortalRoom;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-public final class GameScreen implements GameState {
+public final class GameScreen implements GameState, Observer {
 
   private final SpriteBatch batch;
   private final GameModel model;
@@ -60,12 +61,12 @@ public final class GameScreen implements GameState {
   private final OrthogonalTiledMapRenderer mapRenderer;
   private final Box2DDebugRenderer debugRenderer;
 
-  private static Music explorationMusic;
-  private static Music bossMusic;
+  private Music explorationMusic;
+  private Music bossMusic;
 
-  private static boolean bossCrossfadeStarted = false;
-  private static boolean bossCrossfadeCompleted = false;
-  private static float bossCrossfadeTime = 0f;
+  private boolean bossCrossfadeStarted = false;
+  private boolean bossCrossfadeCompleted = false;
+  private float bossCrossfadeTime = 0f;
   private static final float BOSS_FADE_DURATION = 5f; // seconds
 
   // Map size in pixel (used for camera clamp)
@@ -142,13 +143,16 @@ public final class GameScreen implements GameState {
     // Outro Overlay
     this.outroOverlay = new OutroOverlay(batch);
 
+    // Observer Registration
+    model.attach(this);
+
     // Debug Menu Setup (only when DEBUG_MODE is enabled)
     if (GameManager.DEBUG_MODE) {
       initializeDebugMenu();
     }
 
     // Assets
-    TextureManager.load();
+    TextureManager.getInstance().load();
 
     // Background music (shared across GameScreens)
     if (explorationMusic == null) {
@@ -209,12 +213,15 @@ public final class GameScreen implements GameState {
       }
     }
 
+    // Ensure correct volume is applied on resume
     if (!bossCrossfadeStarted && !bossCrossfadeCompleted) {
       if (explorationMusic != null) explorationMusic.setVolume(baseVolume);
       if (bossMusic != null) bossMusic.setVolume(0f);
     } else if (bossCrossfadeCompleted) {
       if (explorationMusic != null) explorationMusic.setVolume(0f);
       if (bossMusic != null) bossMusic.setVolume(baseVolume);
+    } else {
+      // In middle of crossfade, volumes are set in updateBossCrossfade
     }
   }
 
@@ -229,6 +236,10 @@ public final class GameScreen implements GameState {
     playerAnimTime += delta;
 
     updateBossCrossfade(delta);
+
+    // Ensure volume stays synced if settings changed (e.g. returning from settings)
+    updateAudioVolume();
+
     if (showingOutro) {
       updateMusicFadeOut(delta);
     }
@@ -261,7 +272,8 @@ public final class GameScreen implements GameState {
         drawEntity(frame, player.getPosition(), drawWidth, drawHeight, flipX);
       } else {
         String texName = "player";
-        drawEntity(TextureManager.get(texName), player.getPosition(), drawWidth, drawHeight);
+        drawEntity(
+            TextureManager.getInstance().get(texName), player.getPosition(), drawWidth, drawHeight);
       }
 
       batch.setColor(Color.WHITE);
@@ -317,7 +329,7 @@ public final class GameScreen implements GameState {
 
         if (sb.isCharging()) {
           float offset = enemyAnimOffset.computeIfAbsent(enemy, e -> MathUtils.random(0f, 10f));
-          frame = TextureManager.getSpikedBallChargeFrame(enemyAnimTime + offset);
+          frame = TextureManager.getInstance().getSpikedBallChargeFrame(enemyAnimTime + offset);
         } else {
           frame = computeAnimatedFrame(enemy, EnemyAnimType.SPIKEDBALL);
         }
@@ -328,7 +340,7 @@ public final class GameScreen implements GameState {
         }
       }
 
-      Texture tex = TextureManager.getEnemyTexture(enemy);
+      Texture tex = TextureManager.getInstance().getEnemyTexture(enemy);
       float size =
           (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
       drawEntity(tex, enemy.getPosition(), size, size);
@@ -348,8 +360,8 @@ public final class GameScreen implements GameState {
       }
     }
 
-    Texture tArrow = TextureManager.get("arrow");
-    if (tArrow == null) tArrow = TextureManager.get("player");
+    Texture tArrow = TextureManager.getInstance().get("arrow");
+    if (tArrow == null) tArrow = TextureManager.getInstance().get("player");
 
     for (Projectile p : model.getProjectiles()) {
       batch.draw(
@@ -408,7 +420,7 @@ public final class GameScreen implements GameState {
       }
     } else {
       // Only check for level completion if NOT already showing outro
-      checkLevelTransition();
+      // checkLevelTransition(); // Now handled via Observer
     }
   }
 
@@ -435,7 +447,7 @@ public final class GameScreen implements GameState {
     Vector2 pos = portal.getPosition();
 
     // Use a colored circle as mockup (will be replaced by artist)
-    Texture tex = TextureManager.get("player"); // Fallback texture
+    Texture tex = TextureManager.getInstance().get("player"); // Fallback texture
     if (portal.isPlayerInRange()) {
       batch.setColor(Color.CYAN); // Highlight when player is nearby
     } else {
@@ -638,13 +650,13 @@ public final class GameScreen implements GameState {
   private TextureRegion getAnimFrame(EnemyAnimType type, float time) {
     switch (type) {
       case CHASER:
-        return TextureManager.getChaserWalkFrame(time);
+        return TextureManager.getInstance().getChaserWalkFrame(time);
       case RANGER:
-        return TextureManager.getRangerWalkFrame(time);
+        return TextureManager.getInstance().getRangerWalkFrame(time);
       case SHIELDER:
-        return TextureManager.getShielderWalkFrame(time);
+        return TextureManager.getInstance().getShielderWalkFrame(time);
       case SPIKEDBALL:
-        return TextureManager.getSpikedBallWalkFrame(time);
+        return TextureManager.getInstance().getSpikedBallWalkFrame(time);
       default:
         return null;
     }
@@ -668,11 +680,11 @@ public final class GameScreen implements GameState {
   private TextureRegion getPlayerAnimFrame(int index, float time) {
     switch (index) {
       case 0:
-        return TextureManager.getP1WalkFrame(time);
+        return TextureManager.getInstance().getP1WalkFrame(time);
       case 1:
-        return TextureManager.getP2WalkFrame(time);
+        return TextureManager.getInstance().getP2WalkFrame(time);
       default:
-        return TextureManager.getP1WalkFrame(time);
+        return TextureManager.getInstance().getP1WalkFrame(time);
     }
   }
 
@@ -681,7 +693,7 @@ public final class GameScreen implements GameState {
       float t = boss.getDeathAnimTime();
       float duration = Oblivion.getDeathAnimDuration();
       if (t > duration) t = duration;
-      return TextureManager.getOblivionDeathFrame(t);
+      return TextureManager.getInstance().getOblivionDeathFrame(t);
     }
 
     if (boss.isTeleportingOut() || boss.isTeleportingIn()) {
@@ -696,18 +708,18 @@ public final class GameScreen implements GameState {
         animTime = t;
       }
 
-      return TextureManager.getOblivionTeleportFrame(animTime);
+      return TextureManager.getInstance().getOblivionTeleportFrame(animTime);
     }
 
     float offset = enemyAnimOffset.computeIfAbsent(boss, e -> MathUtils.random(0f, 10f));
     float time = enemyAnimTime + offset;
 
     if (boss.isMeleeWindup()) {
-      return TextureManager.getOblivionMeleeWindupFrame(time);
+      return TextureManager.getInstance().getOblivionMeleeWindupFrame(time);
     }
 
     if (boss.isMeleeAttacking()) {
-      return TextureManager.getOblivionMeleeAttackFrame(time);
+      return TextureManager.getInstance().getOblivionMeleeAttackFrame(time);
     }
 
     boolean isIdle = true;
@@ -718,12 +730,12 @@ public final class GameScreen implements GameState {
 
     if (isIdle) {
       if (boss.isPhaseTwo()) {
-        return TextureManager.getOblivionSpellFrame(time);
+        return TextureManager.getInstance().getOblivionSpellFrame(time);
       } else {
-        return TextureManager.getOblivionIdleFrame(time);
+        return TextureManager.getInstance().getOblivionIdleFrame(time);
       }
     } else {
-      return TextureManager.getOblivionWalkFrame(time);
+      return TextureManager.getInstance().getOblivionWalkFrame(time);
     }
   }
 
@@ -959,10 +971,27 @@ public final class GameScreen implements GameState {
   public void resume() {}
 
   @Override
-  public void hide() {}
+  public void hide() {
+    // CRITICAL FIX: Do NOT call dispose() here.
+    // hide() is called when switching to Settings/Pause, but we want to keep the
+    // game state alive.
+    if (explorationMusic != null && explorationMusic.isPlaying()) {
+      explorationMusic.pause();
+    }
+    if (bossMusic != null && bossMusic.isPlaying()) {
+      bossMusic.pause();
+    }
+  }
 
   @Override
   public void dispose() {
+    // Dispose controller to unregister listener!
+    if (controller != null) controller.dispose();
+
+    if (model != null) model.dispose();
+
+    if (controller != null) controller.dispose();
+
     if (mapRenderer != null) mapRenderer.dispose();
     if (debugRenderer != null) debugRenderer.dispose();
     if (hud != null) hud.dispose();
@@ -970,6 +999,15 @@ public final class GameScreen implements GameState {
     if (debugMenuOverlay != null) debugMenuOverlay.dispose();
     if (pauseMenuOverlay != null) pauseMenuOverlay.dispose();
     if (promptFont != null) promptFont.dispose();
+
+    if (explorationMusic != null) {
+      explorationMusic.dispose();
+      explorationMusic = null;
+    }
+    if (bossMusic != null) {
+      bossMusic.dispose();
+      bossMusic = null;
+    }
 
     enemyAnimOffset.clear();
     enemyFacingRight.clear();
@@ -981,6 +1019,31 @@ public final class GameScreen implements GameState {
         effect.free();
       }
       doorEffectsMap.clear();
+    }
+  }
+
+  @Override
+  public void update(String eventType, Object data) {
+    if ("LEVEL_COMPLETE".equals(eventType)) {
+      checkLevelTransition();
+    } else if ("LEVEL_RESTORED".equals(eventType)) {
+      // Update Map Renderer with new TiledMap
+      if (data instanceof io.github.soulslight.model.map.Level) {
+        io.github.soulslight.model.map.Level restoredLevel =
+            (io.github.soulslight.model.map.Level) data;
+        if (mapRenderer != null && restoredLevel.getMap() != null) {
+          mapRenderer.setMap(restoredLevel.getMap());
+        }
+      }
+
+      // Clear old particles to avoid duplication
+      if (doorEffectsMap != null) {
+        for (com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect effect :
+            doorEffectsMap.values()) {
+          effect.free();
+        }
+        doorEffectsMap.clear();
+      }
     }
   }
 
@@ -1002,6 +1065,22 @@ public final class GameScreen implements GameState {
 
     if (bossCrossfadeTime >= BOSS_FADE_DURATION) {
       bossCrossfadeCompleted = true;
+    }
+  }
+
+  private void updateAudioVolume() {
+    // If NOT crossfading and NOT outro, keep effective volume synced with Settings
+    if ((!bossCrossfadeStarted && !bossCrossfadeCompleted) || bossCrossfadeCompleted) {
+      float vol = SettingsManager.getInstance().getMusicVolume();
+
+      if (bossCrossfadeCompleted) {
+        if (bossMusic != null && bossMusic.isPlaying()) bossMusic.setVolume(vol);
+        if (explorationMusic != null) explorationMusic.setVolume(0f);
+      } else {
+        if (explorationMusic != null && explorationMusic.isPlaying())
+          explorationMusic.setVolume(vol);
+        if (bossMusic != null) bossMusic.setVolume(0f);
+      }
     }
   }
 }

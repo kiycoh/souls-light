@@ -30,6 +30,14 @@ public class GameManager {
     this.campaignSeed = System.currentTimeMillis();
   }
 
+  public long getCampaignSeed() {
+    return campaignSeed;
+  }
+
+  public void setCampaignSeed(long seed) {
+    this.campaignSeed = seed;
+  }
+
   public static synchronized GameManager getInstance() {
     if (instance == null) {
       instance = new GameManager();

@@ -1,54 +1,54 @@
 package io.github.soulslight.model.combat;
 
-import com.badlogic.gdx.Gdx;
 import io.github.soulslight.model.entities.Entity;
 import java.util.List;
 
-/** Pattern: Decorator (Concrete Decorator) Adds fire damage effect to an attack. */
+/** GoF Pattern: Decorator (ConcreteDecorator) Adds Fire effect to the attack. */
 public class FireDamageDecorator extends AttackDecorator {
 
-  public FireDamageDecorator(AttackStrategy attack) {
-    super(attack);
-  }
+  private static final float BURN_DURATION = 3.0f;
+  private static final float BURN_DAMAGE = 5.0f; // Total over duration
 
-  @Override
-  public void attack() {
-    super.attack();
-    Gdx.app.log("FireDamageDecorator", "..with Fire Effect!");
+  public FireDamageDecorator(AttackStrategy wrapped) {
+    super(wrapped);
   }
 
   @Override
   public void executeAttack(Entity attacker, List<Entity> targets) {
-    // EXECUTES BASE ATTACK
+    // Perform normal attack (Damage + Knockback)
     super.executeAttack(attacker, targets);
 
-    Gdx.app.log("FireDamageDecorator", "Applied fire damage to " + targets.size() + " targets");
+    // Add Fire Effect to hits
 
     for (Entity target : targets) {
-      if (attacker.getPosition().dst(target.getPosition()) <= super.getRange()) {
-        // APPLIES EXTRA FIRE DAMAGE
-        target.takeDamage(5.0f);
+      if (isValidTarget(attacker, target)) {
+        applyBurn(target);
       }
     }
   }
 
-  @Override
-  public float getDamage() {
-    return super.getDamage() + 5.0f; // Bonus fire damage
+  private boolean isValidTarget(Entity attacker, Entity target) {
+    if (attacker == target) return false;
+    if (attacker instanceof io.github.soulslight.model.entities.Player
+        && target instanceof io.github.soulslight.model.entities.Player)
+      return false; // Friendly fire?
+
+    float dist = attacker.getPosition().dst(target.getPosition());
+    if (dist > getRange()) return false;
+
+    return true;
   }
 
-  @Override
-  public float getRange() {
-    return super.getRange();
-  }
-
-  @Override
-  public float getAttackSpeed() {
-    return super.getAttackSpeed();
+  private void applyBurn(Entity target) {
+    // Logic to apply Desired Buff/Debuff.
+    com.badlogic.gdx.Gdx.app.log(
+        "FireDecorator", "Applied Burn to " + target.getClass().getSimpleName());
+    target.takeDamage(1.0f); // Bonus fire damage instant
   }
 
   @Override
   public String getSoundID() {
-    return super.getSoundID();
+    // Could mix sounds or return fire sound
+    return "fire_swing";
   }
 }

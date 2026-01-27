@@ -13,20 +13,35 @@ import io.github.soulslight.model.enemies.*;
 import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
+import io.github.soulslight.model.factory.EntityCreator;
+import io.github.soulslight.model.factory.ItemCreator;
+import io.github.soulslight.model.factory.PlayerCreator;
+import io.github.soulslight.model.factory.ProjectileCreator;
+import io.github.soulslight.model.factory.theme.BossLevelFactory;
+import io.github.soulslight.model.factory.theme.CaveLevelFactory;
+import io.github.soulslight.model.factory.theme.DungeonLevelFactory;
+import io.github.soulslight.model.factory.theme.GameLevelFactory;
 import io.github.soulslight.model.items.HealthPotion;
 import io.github.soulslight.model.map.DungeonMapStrategy;
 import io.github.soulslight.model.map.Level;
-import io.github.soulslight.model.map.LevelBuilder;
+import io.github.soulslight.model.map.LevelDirector;
 import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.map.MapGenerationStrategy;
 import io.github.soulslight.model.map.NoiseMapStrategy;
-import io.github.soulslight.model.physics.GameContactListener;
+import io.github.soulslight.model.map.StandardLevelBuilder;
+import io.github.soulslight.model.observer.Subject;
+import io.github.soulslight.model.room.EnemyDeathListener;
 import io.github.soulslight.model.room.RoomData;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class GameModel implements Disposable, ProjectileListener {
+public class GameModel extends Subject
+    implements Disposable, ProjectileListener, EnemyDeathListener {
+
+  private final EntityCreator playerCreator = new PlayerCreator();
+  private final EntityCreator itemCreator = new ItemCreator();
+  private final EntityCreator projectileCreator = new ProjectileCreator();
 
   public static final float MAX_WILL = 100f;
   private final World physicsWorld;
@@ -42,6 +57,13 @@ public class GameModel implements Disposable, ProjectileListener {
   // Level completion flag for portal transition
   private boolean levelCompleted = false;
 
+  public void setLevelCompleted(boolean completed) {
+    this.levelCompleted = completed;
+    if (completed) {
+      notifyObservers("LEVEL_COMPLETE", this.level);
+    }
+  }
+
   private int totalEnemiesKilled = 0;
 
   private final ProjectileManager projectileManager;
@@ -51,7 +73,8 @@ public class GameModel implements Disposable, ProjectileListener {
     EnemyRegistry.loadCache(null);
     this.lightingSystem = new io.github.soulslight.model.lighting.LightingSystem();
     this.physicsWorld = new World(new Vector2(0, 0), true);
-    this.physicsWorld.setContactListener(new GameContactListener());
+    this.physicsWorld.setContactListener(
+        new io.github.soulslight.model.physics.Box2DPhysicsAdapter());
 
     this.currentWill = MAX_WILL / 2;
     this.isPaused = false;
@@ -69,7 +92,7 @@ public class GameModel implements Disposable, ProjectileListener {
 
     // Player 1: Uses class selected in ClassSelectionScreen
     Player.PlayerClass p1Class = GameManager.getInstance().getPlayerClass(0);
-    Player p1 = new Player(p1Class, this.physicsWorld, spawn.x, spawn.y);
+    Player p1 = (Player) playerCreator.createEntity(this.physicsWorld, spawn.x, spawn.y, p1Class);
     p1.addProjectileListener(this); // Register listener
     players.add(p1);
     GameManager.getInstance().addPlayer(p1);
@@ -77,7 +100,8 @@ public class GameModel implements Disposable, ProjectileListener {
     // Player 2 (spawn slightly offset) - Only if NOT single player
     if (!io.github.soulslight.manager.SettingsManager.getInstance().isSinglePlayer()) {
       Player.PlayerClass p2Class = GameManager.getInstance().getPlayerClass(1);
-      Player p2 = new Player(p2Class, this.physicsWorld, spawn.x + 20, spawn.y);
+      Player p2 =
+          (Player) playerCreator.createEntity(this.physicsWorld, spawn.x + 20, spawn.y, p2Class);
       p2.addProjectileListener(this); // Register listener
       players.add(p2);
       GameManager.getInstance().addPlayer(p2);
@@ -86,69 +110,45 @@ public class GameModel implements Disposable, ProjectileListener {
     // Projectile Manager
     this.projectileManager = new ProjectileManager(physicsWorld);
 
-    EnemyFactory factory = new DungeonEnemyFactory();
-
     // ---- MAP TYPE DETECTION: Dungeon (rooms) vs Cave (roomless) ----
     boolean hasCavePortal = myMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
+    GameLevelFactory levelFactory;
+
+    // GoF Builder: Create Director and Builder
+    StandardLevelBuilder builder = new StandardLevelBuilder();
+    LevelDirector director = new LevelDirector(builder);
 
     if (!roomData.isEmpty()) {
+      levelFactory = new DungeonLevelFactory();
       // ---- DUNGEON-STYLE LEVEL (rooms + doors + portal room) ----
-      this.level =
-          new LevelBuilder()
-              .buildMap(myMap)
-              .buildRooms(roomData)
-              .initializeRoomManager(this.physicsWorld)
-              .buildPhysicsFromMap(this.physicsWorld)
-              .spawnEnemiesInRooms(factory, this.physicsWorld)
-              .setEnvironment("dungeon_theme.mp3", 0.3f)
-              .build();
+      this.level = director.constructDungeonLevel(myMap, roomData, levelFactory, this.physicsWorld);
+
     } else if (hasCavePortal) {
+      levelFactory = new CaveLevelFactory();
       // ---- CAVE-STYLE LEVEL (random spawn + cave portal) ----
       LevelFactory.EnemyConfig config =
           LevelFactory.getEnemyConfig(
               GameManager.getInstance().getCurrentLevelIndex(),
               GameManager.getInstance().getGameMode());
-      this.level =
-          new LevelBuilder()
-              .buildMap(myMap)
-              .buildPhysicsFromMap(this.physicsWorld)
-              .spawnRandom(
-                  factory,
-                  this.physicsWorld,
-                  config.melee(),
-                  config.ranged(),
-                  config.tank(),
-                  config.ball(),
-                  config.spawnBoss())
-              .spawnCavePortal(this.physicsWorld)
-              .setEnvironment("cave_theme.mp3", 0.2f)
-              .build();
+
+      this.level = director.constructCaveLevel(myMap, levelFactory, this.physicsWorld, config);
+
     } else {
+      levelFactory = new BossLevelFactory();
       // ---- BOSS ARENA OR CUSTOM (minimal setup) ----
       LevelFactory.EnemyConfig config =
           LevelFactory.getEnemyConfig(
               GameManager.getInstance().getCurrentLevelIndex(),
               GameManager.getInstance().getGameMode());
-      this.level =
-          new LevelBuilder()
-              .buildMap(myMap)
-              .buildPhysicsFromMap(this.physicsWorld)
-              .spawnRandom(
-                  factory,
-                  this.physicsWorld,
-                  config.melee(),
-                  config.ranged(),
-                  config.tank(),
-                  config.ball(),
-                  config.spawnBoss())
-              .setEnvironment("boss_theme.mp3", 0.1f)
-              .build();
+
+      this.level = director.constructBossLevel(myMap, levelFactory, this.physicsWorld, config);
     }
 
     // Shielder 'target' setup and Listener registration
     if (this.level.getEnemies() != null) {
       for (AbstractEnemy e : this.level.getEnemies()) {
         e.addProjectileListener(this); // Register listener
+        e.addDeathListener(this); // Register death listener
         if (e instanceof Shielder) {
           ((Shielder) e).setAllies(this.level.getEnemies());
         }
@@ -249,7 +249,9 @@ public class GameModel implements Disposable, ProjectileListener {
       for (int i = 0; i < 2; i++) {
         Vector2 pos = getRandomFloorPosition(level.getMap(), room);
         if (pos != null) {
-          ItemEntity item = new ItemEntity(new HealthPotion(), physicsWorld, pos.x, pos.y);
+          ItemEntity item =
+              (ItemEntity)
+                  itemCreator.createEntity(this.physicsWorld, pos.x, pos.y, new HealthPotion());
           level.addItem(item);
           totalSpawned++;
           com.badlogic.gdx.Gdx.app.log("GameModel", "Spawned Item at " + pos);
@@ -418,8 +420,16 @@ public class GameModel implements Disposable, ProjectileListener {
     }
 
     projectileManager.addProjectile(
-        new Projectile(
-            physicsWorld, origin.x, origin.y, target, isPlayerSource, null, speed, damage));
+        (Projectile)
+            projectileCreator.createEntity(
+                this.physicsWorld,
+                origin.x,
+                origin.y,
+                target,
+                isPlayerSource,
+                (io.github.soulslight.model.entities.Entity) null,
+                speed,
+                damage));
   }
 
   @Override
@@ -430,17 +440,16 @@ public class GameModel implements Disposable, ProjectileListener {
       float damage) {
 
     projectileManager.addProjectile(
-        new Projectile(
-            physicsWorld,
-            origin.x,
-            origin.y,
-            targetEntity.getPosition(),
-            true, // isPlayerSource
-            targetEntity,
-            400f,
-            damage)); // Default speed for homing
-    // MISSING DAMAGE IN CONSTRUCTOR CALL?
-    // I need to use the full constructor.
+        (Projectile)
+            projectileCreator.createEntity(
+                this.physicsWorld,
+                origin.x,
+                origin.y,
+                targetEntity.getPosition(),
+                true, // isPlayerSource
+                targetEntity,
+                400f,
+                damage)); // Default speed for homing
   }
 
   private void checkMeleeCollision(AbstractEnemy enemy) {
@@ -566,6 +575,7 @@ public class GameModel implements Disposable, ProjectileListener {
     }
 
     // Fix: Save actual current level index instead of hardcoded 1
+    // Fix: Save actual campaign seed from GameManager
     return new GameStateMemento(
         playerStates,
         enemyStates,
@@ -573,7 +583,7 @@ public class GameModel implements Disposable, ProjectileListener {
         roomStates,
         doorStates,
         portalStates,
-        this.currentSeed,
+        GameManager.getInstance().getCampaignSeed(),
         GameManager.getInstance().getCurrentLevelIndex());
   }
 
@@ -598,8 +608,6 @@ public class GameModel implements Disposable, ProjectileListener {
     GameManager.getInstance().clearPlayers();
     this.projectileManager.getProjectiles().clear();
 
-    // Clear EVERYTHING remaining from physics world (Enemies, Players, Walls,
-    // etc.)
     com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies =
         new com.badlogic.gdx.utils.Array<>();
     physicsWorld.getBodies(bodies);
@@ -607,7 +615,8 @@ public class GameModel implements Disposable, ProjectileListener {
       physicsWorld.destroyBody(b);
     }
 
-    // Restore Seed
+    // Restore Seed to GameManager so map generation is consistent!
+    GameManager.getInstance().setCampaignSeed(memento.seed);
     this.currentSeed = memento.seed;
 
     // Fix: Restore Level Index BEFORE generating map
@@ -623,20 +632,36 @@ public class GameModel implements Disposable, ProjectileListener {
     boolean hasCavePortal =
         newMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
 
-    LevelBuilder builder =
-        new LevelBuilder().buildMap(newMap).buildPhysicsFromMap(this.physicsWorld);
+    // GoF Builder: Create Director and Builder
+    StandardLevelBuilder builder = new StandardLevelBuilder();
+    LevelDirector director = new LevelDirector(builder);
 
-    // Conditional setup based on level type, mirroring constructor but WITHOUT
-    // auto-spawning enemies
+    // Conditional setup based on level type
+    GameLevelFactory levelFactory;
     if (!roomData.isEmpty()) {
-      builder
-          .buildRooms(roomData)
-          .initializeRoomManager(this.physicsWorld)
-          .setEnvironment("dungeon_theme.mp3", 0.3f);
+      levelFactory = new DungeonLevelFactory();
+      this.level =
+          director.constructDungeonLevelRestored(newMap, roomData, levelFactory, this.physicsWorld);
+
     } else if (hasCavePortal) {
-      builder.spawnCavePortal(this.physicsWorld).setEnvironment("cave_theme.mp3", 0.2f);
+      levelFactory = new CaveLevelFactory();
+      LevelFactory.EnemyConfig config =
+          LevelFactory.getEnemyConfig(
+              GameManager.getInstance().getCurrentLevelIndex(),
+              GameManager.getInstance().getGameMode());
+
+      this.level =
+          director.constructCaveLevelRestored(newMap, levelFactory, this.physicsWorld, config);
+
     } else {
-      builder.setEnvironment("boss_theme.mp3", 0.1f);
+      levelFactory = new BossLevelFactory();
+      LevelFactory.EnemyConfig config =
+          LevelFactory.getEnemyConfig(
+              GameManager.getInstance().getCurrentLevelIndex(),
+              GameManager.getInstance().getGameMode());
+
+      this.level =
+          director.constructBossLevelRestored(newMap, levelFactory, this.physicsWorld, config);
     }
 
     this.level = builder.build();
@@ -644,7 +669,12 @@ public class GameModel implements Disposable, ProjectileListener {
 
     // 2. Recreate players from Memento
     for (PlayerMemento pm : memento.players) {
-      Player newPlayer = new Player(pm.type, physicsWorld, pm.x, pm.y);
+      Vector2 savedPos = new Vector2(pm.x, pm.y);
+      Vector2 safePos = getSafeSpawnPosition(savedPos);
+
+      Player newPlayer =
+          (Player) playerCreator.createEntity(this.physicsWorld, safePos.x, safePos.y, pm.type);
+      newPlayer.addProjectileListener(this); // Register listener
       newPlayer.setHealth(pm.health);
 
       players.add(newPlayer);
@@ -738,6 +768,7 @@ public class GameModel implements Disposable, ProjectileListener {
       // Restore Shielder links and Listener registration
       for (AbstractEnemy e : this.level.getEnemies()) {
         e.addProjectileListener(this); // Register listener
+        e.addDeathListener(this); // Register death listener
         if (e instanceof Shielder) {
           ((Shielder) e).setAllies(this.level.getEnemies());
         }
@@ -754,11 +785,23 @@ public class GameModel implements Disposable, ProjectileListener {
       for (ProjectileMemento pm : memento.projectiles) {
         // Workaround: Create with dummy target, then override velocity.
         Vector2 dummyTarget = new Vector2(pm.x + pm.vx, pm.y + pm.vy);
-        Projectile p = new Projectile(physicsWorld, pm.x, pm.y, dummyTarget);
+        Projectile p =
+            (Projectile)
+                projectileCreator.createEntity(
+                    this.physicsWorld,
+                    pm.x,
+                    pm.y,
+                    dummyTarget,
+                    false,
+                    (io.github.soulslight.model.entities.Entity) null,
+                    0f,
+                    0f);
         p.getBody().setLinearVelocity(pm.vx, pm.vy);
         this.projectileManager.addProjectile(p);
       }
     }
+
+    notifyObservers("LEVEL_RESTORED", this.level);
   }
 
   public List<Projectile> getProjectiles() {
@@ -790,6 +833,20 @@ public class GameModel implements Disposable, ProjectileListener {
     return (level != null) ? level.getEnemies() : Collections.emptyList();
   }
 
+  @Override
+  public void onEnemyDied(AbstractEnemy enemy) {
+    if (enemy instanceof Oblivion && ((Oblivion) enemy).isPhaseTwo()) {
+      // Boss Killed!
+      setLevelCompleted(true);
+    }
+    // Could track total kills here too if needed
+    // totalEnemiesKilled++; // Already handled in update loop? Use this instead?
+    // Current update loop removes dead enemies and increments counter.
+    // Listener is cleaner, but let's stick to Boss logic for now to avoid double
+    // counting
+    // if we don't refactor the update loop.
+  }
+
   public float getCurrentWill() {
     return currentWill;
   }
@@ -810,10 +867,6 @@ public class GameModel implements Disposable, ProjectileListener {
     return levelCompleted;
   }
 
-  public void setLevelCompleted(boolean completed) {
-    this.levelCompleted = completed;
-  }
-
   public int getTotalEnemiesKilled() {
     return totalEnemiesKilled;
   }
@@ -824,8 +877,64 @@ public class GameModel implements Disposable, ProjectileListener {
 
   @Override
   public void dispose() {
-    if (physicsWorld != null) physicsWorld.dispose();
+    // Dispose level and entities FIRST before destroying the world they live in!
     if (level != null) level.dispose();
+
+    if (physicsWorld != null) physicsWorld.dispose();
+
     GameManager.getInstance().cleanUp();
+  }
+
+  /** Checks if a position is safe (floor) and returns it. If not, searches for nearest floor. */
+  private Vector2 getSafeSpawnPosition(Vector2 pos) {
+    if (isFloorTile(pos)) return pos;
+
+    // If inside wall, search outwards (Spiral/Grid Search)
+    // Radius in TILES
+    int searchRadius = 3;
+
+    if (level == null || level.getMap() == null) return pos;
+    TiledMapTileLayer layer = (TiledMapTileLayer) level.getMap().getLayers().get(0);
+    float tileSize = layer.getTileWidth();
+    int cx = (int) (pos.x / tileSize);
+    int cy = (int) (pos.y / tileSize);
+
+    for (int r = 1; r <= searchRadius; r++) {
+      for (int y = cy - r; y <= cy + r; y++) {
+        for (int x = cx - r; x <= cx + r; x++) {
+          Vector2 candidate =
+              new Vector2(x * tileSize + tileSize / 2f, y * tileSize + tileSize / 2f);
+          if (isFloorTile(candidate)) {
+            com.badlogic.gdx.Gdx.app.log(
+                "SafeSpawn", "Moved player from " + pos + " to " + candidate);
+            return candidate;
+          }
+        }
+      }
+    }
+
+    return pos; // Fallback
+  }
+
+  private boolean isFloorTile(Vector2 pos) {
+    if (level == null || level.getMap() == null) return true;
+    TiledMapTileLayer layer = (TiledMapTileLayer) level.getMap().getLayers().get(0);
+    if (layer == null) return true;
+
+    int x = (int) (pos.x / layer.getTileWidth());
+    int y = (int) (pos.y / layer.getTileHeight());
+
+    if (x < 0 || x >= layer.getWidth() || y < 0 || y >= layer.getHeight()) return false;
+
+    TiledMapTileLayer.Cell cell = layer.getCell(x, y);
+    // Null cell usually means void, which is arguably NOT floor. Depends on map.
+    // Assuming void is unsafe.
+    if (cell == null || cell.getTile() == null) return false;
+
+    var props = cell.getTile().getProperties();
+    if (props.containsKey("type")) {
+      return "floor".equals(props.get("type", String.class));
+    }
+    return !props.get("isWall", false, Boolean.class);
   }
 }

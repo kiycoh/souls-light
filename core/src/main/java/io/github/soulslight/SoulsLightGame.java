@@ -38,7 +38,7 @@ public class SoulsLightGame extends Game {
   public void dispose() {
     batch.dispose();
     ResourceManager.getInstance().dispose();
-    TextureManager.dispose();
+    TextureManager.getInstance().dispose();
     super.dispose();
   }
 }

@@ -15,31 +15,47 @@ import java.util.Map;
 
 public class TextureManager {
 
-  private static final Map<String, Texture> textures = new HashMap<>();
+  private static TextureManager instance;
 
-  private static Animation<TextureRegion> chaserWalkAnim;
-  private static Animation<TextureRegion> rangerWalkAnim;
-  private static Animation<TextureRegion> shielderWalkAnim;
-  private static Animation<TextureRegion> spikedBallWalkAnim;
-  private static Animation<TextureRegion> spikedBallChargeAnim;
+  private final Map<String, Texture> textures = new HashMap<>();
 
-  private static Animation<TextureRegion> p1WalkAnim;
-  private static Animation<TextureRegion> p2WalkAnim;
+  private Animation<TextureRegion> chaserWalkAnim;
+  private Animation<TextureRegion> rangerWalkAnim;
+  private Animation<TextureRegion> shielderWalkAnim;
+  private Animation<TextureRegion> spikedBallWalkAnim;
+  private Animation<TextureRegion> spikedBallChargeAnim;
 
-  private static Animation<TextureRegion> oblivionIdleAnim;
-  private static Animation<TextureRegion> oblivionWalkAnim;
-  private static Animation<TextureRegion> oblivionMeleeWindupAnim;
-  private static Animation<TextureRegion> oblivionMeleeAttackAnim;
-  private static Animation<TextureRegion> oblivionSpellAnim;
-  private static Animation<TextureRegion> oblivionTeleportAnim;
-  private static Animation<TextureRegion> oblivionDeathAnim;
+  private Animation<TextureRegion> p1WalkAnim;
+  private Animation<TextureRegion> p2WalkAnim;
 
-  private static final Map<String, Animation<TextureRegion>> builtAnims = new HashMap<>();
+  private Animation<TextureRegion> oblivionIdleAnim;
+  private Animation<TextureRegion> oblivionWalkAnim;
+  private Animation<TextureRegion> oblivionMeleeWindupAnim;
+  private Animation<TextureRegion> oblivionMeleeAttackAnim;
+  private Animation<TextureRegion> oblivionSpellAnim;
+  private Animation<TextureRegion> oblivionTeleportAnim;
+  private Animation<TextureRegion> oblivionDeathAnim;
+
+  private final Map<String, Animation<TextureRegion>> builtAnims = new HashMap<>();
 
   // used for tests
-  private static String ASSETS_BASE = "";
+  private String ASSETS_BASE = "";
 
-  public static void load() {
+  private TextureManager() {
+    // Lazy loading typically handled in load() if explicitly called, or implicitly
+    // on first access?
+    // For now, keeping load() separate to control when assets are loaded
+    // (GameScreen ctor)
+  }
+
+  public static synchronized TextureManager getInstance() {
+    if (instance == null) {
+      instance = new TextureManager();
+    }
+    return instance;
+  }
+
+  public void load() {
     // Carica le texture e assegna le chiavi sottoforma di stringhe
     if (!textures.isEmpty()) return;
 
@@ -107,7 +123,7 @@ public class TextureManager {
     }
   }
 
-  private static void detectAssetsBase() {
+  private void detectAssetsBase() {
     if (Gdx.files.internal("images/player.png").exists()) {
       ASSETS_BASE = "";
     } else if (Gdx.files.internal("../assets/images/player.png").exists()) {
@@ -117,9 +133,10 @@ public class TextureManager {
     }
   }
 
-  public static Texture get(String name) {
+  public Texture get(String name) {
     if (!textures.containsKey(name)) {
-      // Protezione contro i crash: se chiedi una texture che non esiste, stampa errore e ridai il
+      // Protezione contro i crash: se chiedi una texture che non esiste, stampa
+      // errore e ridai il
       // player
       System.err.println("ERRORE: Texture mancante -> " + name);
       return textures.get("player");
@@ -127,7 +144,7 @@ public class TextureManager {
     return textures.get(name);
   }
 
-  public static Texture getEnemyTexture(AbstractEnemy enemy) {
+  public Texture getEnemyTexture(AbstractEnemy enemy) {
     if (enemy instanceof Ranger) return get("archer");
     if (enemy instanceof SpikedBall) return get("slime");
     if (enemy instanceof Shielder) return get("shielder");
@@ -135,77 +152,77 @@ public class TextureManager {
     return get("skeleton");
   }
 
-  public static TextureRegion getChaserWalkFrame(float stateTime) {
+  public TextureRegion getChaserWalkFrame(float stateTime) {
     if (chaserWalkAnim == null) return null;
     return chaserWalkAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getRangerWalkFrame(float stateTime) {
+  public TextureRegion getRangerWalkFrame(float stateTime) {
     if (rangerWalkAnim == null) return null;
     return rangerWalkAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getShielderWalkFrame(float stateTime) {
+  public TextureRegion getShielderWalkFrame(float stateTime) {
     if (shielderWalkAnim == null) return null;
     return shielderWalkAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getSpikedBallWalkFrame(float stateTime) {
+  public TextureRegion getSpikedBallWalkFrame(float stateTime) {
     if (spikedBallWalkAnim == null) return null;
     return spikedBallWalkAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getSpikedBallChargeFrame(float stateTime) {
+  public TextureRegion getSpikedBallChargeFrame(float stateTime) {
     if (spikedBallChargeAnim == null) return null;
     return spikedBallChargeAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getP1WalkFrame(float stateTime) {
+  public TextureRegion getP1WalkFrame(float stateTime) {
     if (p1WalkAnim == null) return null;
     return p1WalkAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getP2WalkFrame(float stateTime) {
+  public TextureRegion getP2WalkFrame(float stateTime) {
     if (p2WalkAnim == null) return null;
     return p2WalkAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getOblivionIdleFrame(float stateTime) {
+  public TextureRegion getOblivionIdleFrame(float stateTime) {
     if (oblivionIdleAnim == null) return null;
     return oblivionIdleAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getOblivionWalkFrame(float stateTime) {
+  public TextureRegion getOblivionWalkFrame(float stateTime) {
     if (oblivionWalkAnim == null) return null;
     return oblivionWalkAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getOblivionMeleeWindupFrame(float stateTime) {
+  public TextureRegion getOblivionMeleeWindupFrame(float stateTime) {
     if (oblivionMeleeWindupAnim == null) return null;
     return oblivionMeleeWindupAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getOblivionMeleeAttackFrame(float stateTime) {
+  public TextureRegion getOblivionMeleeAttackFrame(float stateTime) {
     if (oblivionMeleeAttackAnim == null) return null;
     return oblivionMeleeAttackAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getOblivionSpellFrame(float stateTime) {
+  public TextureRegion getOblivionSpellFrame(float stateTime) {
     if (oblivionSpellAnim == null) return null;
     return oblivionSpellAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getOblivionTeleportFrame(float stateTime) {
+  public TextureRegion getOblivionTeleportFrame(float stateTime) {
     if (oblivionTeleportAnim == null) return null;
     return oblivionTeleportAnim.getKeyFrame(stateTime, true);
   }
 
-  public static TextureRegion getOblivionDeathFrame(float stateTime) {
+  public TextureRegion getOblivionDeathFrame(float stateTime) {
     if (oblivionDeathAnim == null) return null;
     return oblivionDeathAnim.getKeyFrame(stateTime, false);
   }
 
-  public static void dispose() {
+  public void dispose() {
     for (Texture t : textures.values()) t.dispose();
     textures.clear();
 
@@ -230,7 +247,7 @@ public class TextureManager {
   }
 
   // helper
-  private static void buildAnimIfExists(String key, int frameW, int frameH) {
+  private void buildAnimIfExists(String key, int frameW, int frameH) {
     String path = ASSETS_BASE + "images/" + key + ".png";
     if (!Gdx.files.internal(path).exists()) {
       return;
@@ -269,7 +286,7 @@ public class TextureManager {
     builtAnims.put(key, anim);
   }
 
-  private static Animation<TextureRegion> getBuiltAnim(String key) {
+  private Animation<TextureRegion> getBuiltAnim(String key) {
     return builtAnims.get(key);
   }
 }
