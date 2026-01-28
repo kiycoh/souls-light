@@ -43,8 +43,6 @@ import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.observer.Observer;
-import io.github.soulslight.model.room.Portal;
-import io.github.soulslight.model.room.PortalRoom;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -98,25 +96,11 @@ public final class GameScreen implements GameState, Observer {
   private final BitmapFont promptFont;
 
   private final LightingRenderer lightingRenderer;
+  private final ParticleRenderSystem particleRenderSystem;
 
   // Outro Overlay
   private OutroOverlay outroOverlay;
   private boolean showingOutro = false;
-
-  // Door particles
-
-  private final java.util.Map<
-          io.github.soulslight.model.room.Door,
-          com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>
-      doorEffectsMap = new java.util.IdentityHashMap<>();
-  private final java.util.Map<
-          io.github.soulslight.model.entities.Projectile,
-          com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>
-      projectileEffectsMap = new java.util.IdentityHashMap<>();
-
-  // Portal particles
-  private com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect portalEffect;
-  private float portalEffectTime = 0f;
 
   public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
     this.batch = batch;
@@ -141,6 +125,7 @@ public final class GameScreen implements GameState, Observer {
     this.hud = new GameHUD();
     this.debugRenderer = new Box2DDebugRenderer();
     this.lightingRenderer = new LightingRenderer();
+    this.particleRenderSystem = new ParticleRenderSystem();
     this.promptFont = new BitmapFont();
 
     // Pause Menu
@@ -262,7 +247,7 @@ public final class GameScreen implements GameState, Observer {
     batch.begin();
 
     // Draw particles for locked doors
-    drawDoorParticles(delta);
+    particleRenderSystem.renderDoorParticles(batch, model, delta);
 
     // Update global particles
     io.github.soulslight.manager.ParticleManager.getInstance().update(delta);
@@ -298,61 +283,7 @@ public final class GameScreen implements GameState, Observer {
 
       boolean flipX = shouldFlipXStable(enemy);
 
-      if (enemy instanceof Oblivion) {
-        TextureRegion frame = computeOblivionFrame((Oblivion) enemy);
-        if (frame != null) {
-          // Oblivion spritesheet needs to be flipped
-          boolean flipOblivion = !flipX;
-          drawOblivion(frame, enemy.getPosition(), flipOblivion);
-          continue;
-        }
-      }
-
-      if (enemy instanceof Chaser) {
-        TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.CHASER);
-        if (frame != null) {
-          drawEntity(frame, enemy.getPosition(), 32, 46, flipX);
-          continue;
-        }
-      }
-
-      if (enemy instanceof Ranger) {
-        TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.RANGER);
-        if (frame != null) {
-          drawEntity(frame, enemy.getPosition(), 32, 46, flipX);
-          continue;
-        }
-      }
-
-      if (enemy instanceof Shielder) {
-        TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.SHIELDER);
-        if (frame != null) {
-          drawEntity(frame, enemy.getPosition(), 32, 54, flipX);
-          continue;
-        }
-      }
-
-      if (enemy instanceof SpikedBall) {
-        SpikedBall sb = (SpikedBall) enemy;
-        TextureRegion frame;
-
-        if (sb.isCharging()) {
-          float offset = enemyAnimOffset.computeIfAbsent(enemy, e -> MathUtils.random(0f, 10f));
-          frame = TextureManager.getInstance().getSpikedBallChargeFrame(enemyAnimTime + offset);
-        } else {
-          frame = computeAnimatedFrame(enemy, EnemyAnimType.SPIKEDBALL);
-        }
-
-        if (frame != null) {
-          drawEntity(frame, enemy.getPosition(), 64, 64, flipX);
-          continue;
-        }
-      }
-
-      Texture tex = TextureManager.getInstance().getEnemyTexture(enemy);
-      float size =
-          (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
-      drawEntity(tex, enemy.getPosition(), size, size);
+      drawEnemy(enemy, flipX);
     }
 
     // ITEM RENDERING
@@ -370,10 +301,10 @@ public final class GameScreen implements GameState, Observer {
     }
 
     // Draw Projectiles (Sprites or Particles)
-    drawProjectiles(delta);
+    particleRenderSystem.renderProjectiles(batch, model, delta);
 
     // Draw portal
-    drawPortal();
+    particleRenderSystem.renderPortal(batch, model);
 
     // Render global particles
     io.github.soulslight.manager.ParticleManager.getInstance().render(batch);
@@ -416,56 +347,6 @@ public final class GameScreen implements GameState, Observer {
     }
   }
 
-  private void drawPortal() {
-    if (model.getLevel() == null) return;
-
-    Portal portal = null;
-
-    // Check for dungeon-style PortalRoom first
-    if (model.getLevel().getRoomManager() != null) {
-      PortalRoom portalRoom = model.getLevel().getRoomManager().getPortalRoom();
-      if (portalRoom != null && portalRoom.getPortal() != null) {
-        portal = portalRoom.getPortal();
-      }
-    }
-
-    // Fall back to cave-style direct portal
-    if (portal == null) {
-      portal = model.getLevel().getCavePortal();
-    }
-
-    if (portal == null) return;
-
-    Vector2 pos = portal.getPosition();
-
-    com.badlogic.gdx.graphics.g2d.ParticleEffectPool pool =
-        io.github.soulslight.manager.ParticleManager.getInstance()
-            .getPool(io.github.soulslight.model.particles.ParticleType.PURPLE_SPARKS);
-
-    if (pool != null) {
-      if (portalEffect == null) {
-        portalEffect = pool.obtain();
-        portalEffect.start();
-      }
-
-      // Update position (Portal Center + Ellipse Offset)
-      portalEffect.setPosition(pos.x, pos.y);
-
-      portalEffect.update(Gdx.graphics.getDeltaTime());
-      portalEffect.draw(batch);
-
-      if (portalEffect.isComplete()) {
-        portalEffect.reset();
-      }
-    }
-
-    // Use the portal's current frame from the state machine
-    TextureRegion frame = portal.getFrame();
-    if (frame != null) {
-      drawEntity(frame, pos, 64f, 64f, false);
-    }
-  }
-
   private void drawPortalPrompt() {
     if (model.getLevel() == null) return;
 
@@ -495,174 +376,6 @@ public final class GameScreen implements GameState, Observer {
         viewport.getWorldWidth() / 2 - 60,
         viewport.getWorldHeight() - 20);
     batch.end();
-  }
-
-  private void drawDoorParticles(float delta) {
-    if (model.getLevel() == null || model.getLevel().getRoomManager() == null) return;
-
-    // Ensure resources are loaded (lazy load check)
-    // In a real scenario, this might be better in show() or a specific load()
-    // method,
-    // but here we ensure the pool exists.
-    io.github.soulslight.manager.ParticleManager pm =
-        io.github.soulslight.manager.ParticleManager.getInstance();
-
-    // We update/render the global manager effects at the end,
-    // but for doors specifically, we need persistent effects linked to door
-    // objects.
-    // The Manager handles "shot and forget" particles well (spawn & auto-cleanup),
-    // but for continuous loops tied to game objects, we might want to manually
-    // manage the pooled effect
-    // retrieved from the manager's pool.
-
-    // 1. Update active effects
-    java.util.Iterator<
-            java.util.Map.Entry<
-                io.github.soulslight.model.room.Door,
-                com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>>
-        it = doorEffectsMap.entrySet().iterator();
-    while (it.hasNext()) {
-      java.util.Map.Entry<
-              io.github.soulslight.model.room.Door,
-              com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>
-          entry = it.next();
-      io.github.soulslight.model.room.Door door = entry.getKey();
-      com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect effect = entry.getValue();
-
-      // If door is no longer locked, stop effect
-      if (!door.isLocked()) {
-        effect.free();
-        it.remove();
-        continue;
-      }
-
-      effect.update(delta);
-      effect.draw(batch);
-
-      if (effect.isComplete()) {
-        effect.reset();
-      }
-    }
-
-    // Spawn effects for locked doors that don't have one
-    for (io.github.soulslight.model.room.Room room : model.getLevel().getRoomManager().getRooms()) {
-      for (io.github.soulslight.model.room.Door door : room.getDoors()) {
-        if (door.isLocked()) {
-          if (!doorEffectsMap.containsKey(door)) {
-            // Get pool template from Manager
-            com.badlogic.gdx.graphics.g2d.ParticleEffectPool pool =
-                pm.getPool(io.github.soulslight.model.particles.ParticleType.PENTAGRAM_GLITCHY);
-
-            if (pool != null) {
-              com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect eff = pool.obtain();
-              eff.setPosition(door.getPosition().x, door.getPosition().y);
-              eff.start();
-              doorEffectsMap.put(door, eff);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  private void drawProjectiles(float delta) {
-    com.badlogic.gdx.graphics.Texture tArrow =
-        io.github.soulslight.manager.TextureManager.getInstance().get("arrow");
-    if (tArrow == null)
-      tArrow = io.github.soulslight.manager.TextureManager.getInstance().get("player");
-
-    java.util.Set<io.github.soulslight.model.entities.Projectile> active =
-        new java.util.HashSet<>();
-
-    for (io.github.soulslight.model.entities.Projectile p : model.getProjectiles()) {
-      active.add(p);
-      String type = p.getType();
-
-      if ("homing_fireball".equals(type)) {
-        updateAndDrawParticle(
-            p, io.github.soulslight.model.particles.ParticleType.FIREBALL_BLUE, delta);
-      } else if ("fireball".equals(type)) {
-        updateAndDrawParticle(
-            p, io.github.soulslight.model.particles.ParticleType.FIREBALL_BLUE, delta);
-      } else {
-        // Default Sprite Drawing
-        batch.draw(
-            tArrow,
-            p.getPosition().x - 16,
-            p.getPosition().y - 4,
-            16,
-            4,
-            32,
-            8,
-            1,
-            1,
-            p.getRotation(),
-            0,
-            0,
-            tArrow.getWidth(),
-            tArrow.getHeight(),
-            false,
-            false);
-      }
-    }
-
-    // Cleanup dead particles
-    java.util.Iterator<
-            java.util.Map.Entry<
-                io.github.soulslight.model.entities.Projectile,
-                com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>>
-        it = projectileEffectsMap.entrySet().iterator();
-    while (it.hasNext()) {
-      java.util.Map.Entry<
-              io.github.soulslight.model.entities.Projectile,
-              com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>
-          entry = it.next();
-      if (!active.contains(entry.getKey())) {
-        entry.getValue().free();
-        it.remove();
-      }
-    }
-  }
-
-  private void updateAndDrawParticle(
-      io.github.soulslight.model.entities.Projectile p,
-      io.github.soulslight.model.particles.ParticleType type,
-      float delta) {
-    com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect effect =
-        projectileEffectsMap.get(p);
-
-    // Obtain directly from pool to avoid adding to ParticleManager's global active
-    // list (prevents double update/render)
-    if (effect == null) {
-      com.badlogic.gdx.graphics.g2d.ParticleEffectPool pool =
-          io.github.soulslight.manager.ParticleManager.getInstance().getPool(type);
-      if (pool != null) {
-        effect = pool.obtain();
-        projectileEffectsMap.put(p, effect);
-      }
-    }
-
-    if (effect != null) {
-      effect.setPosition(p.getPosition().x, p.getPosition().y);
-
-      // Rotate Blue Fireballs to face target
-      if (type == io.github.soulslight.model.particles.ParticleType.FIREBALL_BLUE) {
-        float angle = p.getRotation();
-        for (com.badlogic.gdx.graphics.g2d.ParticleEmitter emitter : effect.getEmitters()) {
-          // 1. Set Emission Direction (Where particles fly)
-          emitter.getAngle().setHigh(angle + 180f - 15f, angle + 180f + 15f);
-          emitter.getAngle().setLow(angle + 180f);
-
-          // 2. Set Texture Rotation (Which way the sprite points)
-          // Crucial for directional particles like comets/arrows
-          emitter.getRotation().setHigh(angle);
-          emitter.getRotation().setLow(angle);
-        }
-      }
-
-      effect.update(delta);
-      effect.draw(batch);
-    }
   }
 
   private void checkLevelTransition() {
@@ -713,7 +426,8 @@ public final class GameScreen implements GameState, Observer {
     if (Gdx.app.getApplicationListener() instanceof io.github.soulslight.SoulsLightGame game) {
 
       if (explorationMusic != null) {
-        explorationMusic.stop();
+        lightingRenderer.dispose();
+        particleRenderSystem.dispose();
         explorationMusic.dispose();
         explorationMusic = null;
       }
@@ -792,6 +506,64 @@ public final class GameScreen implements GameState, Observer {
       default:
         return TextureManager.getInstance().getP1WalkFrame(time);
     }
+  }
+
+  private void drawEnemy(AbstractEnemy enemy, boolean flipX) {
+    if (enemy instanceof Oblivion) {
+      TextureRegion frame = computeOblivionFrame((Oblivion) enemy);
+      if (frame != null) {
+        // Oblivion spritesheet needs to be flipped
+        boolean flipOblivion = !flipX;
+        drawOblivion(frame, enemy.getPosition(), flipOblivion);
+        return;
+      }
+    }
+
+    if (enemy instanceof Chaser) {
+      TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.CHASER);
+      if (frame != null) {
+        drawEntity(frame, enemy.getPosition(), 32, 46, flipX);
+        return;
+      }
+    }
+
+    if (enemy instanceof Ranger) {
+      TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.RANGER);
+      if (frame != null) {
+        drawEntity(frame, enemy.getPosition(), 32, 46, flipX);
+        return;
+      }
+    }
+
+    if (enemy instanceof Shielder) {
+      TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.SHIELDER);
+      if (frame != null) {
+        drawEntity(frame, enemy.getPosition(), 32, 54, flipX);
+        return;
+      }
+    }
+
+    if (enemy instanceof SpikedBall) {
+      SpikedBall sb = (SpikedBall) enemy;
+      TextureRegion frame;
+
+      if (sb.isCharging()) {
+        float offset = enemyAnimOffset.computeIfAbsent(enemy, e -> MathUtils.random(0f, 10f));
+        frame = TextureManager.getInstance().getSpikedBallChargeFrame(enemyAnimTime + offset);
+      } else {
+        frame = computeAnimatedFrame(enemy, EnemyAnimType.SPIKEDBALL);
+      }
+
+      if (frame != null) {
+        drawEntity(frame, enemy.getPosition(), 64, 64, flipX);
+        return;
+      }
+    }
+
+    Texture tex = TextureManager.getInstance().getEnemyTexture(enemy);
+    float size =
+        (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
+    drawEntity(tex, enemy.getPosition(), size, size);
   }
 
   private TextureRegion computeOblivionFrame(Oblivion boss) {
@@ -1119,19 +891,6 @@ public final class GameScreen implements GameState, Observer {
     enemyFacingRight.clear();
     playerFacingRight.clear();
 
-    if (doorEffectsMap != null) {
-      for (com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect effect :
-          doorEffectsMap.values()) {
-        effect.free();
-      }
-      doorEffectsMap.clear();
-    }
-
-    if (portalEffect != null) {
-      portalEffect.free();
-      portalEffect = null;
-    }
-
     io.github.soulslight.manager.ParticleManager.getInstance().clear();
   }
 
@@ -1140,6 +899,11 @@ public final class GameScreen implements GameState, Observer {
     if ("LEVEL_COMPLETE".equals(eventType)) {
       checkLevelTransition();
     } else if ("LEVEL_RESTORED".equals(eventType)) {
+      // Clear legacy visual effects from previous state
+      if (particleRenderSystem != null) {
+        particleRenderSystem.dispose();
+      }
+
       // Update Map Renderer with new TiledMap
       if (data instanceof io.github.soulslight.model.map.Level) {
         io.github.soulslight.model.map.Level restoredLevel =
@@ -1149,14 +913,6 @@ public final class GameScreen implements GameState, Observer {
         }
       }
 
-      // Clear old particles to avoid duplication
-      if (doorEffectsMap != null) {
-        for (com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect effect :
-            doorEffectsMap.values()) {
-          effect.free();
-        }
-        doorEffectsMap.clear();
-      }
     } else if ("PLAYER_HIT".equals(eventType)
         && data instanceof io.github.soulslight.model.entities.Player) {
       io.github.soulslight.model.entities.Player p =

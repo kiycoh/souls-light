@@ -39,57 +39,73 @@ public class GameController extends InputAdapter implements ControllerListener, 
   public boolean keyDown(int keycode) {
     // --- DEBUG MENU CONTROLS (when menu is visible) ---
     if (debugMenuController != null && debugMenuController.isVisible()) {
-      switch (keycode) {
-        case Input.Keys.UP -> {
-          debugMenuController.selectPrevious();
-          return true;
-        }
-        case Input.Keys.DOWN -> {
-          debugMenuController.selectNext();
-          return true;
-        }
-        case Input.Keys.ENTER -> {
-          debugMenuController.executeSelected();
-          return true;
-        }
-        case Input.Keys.F1, Input.Keys.ESCAPE -> {
-          debugMenuController.closeMenu();
-          model.setPaused(false);
-          return true;
-        }
-        default -> {
-          return true; // Consume all other keys when menu is open
-        }
-      }
+      return handleDebugMenuInput(keycode);
     }
 
     // --- DEBUG MENU TOGGLE ---
     if (keycode == Input.Keys.F1 && GameManager.DEBUG_MODE) {
-      if (debugMenuController != null) {
-        debugMenuController.toggleMenu();
-        // Pause game when debug menu is open (as per user request)
-        if (debugMenuController.isVisible()) {
-          model.setPaused(true);
-        } else {
-          model.setPaused(false);
-        }
-      }
+      handleDebugToggle();
       return true;
     }
 
     // --- PAUSE MENU TOGGLE ---
     if (keycode == Input.Keys.ESCAPE) {
-      // If debug menu is open, ESC closes it
-      boolean newState = !model.isPaused();
-      model.setPaused(newState);
-
-      if (gameScreen != null) {
-        gameScreen.updateInputMode(); // Notify screen to switch processors
-      }
+      handlePauseToggle();
       return true;
     }
 
-    // --- COMMAND MAPPING ---
+    // --- GAMEPLAY COMMANDS ---
+    return handleGameplayInput(keycode);
+  }
+
+  private boolean handleDebugMenuInput(int keycode) {
+    switch (keycode) {
+      case Input.Keys.UP -> {
+        debugMenuController.selectPrevious();
+        return true;
+      }
+      case Input.Keys.DOWN -> {
+        debugMenuController.selectNext();
+        return true;
+      }
+      case Input.Keys.ENTER -> {
+        debugMenuController.executeSelected();
+        return true;
+      }
+      case Input.Keys.F1, Input.Keys.ESCAPE -> {
+        debugMenuController.closeMenu();
+        model.setPaused(false);
+        return true;
+      }
+      default -> {
+        return true; // Consume all other keys when menu is open
+      }
+    }
+  }
+
+  private void handleDebugToggle() {
+    if (debugMenuController != null) {
+      debugMenuController.toggleMenu();
+      // Pause game when debug menu is open (as per user request)
+      if (debugMenuController.isVisible()) {
+        model.setPaused(true);
+      } else {
+        model.setPaused(false);
+      }
+    }
+  }
+
+  private void handlePauseToggle() {
+    // If debug menu is open, ESC closes it (handled in handleDebugMenuInput)
+    boolean newState = !model.isPaused();
+    model.setPaused(newState);
+
+    if (gameScreen != null) {
+      gameScreen.updateInputMode(); // Notify screen to switch processors
+    }
+  }
+
+  private boolean handleGameplayInput(int keycode) {
     Command command = null;
     List<Player> players = model.getPlayers();
 
@@ -124,15 +140,13 @@ public class GameController extends InputAdapter implements ControllerListener, 
       case Input.Keys.E -> // Portal activation
           command = new InteractCommand();
     }
-    // --- PLAYER 1 (Keyboard Only) ---
-    // --- INVENTORY ---
 
     if (command != null) {
       command.execute(model);
       return true;
     }
 
-    return false; // Not consumed if no command mapped (or specific system keys returned above)
+    return false;
   }
 
   public void update(float delta) {

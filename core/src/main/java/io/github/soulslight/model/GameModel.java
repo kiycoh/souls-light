@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Disposable;
 import io.github.soulslight.manager.GameManager;
+import io.github.soulslight.manager.ParticleManager;
 import io.github.soulslight.manager.ProjectileManager;
 import io.github.soulslight.model.combat.ProjectileListener;
 import io.github.soulslight.model.enemies.*;
@@ -43,7 +44,6 @@ public class GameModel extends Subject
   private final EntityCreator itemCreator = new ItemCreator();
   private final EntityCreator projectileCreator = new ProjectileCreator();
 
-  public static final float MAX_WILL = 100f;
   private final World physicsWorld;
   private float currentWill;
   private boolean isPaused;
@@ -76,7 +76,7 @@ public class GameModel extends Subject
     this.physicsWorld.setContactListener(
         new io.github.soulslight.model.physics.Box2DPhysicsAdapter());
 
-    this.currentWill = MAX_WILL / 2;
+    this.currentWill = Constants.MAX_WILL / 2;
     this.isPaused = false;
     this.players = new java.util.ArrayList<>();
 
@@ -116,37 +116,9 @@ public class GameModel extends Subject
 
     // ---- MAP TYPE DETECTION: Dungeon (rooms) vs Cave (roomless) ----
     boolean hasCavePortal = myMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
-    GameLevelFactory levelFactory;
 
-    // GoF Builder: Create Director and Builder
-    StandardLevelBuilder builder = new StandardLevelBuilder();
-    LevelDirector director = new LevelDirector(builder);
-
-    if (!roomData.isEmpty()) {
-      levelFactory = new DungeonLevelFactory();
-      // ---- DUNGEON-STYLE LEVEL (rooms + doors + portal room) ----
-      this.level = director.constructDungeonLevel(myMap, roomData, levelFactory, this.physicsWorld);
-
-    } else if (hasCavePortal) {
-      levelFactory = new CaveLevelFactory();
-      // ---- CAVE-STYLE LEVEL (random spawn + cave portal) ----
-      LevelFactory.EnemyConfig config =
-          LevelFactory.getEnemyConfig(
-              GameManager.getInstance().getCurrentLevelIndex(),
-              GameManager.getInstance().getGameMode());
-
-      this.level = director.constructCaveLevel(myMap, levelFactory, this.physicsWorld, config);
-
-    } else {
-      levelFactory = new BossLevelFactory();
-      // ---- BOSS ARENA OR CUSTOM (minimal setup) ----
-      LevelFactory.EnemyConfig config =
-          LevelFactory.getEnemyConfig(
-              GameManager.getInstance().getCurrentLevelIndex(),
-              GameManager.getInstance().getGameMode());
-
-      this.level = director.constructBossLevel(myMap, levelFactory, this.physicsWorld, config);
-    }
+    // Unified Level Construction
+    buildLevel(myMap, roomData, hasCavePortal, false);
 
     // Shielder 'target' setup and Listener registration
     if (this.level.getEnemies() != null) {
@@ -311,50 +283,7 @@ public class GameModel extends Subject
     }
 
     // Revive Logic
-    for (Player activePlayer : players) {
-      if (activePlayer == null || activePlayer.isDead()) continue;
-
-      // Check if player is still
-      float velSq =
-          activePlayer.getBody() != null ? activePlayer.getBody().getLinearVelocity().len2() : 0f;
-      // Increased tolerance for "stillness"
-      boolean isStill = activePlayer.getBody() != null && velSq < 5.0f;
-
-      boolean revivingSomeone = false;
-
-      if (isStill) {
-        for (Player deadPlayer : players) {
-          if (deadPlayer == null || !deadPlayer.isDead()) continue;
-
-          float dist = activePlayer.getPosition().dst(deadPlayer.getPosition());
-          // com.badlogic.gdx.Gdx.app.log("ReviveDebug", "Dist to dead: " + dist);
-
-          // Check overlap (assuming radius ~14f, combined ~28f, use 40f for tolerance)
-          if (dist < 40f) {
-            revivingSomeone = true;
-            activePlayer.setReviveAttemptTimer(activePlayer.getReviveAttemptTimer() + deltaTime);
-
-            // Log every integer second to verify progress
-            if ((int) activePlayer.getReviveAttemptTimer()
-                > (int) (activePlayer.getReviveAttemptTimer() - deltaTime)) {
-              com.badlogic.gdx.Gdx.app.log(
-                  "ReviveDebug", "Reviving... Timer: " + activePlayer.getReviveAttemptTimer());
-            }
-
-            if (activePlayer.getReviveAttemptTimer() >= 5.0f) {
-              deadPlayer.revive();
-              activePlayer.setReviveAttemptTimer(0f);
-              com.badlogic.gdx.Gdx.app.log("GameModel", "Player revived!");
-            }
-            break; // Only revive one at a time
-          }
-        }
-      }
-
-      if (!revivingSomeone) {
-        activePlayer.setReviveAttemptTimer(0f);
-      }
-    }
+    updateReviveLogic(deltaTime);
 
     updateEnemiesLogic(deltaTime);
 
@@ -409,32 +338,72 @@ public class GameModel extends Subject
       if (enemy.getPosition().y < -100f) {
         enemy.takeDamage(Float.MAX_VALUE); // Ensures death listeners are notified
       }
-
       checkMeleeCollision(enemy);
+    }
+  }
+
+  private void buildLevel(
+      TiledMap map, List<RoomData> roomData, boolean hasCavePortal, boolean isRestore) {
+    GameLevelFactory levelFactory;
+    StandardLevelBuilder builder = new StandardLevelBuilder();
+    LevelDirector director = new LevelDirector(builder);
+
+    if (!roomData.isEmpty()) {
+      levelFactory = new DungeonLevelFactory();
+      if (isRestore) {
+        this.level =
+            director.constructDungeonLevelRestored(map, roomData, levelFactory, this.physicsWorld);
+      } else {
+        this.level = director.constructDungeonLevel(map, roomData, levelFactory, this.physicsWorld);
+      }
+    } else if (hasCavePortal) {
+      levelFactory = new CaveLevelFactory();
+      LevelFactory.EnemyConfig config =
+          LevelFactory.getEnemyConfig(
+              GameManager.getInstance().getCurrentLevelIndex(),
+              GameManager.getInstance().getGameMode());
+
+      if (isRestore) {
+        this.level =
+            director.constructCaveLevelRestored(map, levelFactory, this.physicsWorld, config);
+      } else {
+        this.level = director.constructCaveLevel(map, levelFactory, this.physicsWorld, config);
+      }
+    } else {
+      levelFactory = new BossLevelFactory();
+      LevelFactory.EnemyConfig config =
+          LevelFactory.getEnemyConfig(
+              GameManager.getInstance().getCurrentLevelIndex(),
+              GameManager.getInstance().getGameMode());
+
+      if (isRestore) {
+        this.level =
+            director.constructBossLevelRestored(map, levelFactory, this.physicsWorld, config);
+      } else {
+        this.level = director.constructBossLevel(map, levelFactory, this.physicsWorld, config);
+      }
     }
   }
 
   @Override
   public void onProjectileRequest(Vector2 origin, Vector2 target, String type, float damage) {
     boolean isPlayerSource = false;
-    float speed = 400f;
+    float speed = Constants.SPEED_ARROW;
 
     // Handle Player Projectile Types
-    if ("arrow".equals(type)) { // Rain of Arrows
+    if (Constants.PROJ_ARROW.equals(type)) { // Rain of Arrows
       isPlayerSource = true;
-      speed = 400f;
-    } else if ("fast_arrow".equals(type)) { // Archer Base Attack
+      speed = Constants.SPEED_ARROW;
+    } else if (Constants.PROJ_FAST_ARROW.equals(type)) { // Archer Base Attack
       isPlayerSource = true;
-      speed = 700f; // Faster than default
-      isPlayerSource = true;
-      speed = 700f; // Faster than default
+      speed = Constants.SPEED_FAST_ARROW; // Faster than default
     } else if ("homing_fireball_target".equals(type)
-        || type.startsWith("homing_fireball")
-        || "fireball".equals(type)) { // FIX: Add generic fireball support
+        || type.startsWith(Constants.PROJ_HOMING_FIREBALL)
+        || Constants.PROJ_FIREBALL.equals(type)) { // FIX: Add generic fireball support
       isPlayerSource = true;
-    } else if ("enemy_arrow".equals(type)) {
+    } else if (Constants.PROJ_ENEMY_ARROW.equals(type)) {
       isPlayerSource = false; // Explicitly enemy source
-      speed = 300f; // Slower than player arrows to be dodgeable
+      speed = Constants.SPEED_ENEMY_ARROW; // Slower than player arrows to be dodgeable
     }
 
     projectileManager.addProjectile(
@@ -449,6 +418,52 @@ public class GameModel extends Subject
                 speed,
                 damage,
                 type));
+  }
+
+  private void updateReviveLogic(float deltaTime) {
+    for (Player activePlayer : players) {
+      if (activePlayer == null || activePlayer.isDead()) continue;
+
+      // Check if player is still
+      float velSq =
+          activePlayer.getBody() != null ? activePlayer.getBody().getLinearVelocity().len2() : 0f;
+      // Increased tolerance for "stillness"
+      boolean isStill = activePlayer.getBody() != null && velSq < 5.0f;
+
+      boolean revivingSomeone = false;
+
+      if (isStill) {
+        for (Player deadPlayer : players) {
+          if (deadPlayer == null || !deadPlayer.isDead()) continue;
+
+          float dist = activePlayer.getPosition().dst(deadPlayer.getPosition());
+
+          // Check overlap (assuming radius ~14f, combined ~28f, use 40f for tolerance)
+          if (dist < Constants.REVIVE_DISTANCE) {
+            revivingSomeone = true;
+            activePlayer.setReviveAttemptTimer(activePlayer.getReviveAttemptTimer() + deltaTime);
+
+            // Log every integer second to verify progress
+            if ((int) activePlayer.getReviveAttemptTimer()
+                > (int) (activePlayer.getReviveAttemptTimer() - deltaTime)) {
+              com.badlogic.gdx.Gdx.app.log(
+                  "ReviveDebug", "Reviving... Timer: " + activePlayer.getReviveAttemptTimer());
+            }
+
+            if (activePlayer.getReviveAttemptTimer() >= Constants.REVIVE_TIME) {
+              deadPlayer.revive();
+              activePlayer.setReviveAttemptTimer(0f);
+              com.badlogic.gdx.Gdx.app.log("GameModel", "Player revived!");
+            }
+            break; // Only revive one at a time
+          }
+        }
+      }
+
+      if (!revivingSomeone) {
+        activePlayer.setReviveAttemptTimer(0f);
+      }
+    }
   }
 
   @Override
@@ -645,6 +660,7 @@ public class GameModel extends Subject
     players.clear();
     GameManager.getInstance().clearPlayers();
     this.projectileManager.getProjectiles().clear();
+    ParticleManager.getInstance().clear();
 
     com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies =
         new com.badlogic.gdx.utils.Array<>();
@@ -671,39 +687,9 @@ public class GameModel extends Subject
     boolean hasCavePortal =
         newMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
 
-    // GoF Builder: Create Director and Builder
-    StandardLevelBuilder builder = new StandardLevelBuilder();
-    LevelDirector director = new LevelDirector(builder);
+    // Unified Level Construction (Restore Mode)
+    buildLevel(newMap, roomData, hasCavePortal, true);
 
-    // Conditional setup based on level type
-    GameLevelFactory levelFactory;
-    if (!roomData.isEmpty()) {
-      levelFactory = new DungeonLevelFactory();
-      this.level =
-          director.constructDungeonLevelRestored(newMap, roomData, levelFactory, this.physicsWorld);
-
-    } else if (hasCavePortal) {
-      levelFactory = new CaveLevelFactory();
-      LevelFactory.EnemyConfig config =
-          LevelFactory.getEnemyConfig(
-              GameManager.getInstance().getCurrentLevelIndex(),
-              GameManager.getInstance().getGameMode());
-
-      this.level =
-          director.constructCaveLevelRestored(newMap, levelFactory, this.physicsWorld, config);
-
-    } else {
-      levelFactory = new BossLevelFactory();
-      LevelFactory.EnemyConfig config =
-          LevelFactory.getEnemyConfig(
-              GameManager.getInstance().getCurrentLevelIndex(),
-              GameManager.getInstance().getGameMode());
-
-      this.level =
-          director.constructBossLevelRestored(newMap, levelFactory, this.physicsWorld, config);
-    }
-
-    this.level = builder.build();
     GameManager.getInstance().setCurrentLevel(this.level);
 
     // 2. Recreate players from Memento
