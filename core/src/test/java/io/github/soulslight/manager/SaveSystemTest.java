@@ -38,7 +38,7 @@ class SaveSystemTest {
   void testPOJOSerialization() {
     // Create a dummy memento
     List<PlayerMemento> players = new ArrayList<>();
-    players.add(new PlayerMemento(Player.PlayerClass.WARRIOR, 100f, 10f, 20f));
+    players.add(new PlayerMemento(Player.PlayerClass.WARRIOR, 100f, 10f, 20f, new ArrayList<>()));
 
     List<EnemyMemento> enemies = new ArrayList<>();
     enemies.add(new EnemyMemento("Chaser", 50f, 50f, 100f));
@@ -57,7 +57,8 @@ class SaveSystemTest {
             new ArrayList<>(),
             new ArrayList<>(),
             seed,
-            2);
+            2,
+            50f);
 
     // Serialize with LibGDX Json (Standard Way)
     Json json = new Json();
@@ -103,7 +104,8 @@ class SaveSystemTest {
             new ArrayList<>(),
             new ArrayList<>(),
             999L,
-            1);
+            1,
+            50f);
     Mockito.when(mockModel.createMemento()).thenReturn(memento);
 
     // Save
@@ -134,7 +136,8 @@ class SaveSystemTest {
             new ArrayList<>(),
             new ArrayList<>(),
             123L,
-            1);
+            1,
+            50f);
 
     Json json = new Json();
     String validJson = json.toJson(validMemento);
@@ -176,7 +179,8 @@ class SaveSystemTest {
             new ArrayList<>(),
             new ArrayList<>(),
             1L,
-            1);
+            1,
+            50f);
     Mockito.when(mockModel.createMemento()).thenReturn(m1);
     saveManager.saveGame(mockModel);
 
@@ -190,7 +194,8 @@ class SaveSystemTest {
             new ArrayList<>(),
             new ArrayList<>(),
             2L,
-            2);
+            2,
+            50f);
     Mockito.when(mockModel.createMemento()).thenReturn(m2);
     saveManager.saveGame(mockModel);
 

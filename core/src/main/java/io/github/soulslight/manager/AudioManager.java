@@ -250,6 +250,24 @@ public class AudioManager {
     return Gdx.audio.newSound(Gdx.files.internal(path));
   }
 
+  public void playSound(String soundID) {
+    String path = getSoundPath(soundID);
+    if (path != null) {
+      Sound sound = loadSound(path); // This is inefficient (loads every time), but robust for now
+      sound.play(SettingsManager.getInstance().getSoundVolume());
+      // To avoid leak, we should use a simple cache map.
+    }
+  }
+
+  private String getSoundPath(String soundID) {
+    return switch (soundID) {
+      case "sword_swing" -> "audio/sounds/player_warrior_attack.wav";
+      case "fireball_sound" -> "audio/sounds/player_mage_attack.wav";
+      case "bow_shot" -> "audio/sounds/player_archer_attack.wav";
+      default -> null; // Or return a default sound
+    };
+  }
+
   /** Dispose all managed resources. */
   public void dispose() {
     stopMusic();

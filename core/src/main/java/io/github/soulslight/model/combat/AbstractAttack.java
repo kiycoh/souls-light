@@ -11,12 +11,28 @@ public abstract class AbstractAttack implements AttackStrategy {
 
   @Override
   public void executeAttack(Entity attacker, List<Entity> targets) {
-    if (targets == null || targets.isEmpty()) return;
+    // DO NOT return early if targets are null/empty. We might want to "whiff"
+    // (attack air).
+    List<Entity> finalTargets =
+        (targets == null || targets.isEmpty())
+            ? java.util.Collections.emptyList()
+            : selectTargets(attacker, targets);
 
-    List<Entity> finalTargets = selectTargets(attacker, targets);
-    for (Entity target : finalTargets) {
-      performAttack(attacker, target);
+    if (finalTargets.isEmpty()) {
+      performNoTargetAttack(attacker);
+    } else {
+      for (Entity target : finalTargets) {
+        performAttack(attacker, target);
+      }
     }
+  }
+
+  /**
+   * Hook method called when an attack is executed but no valid targets are found. Useful for
+   * "whiffing" animations or shooting linear projectiles that don't lock on.
+   */
+  protected void performNoTargetAttack(Entity attacker) {
+    // Default: do nothing
   }
 
   /**

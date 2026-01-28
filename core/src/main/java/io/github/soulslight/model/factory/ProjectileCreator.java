@@ -20,7 +20,8 @@ public class ProjectileCreator extends EntityCreator {
     Entity sourceEntity = (Entity) args[2]; // Can be null
     float speed = (Float) args[3];
     float damage = (Float) args[4];
+    String type = (args.length > 5) ? (String) args[5] : "arrow";
 
-    return new Projectile(world, x, y, target, isPlayerSource, sourceEntity, speed, damage);
+    return new Projectile(world, x, y, target, isPlayerSource, sourceEntity, speed, damage, type);
   }
 }

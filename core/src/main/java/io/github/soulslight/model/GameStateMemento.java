@@ -17,6 +17,8 @@ public class GameStateMemento {
   // No-arg constructor
   public GameStateMemento() {}
 
+  public float currentWill;
+
   public GameStateMemento(
       List<PlayerMemento> players,
       List<EnemyMemento> enemies,
@@ -25,7 +27,8 @@ public class GameStateMemento {
       List<DoorMemento> doors,
       List<PortalMemento> portals,
       long seed,
-      int currentLevelIndex) {
+      int currentLevelIndex,
+      float currentWill) {
     this.players = players;
     this.enemies = enemies;
     this.projectiles = projectiles;
@@ -34,5 +37,6 @@ public class GameStateMemento {
     this.portals = portals;
     this.seed = seed;
     this.currentLevelIndex = currentLevelIndex;
+    this.currentWill = currentWill;
   }
 }

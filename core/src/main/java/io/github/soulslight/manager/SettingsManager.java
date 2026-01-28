@@ -57,6 +57,18 @@ public class SettingsManager {
     AudioManager.getInstance().updateMusicVolume();
   }
 
+  private static final String KEY_SOUND_VOL = "sound_volume";
+
+  public float getSoundVolume() {
+    return preferences.getFloat(KEY_SOUND_VOL, 0.5f);
+  }
+
+  public void setSoundVolume(float volume) {
+    float v = Math.max(0f, Math.min(1f, volume));
+    preferences.putFloat(KEY_SOUND_VOL, v);
+    preferences.flush();
+  }
+
   public boolean isFullscreen() {
     return preferences.getBoolean(KEY_FULLSCREEN, false);
   }

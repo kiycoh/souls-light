@@ -206,6 +206,14 @@ public class Player extends Entity {
       }
     }
 
+    // Sync body rotation with movement
+    if (body != null) {
+      com.badlogic.gdx.math.Vector2 vel = body.getLinearVelocity();
+      if (vel.len2() > 1f) {
+        body.setTransform(body.getPosition(), vel.angleRad());
+      }
+    }
+
     super.update(delta);
   }
 
@@ -319,6 +327,9 @@ public class Player extends Entity {
   public void takeDamage(float amount) {
     if (debugInvincible || invincibilityTimer > 0) return;
     super.takeDamage(amount);
+
+    notifyDamageListeners(amount);
+
     if (!isDead()) invincibilityTimer = INVINCIBILITY_DURATION;
   }
 
@@ -393,6 +404,27 @@ public class Player extends Entity {
     com.badlogic.gdx.Gdx.app.log("Player", "Inventory full!");
     return false;
   }
+
+  // --- Damage Listener for Events (Observer Pattern Lite) ---
+  public interface DamageListener {
+    void onDamageTaken(Player player, float amount);
+  }
+
+  private final List<DamageListener> damageListeners = new java.util.ArrayList<>();
+
+  public void addDamageListener(DamageListener listener) {
+    if (!damageListeners.contains(listener)) {
+      damageListeners.add(listener);
+    }
+  }
+
+  private void notifyDamageListeners(float amount) {
+    for (DamageListener listener : damageListeners) {
+      listener.onDamageTaken(this, amount);
+    }
+  }
+
+  // -----------------------------------------------------------
 
   public void consumeItem(int slotIndex) {
     if (slotIndex < 0 || slotIndex >= inventory.getCapacity()) return;

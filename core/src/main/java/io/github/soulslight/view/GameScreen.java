@@ -41,7 +41,6 @@ import io.github.soulslight.model.enemies.Shielder;
 import io.github.soulslight.model.enemies.SpikedBall;
 import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
-import io.github.soulslight.model.entities.Projectile;
 import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.observer.Observer;
 import io.github.soulslight.model.room.Portal;
@@ -105,12 +104,19 @@ public final class GameScreen implements GameState, Observer {
   private boolean showingOutro = false;
 
   // Door particles
-  private com.badlogic.gdx.graphics.g2d.ParticleEffect doorEffect;
-  private com.badlogic.gdx.graphics.g2d.ParticleEffectPool doorEffectPool;
+
   private final java.util.Map<
           io.github.soulslight.model.room.Door,
           com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>
       doorEffectsMap = new java.util.IdentityHashMap<>();
+  private final java.util.Map<
+          io.github.soulslight.model.entities.Projectile,
+          com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>
+      projectileEffectsMap = new java.util.IdentityHashMap<>();
+
+  // Portal particles
+  private com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect portalEffect;
+  private float portalEffectTime = 0f;
 
   public GameScreen(SpriteBatch batch, GameModel model, GameController controller) {
     this.batch = batch;
@@ -258,6 +264,9 @@ public final class GameScreen implements GameState, Observer {
     // Draw particles for locked doors
     drawDoorParticles(delta);
 
+    // Update global particles
+    io.github.soulslight.manager.ParticleManager.getInstance().update(delta);
+
     int playerIndex = 0;
     for (Player player : model.getPlayers()) {
       batch.setColor(player.isDead() ? Color.RED : Color.WHITE);
@@ -360,31 +369,14 @@ public final class GameScreen implements GameState, Observer {
       }
     }
 
-    Texture tArrow = TextureManager.getInstance().get("arrow");
-    if (tArrow == null) tArrow = TextureManager.getInstance().get("player");
-
-    for (Projectile p : model.getProjectiles()) {
-      batch.draw(
-          tArrow,
-          p.getPosition().x - 16,
-          p.getPosition().y - 4,
-          16,
-          4,
-          32,
-          8,
-          1,
-          1,
-          p.getRotation(),
-          0,
-          0,
-          tArrow.getWidth(),
-          tArrow.getHeight(),
-          false,
-          false);
-    }
+    // Draw Projectiles (Sprites or Particles)
+    drawProjectiles(delta);
 
     // Draw portal
     drawPortal();
+
+    // Render global particles
+    io.github.soulslight.manager.ParticleManager.getInstance().render(batch);
 
     batch.end();
 
@@ -446,6 +438,27 @@ public final class GameScreen implements GameState, Observer {
 
     Vector2 pos = portal.getPosition();
 
+    com.badlogic.gdx.graphics.g2d.ParticleEffectPool pool =
+        io.github.soulslight.manager.ParticleManager.getInstance()
+            .getPool(io.github.soulslight.model.particles.ParticleType.PURPLE_SPARKS);
+
+    if (pool != null) {
+      if (portalEffect == null) {
+        portalEffect = pool.obtain();
+        portalEffect.start();
+      }
+
+      // Update position (Portal Center + Ellipse Offset)
+      portalEffect.setPosition(pos.x, pos.y);
+
+      portalEffect.update(Gdx.graphics.getDeltaTime());
+      portalEffect.draw(batch);
+
+      if (portalEffect.isComplete()) {
+        portalEffect.reset();
+      }
+    }
+
     // Use the portal's current frame from the state machine
     TextureRegion frame = portal.getFrame();
     if (frame != null) {
@@ -487,25 +500,20 @@ public final class GameScreen implements GameState, Observer {
   private void drawDoorParticles(float delta) {
     if (model.getLevel() == null || model.getLevel().getRoomManager() == null) return;
 
-    if (doorEffect == null) {
-      doorEffect = new com.badlogic.gdx.graphics.g2d.ParticleEffect();
-      // Corrected path based on file check
-      if (Gdx.files.internal("particles/effects/Particle Park Pentagram Glitchy.p").exists()) {
-        doorEffect.load(
-            Gdx.files.internal("particles/effects/Particle Park Pentagram Glitchy.p"),
-            Gdx.files.internal("particles/images"));
-        doorEffect.scaleEffect(0.7f);
-        doorEffectPool = new com.badlogic.gdx.graphics.g2d.ParticleEffectPool(doorEffect, 10, 50);
-      } else {
-        Gdx.app.log(
-            "GameScreen",
-            "Particle file not found: particles/effects/Particle Park Pentagram Glitchy.p");
-      }
-    }
+    // Ensure resources are loaded (lazy load check)
+    // In a real scenario, this might be better in show() or a specific load()
+    // method,
+    // but here we ensure the pool exists.
+    io.github.soulslight.manager.ParticleManager pm =
+        io.github.soulslight.manager.ParticleManager.getInstance();
 
-    if (doorEffectPool == null) return;
-
-    if (doorEffectPool == null) return;
+    // We update/render the global manager effects at the end,
+    // but for doors specifically, we need persistent effects linked to door
+    // objects.
+    // The Manager handles "shot and forget" particles well (spawn & auto-cleanup),
+    // but for continuous loops tied to game objects, we might want to manually
+    // manage the pooled effect
+    // retrieved from the manager's pool.
 
     // 1. Update active effects
     java.util.Iterator<
@@ -532,31 +540,128 @@ public final class GameScreen implements GameState, Observer {
       effect.draw(batch);
 
       if (effect.isComplete()) {
-        effect.reset(); // Loop it if it completes? Or free and let spawn logic handle re-add?
-        // For continuous effect, reset ensures it keeps going
+        effect.reset();
       }
     }
 
     // Spawn effects for locked doors that don't have one
-
-    // Iterate all rooms/doors
     for (io.github.soulslight.model.room.Room room : model.getLevel().getRoomManager().getRooms()) {
       for (io.github.soulslight.model.room.Door door : room.getDoors()) {
         if (door.isLocked()) {
           if (!doorEffectsMap.containsKey(door)) {
-            // Create new effect
-            com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect eff =
-                doorEffectPool.obtain();
-            eff.setPosition(door.getPosition().x, door.getPosition().y);
-            eff.start();
-            doorEffectsMap.put(door, eff);
-          } else {
-            // Ensure position is synced if door moves (unlikely)
-            // doorEffectsMap.get(door).setPosition(door.getPosition().x,
-            // door.getPosition().y);
+            // Get pool template from Manager
+            com.badlogic.gdx.graphics.g2d.ParticleEffectPool pool =
+                pm.getPool(io.github.soulslight.model.particles.ParticleType.PENTAGRAM_GLITCHY);
+
+            if (pool != null) {
+              com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect eff = pool.obtain();
+              eff.setPosition(door.getPosition().x, door.getPosition().y);
+              eff.start();
+              doorEffectsMap.put(door, eff);
+            }
           }
         }
       }
+    }
+  }
+
+  private void drawProjectiles(float delta) {
+    com.badlogic.gdx.graphics.Texture tArrow =
+        io.github.soulslight.manager.TextureManager.getInstance().get("arrow");
+    if (tArrow == null)
+      tArrow = io.github.soulslight.manager.TextureManager.getInstance().get("player");
+
+    java.util.Set<io.github.soulslight.model.entities.Projectile> active =
+        new java.util.HashSet<>();
+
+    for (io.github.soulslight.model.entities.Projectile p : model.getProjectiles()) {
+      active.add(p);
+      String type = p.getType();
+
+      if ("homing_fireball".equals(type)) {
+        updateAndDrawParticle(
+            p, io.github.soulslight.model.particles.ParticleType.FIREBALL_BLUE, delta);
+      } else if ("fireball".equals(type)) {
+        updateAndDrawParticle(
+            p, io.github.soulslight.model.particles.ParticleType.FIREBALL_BLUE, delta);
+      } else {
+        // Default Sprite Drawing
+        batch.draw(
+            tArrow,
+            p.getPosition().x - 16,
+            p.getPosition().y - 4,
+            16,
+            4,
+            32,
+            8,
+            1,
+            1,
+            p.getRotation(),
+            0,
+            0,
+            tArrow.getWidth(),
+            tArrow.getHeight(),
+            false,
+            false);
+      }
+    }
+
+    // Cleanup dead particles
+    java.util.Iterator<
+            java.util.Map.Entry<
+                io.github.soulslight.model.entities.Projectile,
+                com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>>
+        it = projectileEffectsMap.entrySet().iterator();
+    while (it.hasNext()) {
+      java.util.Map.Entry<
+              io.github.soulslight.model.entities.Projectile,
+              com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect>
+          entry = it.next();
+      if (!active.contains(entry.getKey())) {
+        entry.getValue().free();
+        it.remove();
+      }
+    }
+  }
+
+  private void updateAndDrawParticle(
+      io.github.soulslight.model.entities.Projectile p,
+      io.github.soulslight.model.particles.ParticleType type,
+      float delta) {
+    com.badlogic.gdx.graphics.g2d.ParticleEffectPool.PooledEffect effect =
+        projectileEffectsMap.get(p);
+
+    // Obtain directly from pool to avoid adding to ParticleManager's global active
+    // list (prevents double update/render)
+    if (effect == null) {
+      com.badlogic.gdx.graphics.g2d.ParticleEffectPool pool =
+          io.github.soulslight.manager.ParticleManager.getInstance().getPool(type);
+      if (pool != null) {
+        effect = pool.obtain();
+        projectileEffectsMap.put(p, effect);
+      }
+    }
+
+    if (effect != null) {
+      effect.setPosition(p.getPosition().x, p.getPosition().y);
+
+      // Rotate Blue Fireballs to face target
+      if (type == io.github.soulslight.model.particles.ParticleType.FIREBALL_BLUE) {
+        float angle = p.getRotation();
+        for (com.badlogic.gdx.graphics.g2d.ParticleEmitter emitter : effect.getEmitters()) {
+          // 1. Set Emission Direction (Where particles fly)
+          emitter.getAngle().setHigh(angle + 180f - 15f, angle + 180f + 15f);
+          emitter.getAngle().setLow(angle + 180f);
+
+          // 2. Set Texture Rotation (Which way the sprite points)
+          // Crucial for directional particles like comets/arrows
+          emitter.getRotation().setHigh(angle);
+          emitter.getRotation().setLow(angle);
+        }
+      }
+
+      effect.update(delta);
+      effect.draw(batch);
     }
   }
 
@@ -574,6 +679,11 @@ public final class GameScreen implements GameState, Observer {
             Gdx.app.log(
                 "GameScreen",
                 "Transitioning to level " + GameManager.getInstance().getCurrentLevelIndex());
+
+            // CRITICAL FIX: Dispose current screen resources to prevent leaks and
+            // controller conflicts
+            dispose();
+
             // Create new model and controller for next level
             GameModel newModel = new GameModel();
             GameController newController = new GameController(newModel);
@@ -1016,6 +1126,13 @@ public final class GameScreen implements GameState, Observer {
       }
       doorEffectsMap.clear();
     }
+
+    if (portalEffect != null) {
+      portalEffect.free();
+      portalEffect = null;
+    }
+
+    io.github.soulslight.manager.ParticleManager.getInstance().clear();
   }
 
   @Override
@@ -1040,6 +1157,12 @@ public final class GameScreen implements GameState, Observer {
         }
         doorEffectsMap.clear();
       }
+    } else if ("PLAYER_HIT".equals(eventType)
+        && data instanceof io.github.soulslight.model.entities.Player) {
+      io.github.soulslight.model.entities.Player p =
+          (io.github.soulslight.model.entities.Player) data;
+      io.github.soulslight.manager.ParticleManager.getInstance()
+          .spawn(io.github.soulslight.model.particles.ParticleType.BLOOD, p.getPosition());
     }
   }
 

@@ -37,7 +37,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class GameModel extends Subject
-    implements Disposable, ProjectileListener, EnemyDeathListener {
+    implements Disposable, ProjectileListener, EnemyDeathListener, Player.DamageListener {
 
   private final EntityCreator playerCreator = new PlayerCreator();
   private final EntityCreator itemCreator = new ItemCreator();
@@ -92,17 +92,21 @@ public class GameModel extends Subject
 
     // Player 1: Uses class selected in ClassSelectionScreen
     Player.PlayerClass p1Class = GameManager.getInstance().getPlayerClass(0);
+    com.badlogic.gdx.Gdx.app.log("GameModel", "Spawning P1 as: " + p1Class);
     Player p1 = (Player) playerCreator.createEntity(this.physicsWorld, spawn.x, spawn.y, p1Class);
     p1.addProjectileListener(this); // Register listener
+    p1.addDamageListener(this); // Register damage listener
     players.add(p1);
     GameManager.getInstance().addPlayer(p1);
 
     // Player 2 (spawn slightly offset) - Only if NOT single player
     if (!io.github.soulslight.manager.SettingsManager.getInstance().isSinglePlayer()) {
       Player.PlayerClass p2Class = GameManager.getInstance().getPlayerClass(1);
+      com.badlogic.gdx.Gdx.app.log("GameModel", "Spawning P2 as: " + p2Class);
       Player p2 =
           (Player) playerCreator.createEntity(this.physicsWorld, spawn.x + 20, spawn.y, p2Class);
       p2.addProjectileListener(this); // Register listener
+      p2.addDamageListener(this); // Register damage listener
       players.add(p2);
       GameManager.getInstance().addPlayer(p2);
     }
@@ -422,7 +426,11 @@ public class GameModel extends Subject
     } else if ("fast_arrow".equals(type)) { // Archer Base Attack
       isPlayerSource = true;
       speed = 700f; // Faster than default
-    } else if ("homing_fireball_target".equals(type) || type.startsWith("homing_fireball_target")) {
+      isPlayerSource = true;
+      speed = 700f; // Faster than default
+    } else if ("homing_fireball_target".equals(type)
+        || type.startsWith("homing_fireball")
+        || "fireball".equals(type)) { // FIX: Add generic fireball support
       isPlayerSource = true;
     } else if ("enemy_arrow".equals(type)) {
       isPlayerSource = false; // Explicitly enemy source
@@ -439,7 +447,13 @@ public class GameModel extends Subject
                 isPlayerSource,
                 (io.github.soulslight.model.entities.Entity) null,
                 speed,
-                damage));
+                damage,
+                type));
+  }
+
+  @Override
+  public void onDamageTaken(Player player, float amount) {
+    notifyObservers("PLAYER_HIT", player);
   }
 
   @Override
@@ -459,7 +473,8 @@ public class GameModel extends Subject
                 true, // isPlayerSource
                 targetEntity,
                 400f,
-                damage)); // Default speed for homing
+                damage,
+                type)); // Default speed for homing
   }
 
   private void checkMeleeCollision(AbstractEnemy enemy) {
@@ -533,8 +548,20 @@ public class GameModel extends Subject
   public GameStateMemento createMemento() {
     List<PlayerMemento> playerStates = new java.util.ArrayList<>();
     for (Player p : players) {
+      java.util.List<String> inventoryItems = new java.util.ArrayList<>();
+      if (p.getInventory() != null) {
+        for (io.github.soulslight.model.inventory.InventorySlot slot :
+            p.getInventory().getItemSlots()) {
+          if (slot.notEmpty()) {
+            for (int i = 0; i < slot.getAmount(); i++) {
+              inventoryItems.add(slot.peek().getClass().getName());
+            }
+          }
+        }
+      }
       playerStates.add(
-          new PlayerMemento(p.getType(), p.getHealth(), p.getPosition().x, p.getPosition().y));
+          new PlayerMemento(
+              p.getType(), p.getHealth(), p.getPosition().x, p.getPosition().y, inventoryItems));
     }
 
     List<EnemyMemento> enemyStates = new java.util.ArrayList<>();
@@ -594,7 +621,8 @@ public class GameModel extends Subject
         doorStates,
         portalStates,
         GameManager.getInstance().getCampaignSeed(),
-        GameManager.getInstance().getCurrentLevelIndex());
+        GameManager.getInstance().getCurrentLevelIndex(),
+        this.currentWill);
   }
 
   private String getEnemyType(AbstractEnemy e) {
@@ -631,6 +659,7 @@ public class GameModel extends Subject
 
     // Fix: Restore Level Index BEFORE generating map
     GameManager.getInstance().setCurrentLevelIndex(memento.currentLevelIndex);
+    this.currentWill = memento.currentWill;
 
     // Rebuild Map (using level-based strategy)
     MapGenerationStrategy strategy = GameManager.getInstance().getCurrentLevelStrategy();
@@ -685,7 +714,27 @@ public class GameModel extends Subject
       Player newPlayer =
           (Player) playerCreator.createEntity(this.physicsWorld, safePos.x, safePos.y, pm.type);
       newPlayer.addProjectileListener(this); // Register listener
+      newPlayer.addDamageListener(this); // Register damage listener
       newPlayer.setHealth(pm.health);
+
+      // Restore Inventory
+      if (pm.inventoryItems != null) {
+        for (String className : pm.inventoryItems) {
+          try {
+            Class<?> clazz = Class.forName(className);
+            io.github.soulslight.model.inventory.IPickable item =
+                (io.github.soulslight.model.inventory.IPickable)
+                    clazz.getDeclaredConstructor().newInstance();
+            newPlayer.getInventory().addItem(item);
+          } catch (Exception e) {
+            com.badlogic.gdx.Gdx.app.error("GameModel", "Failed to restore item: " + className, e);
+          }
+        }
+      }
+
+      // Sync GameManager class selection for future levels (Fixes level transition
+      // defaults)
+      GameManager.getInstance().setPlayerClass(players.size(), pm.type);
 
       players.add(newPlayer);
       GameManager.getInstance().addPlayer(newPlayer);

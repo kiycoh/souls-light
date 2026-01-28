@@ -80,4 +80,11 @@ public class WarriorAttack extends AbstractAttack {
       enemy.applyKnockback(knockbackDir, KNOCKBACK_FORCE, KNOCKBACK_DURATION);
     }
   }
+
+  @Override
+  protected void performNoTargetAttack(Entity attacker) {
+    // Just play sound/log, animation logic is handled by Player cooldown
+    Gdx.app.log("WarriorAttack", "Whiffed attack (Air Swing)");
+    io.github.soulslight.manager.AudioManager.getInstance().playSound(getSoundID());
+  }
 }

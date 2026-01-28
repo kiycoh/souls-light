@@ -360,6 +360,14 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
       }
     }
 
+    // Sync body rotation with movement
+    if (body != null) {
+      Vector2 vel = body.getLinearVelocity();
+      if (vel.len2() > 1f) {
+        body.setTransform(body.getPosition(), vel.angleRad());
+      }
+    }
+
     super.update(delta);
   }
 

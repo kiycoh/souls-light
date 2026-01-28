@@ -32,6 +32,16 @@ public class MageAttack extends AbstractAttack {
   }
 
   @Override
+  protected void performNoTargetAttack(io.github.soulslight.model.entities.Entity attacker) {
+    if (attacker instanceof io.github.soulslight.model.entities.Player p) {
+      com.badlogic.gdx.math.Vector2 targetPos =
+          p.getPosition().cpy().add(p.getFacingDirection().scl(getRange()));
+      p.notifyProjectileRequest(
+          p.getPosition(), targetPos, "fireball", getDamage()); // Linear fallback
+    }
+  }
+
+  @Override
   public void attack() {
     Gdx.app.log("MageAttack", "Shooting Tracking Projectile");
   }

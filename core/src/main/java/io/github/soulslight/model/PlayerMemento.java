@@ -11,10 +11,18 @@ public class PlayerMemento {
   // No-arg constructor
   public PlayerMemento() {}
 
-  public PlayerMemento(Player.PlayerClass type, float health, float x, float y) {
+  public java.util.List<String> inventoryItems;
+
+  public PlayerMemento(
+      Player.PlayerClass type,
+      float health,
+      float x,
+      float y,
+      java.util.List<String> inventoryItems) {
     this.type = type;
     this.health = health;
     this.x = x;
     this.y = y;
+    this.inventoryItems = inventoryItems;
   }
 }

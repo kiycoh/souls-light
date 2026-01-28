@@ -13,10 +13,11 @@ public class Projectile extends Entity {
   private final Vector2 lastPosition = new Vector2();
   private boolean isPlayerProjectile = false;
   private io.github.soulslight.model.entities.Entity target; // For homing projectiles
+  private final String type;
 
   // Compatibility Constructor 1
   public Projectile(World world, float x, float y, Vector2 targetPos, boolean isPlayerProjectile) {
-    this(world, x, y, targetPos, isPlayerProjectile, null, 400f, 15f);
+    this(world, x, y, targetPos, isPlayerProjectile, null, 400f, 15f, "arrow");
   }
 
   // Compatibility Constructor 2
@@ -27,7 +28,7 @@ public class Projectile extends Entity {
       Vector2 targetPos,
       boolean isPlayerProjectile,
       io.github.soulslight.model.entities.Entity target) {
-    this(world, x, y, targetPos, isPlayerProjectile, target, 400f, 15f);
+    this(world, x, y, targetPos, isPlayerProjectile, target, 400f, 15f, "arrow");
   }
 
   // Compatibility Constructor 3: Speed but no damage
@@ -39,7 +40,7 @@ public class Projectile extends Entity {
       boolean isPlayerProjectile,
       io.github.soulslight.model.entities.Entity target,
       float speed) {
-    this(world, x, y, targetPos, isPlayerProjectile, target, speed, 15f);
+    this(world, x, y, targetPos, isPlayerProjectile, target, speed, 15f, "arrow");
   }
 
   // Master Constructor
@@ -51,13 +52,15 @@ public class Projectile extends Entity {
       boolean isPlayerProjectile,
       io.github.soulslight.model.entities.Entity target,
       float speed,
-      float damage) {
+      float damage,
+      String type) {
     super();
     this.position = new Vector2(x, y);
     this.lastPosition.set(x, y); // Inizializza la posizione precedente
     this.isPlayerProjectile = isPlayerProjectile;
     this.target = target;
     this.damage = damage;
+    this.type = type != null ? type : "arrow";
 
     // Calcola direzione
     Vector2 direction = new Vector2(targetPos).sub(x, y).nor();
@@ -70,7 +73,7 @@ public class Projectile extends Entity {
 
   // Costruttore per compatibilità (default nemici)
   public Projectile(World world, float x, float y, Vector2 targetPos) {
-    this(world, x, y, targetPos, false, null, 400f, 15f);
+    this(world, x, y, targetPos, false, null, 400f, 15f, "enemy_arrow");
   }
 
   private void createBody(World world, float x, float y) {
@@ -129,6 +132,14 @@ public class Projectile extends Entity {
       body.setTransform(myPos, newVelocity.angleRad());
     }
 
+    // ALWAYS sync rotation with velocity (fixes "always facing right" issue)
+    if (body != null) {
+      Vector2 vel = body.getLinearVelocity();
+      if (vel.len2() > 0.1f) {
+        body.setTransform(body.getPosition(), vel.angleRad());
+      }
+    }
+
     super.update(delta);
 
     lifeTime -= delta;
@@ -157,5 +168,9 @@ public class Projectile extends Entity {
 
   public boolean isPlayerProjectile() {
     return isPlayerProjectile;
+  }
+
+  public String getType() {
+    return type;
   }
 }

@@ -33,6 +33,15 @@ public class ArcherAttack extends AbstractAttack {
   }
 
   @Override
+  protected void performNoTargetAttack(io.github.soulslight.model.entities.Entity attacker) {
+    if (attacker instanceof io.github.soulslight.model.entities.Player p) {
+      com.badlogic.gdx.math.Vector2 targetPos =
+          p.getPosition().cpy().add(p.getFacingDirection().scl(getRange()));
+      p.notifyProjectileRequest(p.getPosition(), targetPos, "fast_arrow", getDamage());
+    }
+  }
+
+  @Override
   public void attack() {
     Gdx.app.log("ArcherAttack", "Shooting Fast Arrow");
   }
