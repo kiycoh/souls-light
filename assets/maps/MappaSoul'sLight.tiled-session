@@ -1,0 +1,63 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "MAppa.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "": {
+            "scaleInEditor": 1
+        },
+        ":/automap-tiles.tsx": {
+            "scaleInDock": 1
+        },
+        "MAppa.tmx": {
+            "scale": 1,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 532,
+                "y": 299.5
+            }
+        },
+        "MAppa.tmx#0x72_DungeonTilesetII_v1.7": {
+            "scaleInDock": 1.5
+        },
+        "souls-light - Copia (2)/assets/maps/MAppa.tmx": {
+            "scale": 1.1889843749999998,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 400.3416781654511,
+                "y": 341.0473749917866
+            }
+        },
+        "souls-light - Copia (2)/assets/maps/MAppa.tmx#0x72_DungeonTilesetII_v1.7": {
+            "scaleInDock": 1
+        }
+    },
+    "last.imagePath": "C:/Users/peppe/Desktop/souls-light - Copia (2)/assets/images",
+    "map.height": 40,
+    "map.lastUsedFormat": "tmx",
+    "map.orientation": "1",
+    "map.renderOrder": "2",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "map.width": 50,
+    "openFiles": [
+        "MAppa.tmx",
+        "souls-light - Copia (2)/assets/maps/MAppa.tmx"
+    ],
+    "project": "MappaSoul'sLight.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "souls-light - Copia (2)/assets/maps/MAppa.tmx",
+        "MAppa.tmx"
+    ],
+    "tileset.embedInMap": true,
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    }
+}

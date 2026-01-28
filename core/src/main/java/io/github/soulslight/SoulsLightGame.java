@@ -1,29 +1,44 @@
 package io.github.soulslight;
 
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import io.github.soulslight.controller.GameController;
-import io.github.soulslight.model.GameModel;
-import io.github.soulslight.view.GameScreen;
+import io.github.soulslight.manager.ResourceManager;
+import io.github.soulslight.manager.TextureManager;
+import io.github.soulslight.view.SplashScreen;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class SoulsLightGame extends Game {
-    private SpriteBatch batch;
-    private GameModel model;
-    private GameController controller;
 
-    @Override
-    public void create() {
+  private SpriteBatch batch;
 
-        batch = new SpriteBatch();
-        model = new GameModel();
-        controller = new GameController(model);
-        this.setScreen(new GameScreen(batch, model, controller));
-    }
+  public SpriteBatch getBatch() {
+    return batch;
+  }
 
-    @Override
-    public void dispose() {
-        batch.dispose();
-        super.dispose();
-    }
+  @Override
+  public void setScreen(Screen screen) {
+    super.setScreen(screen);
+  }
+
+  @Override
+  public void render() {
+    io.github.soulslight.manager.AudioManager.getInstance()
+        .update(com.badlogic.gdx.Gdx.graphics.getDeltaTime());
+    super.render();
+  }
+
+  @Override
+  public void create() {
+    batch = new SpriteBatch();
+    this.setScreen(new SplashScreen(this));
+  }
+
+  @Override
+  public void dispose() {
+    batch.dispose();
+    ResourceManager.getInstance().dispose();
+    TextureManager.getInstance().dispose();
+    super.dispose();
+  }
 }
