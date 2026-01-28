@@ -6,19 +6,19 @@ import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.room.Portal;
 import io.github.soulslight.model.room.RoomSensor;
-import io.github.soulslight.utils.LogHelper;
 
 /**
  * GoF Pattern: Adapter (Adaptee Implementation) Contains the actual business logic for handling
  * collisions between game objects. This class is decoupled from Box2D physics engine details
  * (Figures/Contacts).
  */
-public class GameCollisionHandler implements CollisionHandler {
+public class GameCollisionHandler extends io.github.soulslight.model.observer.Subject
+    implements CollisionHandler {
 
   @Override
   public void handleBeginContact(Object userA, Object userB) {
-    // Logging (generic)
-    logContact(userA, userB);
+    // Notify observers instead of direct logging
+    notifyContact(userA, userB);
 
     // Feature Logic: RoomSensor
     checkRoomSensor(userA, userB);
@@ -44,10 +44,11 @@ public class GameCollisionHandler implements CollisionHandler {
     checkPortal(userB, userA, false);
   }
 
-  private void logContact(Object a, Object b) {
+  private void notifyContact(Object a, Object b) {
     String nameA = getName(a);
     String nameB = getName(b);
-    LogHelper.logThrottled("Physics", "Collision Start: " + nameA + " <-> " + nameB, 1.0f);
+    // Send the collision string as data
+    notifyObservers("COLLISION_START", nameA + " <-> " + nameB);
   }
 
   private String getName(Object o) {

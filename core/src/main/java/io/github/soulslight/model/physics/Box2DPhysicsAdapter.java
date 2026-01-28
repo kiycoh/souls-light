@@ -16,6 +16,10 @@ public class Box2DPhysicsAdapter implements ContactListener {
     this.handler = new GameCollisionHandler();
   }
 
+  public GameCollisionHandler getCollisionHandler() {
+    return handler;
+  }
+
   @Override
   public void beginContact(Contact contact) {
     Fixture fa = contact.getFixtureA();

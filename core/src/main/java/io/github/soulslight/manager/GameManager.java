@@ -24,6 +24,7 @@ public class GameManager {
   private GameMode gameMode = GameMode.STORY;
   private int currentLevelIndex = 1;
   private long campaignSeed;
+  private PathfindingManager pathfindingManager;
 
   private GameManager() {
     this.players = new java.util.ArrayList<>();
@@ -225,5 +226,13 @@ public class GameManager {
     } catch (Exception e) {
       Gdx.app.error("GameManager", "Failed to load level", e);
     }
+  }
+
+  public PathfindingManager getPathfindingManager() {
+    return pathfindingManager;
+  }
+
+  public void setPathfindingManager(PathfindingManager pathfindingManager) {
+    this.pathfindingManager = pathfindingManager;
   }
 }

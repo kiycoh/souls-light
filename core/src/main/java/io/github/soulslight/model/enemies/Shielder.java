@@ -74,9 +74,9 @@ public class Shielder extends AbstractEnemy {
 
     float distToTarget = getPosition().dst(protectionPoint);
 
-    if (distToTarget > 5.0f) {
-      // Se lontano dal punto di protezione ci va
-      moveTowards(protectionPoint, deltaTime);
+    if (distToTarget > 15.0f || (body.getLinearVelocity().len2() > 0.1f && distToTarget > 5.0f)) {
+      // Start moving if > 15, keep moving until < 5
+      smartMoveTowards(protectionPoint, deltaTime);
     } else {
       if (body != null) body.setLinearVelocity(0, 0);
     }
@@ -87,7 +87,7 @@ public class Shielder extends AbstractEnemy {
 
     // Cerca di stare a GUARD_DISTANCE dal Ranger
     if (distToVip > GUARD_DISTANCE + 10f) {
-      moveTowards(vip.getPosition(), deltaTime);
+      smartMoveTowards(vip.getPosition(), deltaTime);
     } else if (distToVip < GUARD_DISTANCE - 10f) {
       // Se è troppo vicino, si sposta per non dargli fastidio
       moveAway(vip.getPosition());

@@ -36,7 +36,7 @@ public class ParticleRenderSystem {
 
     ParticleManager pm = ParticleManager.getInstance();
 
-    // 1. Update active effects
+    // Update active effects
     Iterator<Map.Entry<Door, ParticleEffectPool.PooledEffect>> it =
         doorEffectsMap.entrySet().iterator();
     while (it.hasNext()) {

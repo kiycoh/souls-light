@@ -123,7 +123,7 @@ public class SpikedBall extends AbstractEnemy {
   private void handleSearchLogic(float deltaTime) {
     float distToLastPos = getPosition().dst(lastKnownPlayerPos);
     if (distToLastPos > 20f) {
-      moveTowards(lastKnownPlayerPos, deltaTime);
+      smartMoveTowards(lastKnownPlayerPos, deltaTime);
     } else {
       if (body != null) body.setLinearVelocity(0, 0);
     }

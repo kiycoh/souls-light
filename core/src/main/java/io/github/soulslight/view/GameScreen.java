@@ -275,7 +275,7 @@ public final class GameScreen implements GameState, Observer {
     }
 
     for (AbstractEnemy enemy : model.getActiveEnemies()) {
-      if (enemy.isDead()) {
+      if (enemy.isDead() || !enemy.isSpawned()) {
         enemyAnimOffset.remove(enemy);
         enemyFacingRight.remove(enemy);
         continue;

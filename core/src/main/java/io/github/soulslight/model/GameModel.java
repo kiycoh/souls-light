@@ -8,9 +8,16 @@ import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Disposable;
 import io.github.soulslight.manager.GameManager;
 import io.github.soulslight.manager.ParticleManager;
+import io.github.soulslight.manager.PathfindingManager;
 import io.github.soulslight.manager.ProjectileManager;
 import io.github.soulslight.model.combat.ProjectileListener;
-import io.github.soulslight.model.enemies.*;
+import io.github.soulslight.model.enemies.AbstractEnemy;
+import io.github.soulslight.model.enemies.Chaser;
+import io.github.soulslight.model.enemies.EnemyRegistry;
+import io.github.soulslight.model.enemies.Oblivion;
+import io.github.soulslight.model.enemies.Ranger;
+import io.github.soulslight.model.enemies.Shielder;
+import io.github.soulslight.model.enemies.SpikedBall;
 import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
@@ -57,6 +64,8 @@ public class GameModel extends Subject
   // Level completion flag for portal transition
   private boolean levelCompleted = false;
 
+  private io.github.soulslight.utils.CollisionMonitor collisionMonitor;
+
   public void setLevelCompleted(boolean completed) {
     this.levelCompleted = completed;
     if (completed) {
@@ -73,8 +82,13 @@ public class GameModel extends Subject
     EnemyRegistry.loadCache(null);
     this.lightingSystem = new io.github.soulslight.model.lighting.LightingSystem();
     this.physicsWorld = new World(new Vector2(0, 0), true);
-    this.physicsWorld.setContactListener(
-        new io.github.soulslight.model.physics.Box2DPhysicsAdapter());
+    io.github.soulslight.model.physics.Box2DPhysicsAdapter physicsAdapter =
+        new io.github.soulslight.model.physics.Box2DPhysicsAdapter();
+    this.physicsWorld.setContactListener(physicsAdapter);
+
+    // Initialize Collision Monitor (Observer)
+    this.collisionMonitor = new io.github.soulslight.utils.CollisionMonitor();
+    physicsAdapter.getCollisionHandler().attach(this.collisionMonitor);
 
     this.currentWill = Constants.MAX_WILL / 2;
     this.isPaused = false;
@@ -113,6 +127,10 @@ public class GameModel extends Subject
 
     // Projectile Manager
     this.projectileManager = new ProjectileManager(physicsWorld);
+
+    // Initialize Pathfinding
+    TiledMapTileLayer groundLayer = (TiledMapTileLayer) myMap.getLayers().get(0);
+    GameManager.getInstance().setPathfindingManager(new PathfindingManager(groundLayer));
 
     // ---- MAP TYPE DETECTION: Dungeon (rooms) vs Cave (roomless) ----
     boolean hasCavePortal = myMap.getProperties().containsKey(NoiseMapStrategy.PORTAL_POSITION_KEY);
@@ -318,6 +336,11 @@ public class GameModel extends Subject
       float tileSize = layer.getTileWidth();
       lightingSystem.update(p.getPosition().x, p.getPosition().y, tileSize);
     }
+
+    // Update Collision Monitor
+    if (collisionMonitor != null) {
+      collisionMonitor.tick(deltaTime);
+    }
   }
 
   private void updateEnemiesLogic(float deltaTime) {
@@ -326,11 +349,8 @@ public class GameModel extends Subject
     // List<Player> targets = Collections.singletonList(player);
 
     for (AbstractEnemy enemy : level.getEnemies()) {
-      // AbstractEnemy doesn't have update(delta) but Entity does.
-      // However AbstractEnemy extends Entity.
-      // We should check if update(delta) is enough or if we need to call something
-      // else.
-      // Entity.update(delta) syncs graphics from physics.
+      // Skip unspawned enemies (they are inactive)
+      if (!enemy.isSpawned()) continue;
       enemy.update(deltaTime);
       enemy.updateBehavior(players, deltaTime);
 
@@ -681,6 +701,10 @@ public class GameModel extends Subject
     MapGenerationStrategy strategy = GameManager.getInstance().getCurrentLevelStrategy();
     TiledMap newMap = strategy.generate();
     this.lightingSystem.prepareLightingOverlay(newMap);
+
+    // Initialize Pathfinding for restored map
+    TiledMapTileLayer groundLayer = (TiledMapTileLayer) newMap.getLayers().get(0);
+    GameManager.getInstance().setPathfindingManager(new PathfindingManager(groundLayer));
 
     // Extract room data for reconstruction
     List<RoomData> roomData = DungeonMapStrategy.extractRoomData(newMap);

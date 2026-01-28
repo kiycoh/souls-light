@@ -90,7 +90,7 @@ public class Chaser extends AbstractEnemy {
             if (body != null) body.setLinearVelocity(0, 0);
             currentState = State.ATTACKING;
           } else {
-            moveTowards(target.getPosition(), deltaTime);
+            smartMoveTowards(target.getPosition(), deltaTime);
           }
           break;
 
@@ -125,7 +125,7 @@ public class Chaser extends AbstractEnemy {
 
         float distToLastPos = myPos.dst(lastKnownPlayerPos);
         if (distToLastPos > 15f) {
-          moveTowards(lastKnownPlayerPos, deltaTime);
+          smartMoveTowards(lastKnownPlayerPos, deltaTime);
         } else {
           if (body != null) body.setLinearVelocity(0, 0);
         }

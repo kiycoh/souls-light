@@ -35,13 +35,6 @@ public class Ranger extends AbstractEnemy {
   private void setupStats(float health, float speed) {
     this.health = health;
     this.maxHealth = health;
-    this.speed = 130.0f; // Feature branch overrides speed to 130.0f
-    // If we want to respect constructor argument, we should use 'speed', but
-    // feature branch had 130
-    // hardcoded.
-    // I will use 130.0f to match feature branch behavior but keep the method
-    // generic if needed
-    // later.
     this.speed = 130.0f;
   }
 
@@ -101,11 +94,11 @@ public class Ranger extends AbstractEnemy {
 
     // Scappa se troppo vicino
     if (distance < FLEE_DISTANCE) {
-      // Troppo vicino: Scappa usando il metodo del padre!
-      moveAway(target.getPosition());
+      // Troppo vicino: Scappa in modo intelligente
+      smartFlee(target.getPosition(), deltaTime);
     } else if (distance > ATTACK_RANGE - 50f) {
       // Troppo lontano: cerca di avvicinarsi
-      moveTowards(target.getPosition(), deltaTime);
+      smartMoveTowards(target.getPosition(), deltaTime);
     } else {
       // Distanza perfetta:si ferma
       if (body != null) body.setLinearVelocity(0, 0);
@@ -125,12 +118,46 @@ public class Ranger extends AbstractEnemy {
     }
   }
 
+  private void smartFlee(Vector2 threatPos, float deltaTime) {
+    if (body == null) return;
+
+    io.github.soulslight.manager.PathfindingManager pfm =
+        io.github.soulslight.manager.GameManager.getInstance().getPathfindingManager();
+
+    // Fallback if pathfinding is not available
+    if (pfm == null) {
+      moveAway(threatPos);
+      return;
+    }
+
+    Vector2 start = body.getPosition();
+    Vector2 awayDir = start.cpy().sub(threatPos).nor();
+
+    // Try multiple directions to find a valid spot
+    float[] angles = {0, 45, -45, 90, -90, 135, -135};
+    float checkDist = 150f; // Distance to run to
+
+    for (float angle : angles) {
+      Vector2 candidateDir = awayDir.cpy().rotateDeg(angle);
+      Vector2 targetPos = start.cpy().add(candidateDir.scl(checkDist));
+
+      if (pfm.isWalkable(targetPos.x, targetPos.y)) {
+        // Found a valid spot!
+        smartMoveTowards(targetPos, deltaTime);
+        return;
+      }
+    }
+
+    // If no valid spot found (trapped?), just run away as fallback
+    moveAway(threatPos);
+  }
+
   private void handleSearchLogic(float deltaTime) {
     float distToLastPos = getPosition().dst(lastKnownPlayerPos);
 
     if (distToLastPos > 15f) {
       // Si muove per ricercare
-      moveTowards(lastKnownPlayerPos, deltaTime);
+      smartMoveTowards(lastKnownPlayerPos, deltaTime);
     } else {
       if (body != null) body.setLinearVelocity(0, 0);
     }

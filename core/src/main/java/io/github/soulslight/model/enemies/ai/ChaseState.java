@@ -15,15 +15,15 @@ public final class ChaseState implements EnemyState {
     Player target = enemy.getNearestTarget(players);
     if (target == null) return;
 
-    if (enemy.canSeePlayer(target, enemy.getBody().getWorld())) {
-      float distance = enemy.getBody().getPosition().dst(target.getPosition());
-      if (distance <= STOP_DISTANCE) {
-        enemy.setAIState(new AttackState());
-      } else {
-        enemy.moveTowards(target.getPosition(), deltaTime);
-      }
-    } else {
-      enemy.setAIState(new SearchState());
+    float dist = enemy.getBody().getPosition().dst(target.getPosition());
+
+    // Attack transition
+    if (dist <= STOP_DISTANCE && enemy.canSeePlayer(target, enemy.getBody().getWorld())) {
+      enemy.setAIState(new AttackState());
+      return;
     }
+
+    // Delegate to AbstractEnemy's smart movement which handles LOS and Pathfinding
+    enemy.smartMoveTowards(target.getPosition(), deltaTime);
   }
 }

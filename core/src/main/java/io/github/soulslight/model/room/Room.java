@@ -103,6 +103,7 @@ public class Room implements EnemyDeathListener {
   public void addEnemy(AbstractEnemy enemy) {
     enemies.add(enemy);
     enemy.addDeathListener(this);
+    enemy.setSpawned(false); // Enemies start dormant until room activation
   }
 
   /**
@@ -112,6 +113,7 @@ public class Room implements EnemyDeathListener {
   public void activateEnemies() {
     for (AbstractEnemy enemy : enemies) {
       if (!enemy.isDead()) {
+        enemy.setSpawned(true); // Wake up enemy (render + physics)
         enemy.setAIState(new io.github.soulslight.model.enemies.ai.ChaseState());
       }
     }
