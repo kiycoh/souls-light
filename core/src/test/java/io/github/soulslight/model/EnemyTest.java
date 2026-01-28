@@ -323,8 +323,9 @@ public class EnemyTest {
     List<Player> players = Collections.singletonList(player);
 
     oblivion.updateBehavior(players, 4.9f);
-    oblivion.updateBehavior(players, 0.2f);
-    oblivion.update(0.2f);
+    oblivion.updateBehavior(
+        players, 2.0f); // Wait for cooldown (5s) + anim (1.8s) -> need > 6.8s total
+    oblivion.update(0.2f); // Updates physics
 
     assertEquals(500, oblivion.getY(), 1.0f);
 
@@ -386,7 +387,7 @@ public class EnemyTest {
     oblivion.addProjectileListener(listener);
 
     oblivion.updateBehavior(players, 0.1f);
-    oblivion.updateBehavior(players, 0.6f);
+    oblivion.updateBehavior(players, 0.3f); // Less than 0.5s cooldown to avoid second shot
 
     assertEquals(3, listener.callCount, "Oblivion deve generare esattamente 3 eventi projectile");
 

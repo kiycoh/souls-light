@@ -24,7 +24,6 @@ public class GdxTestExtension implements BeforeAllCallback {
     if (Gdx.app == null) {
       HeadlessApplicationConfiguration config = new HeadlessApplicationConfiguration();
 
-      // Inizializza l'applicazione Headless
       new HeadlessApplication(
           new ApplicationListener() {
             @Override
@@ -47,9 +46,70 @@ public class GdxTestExtension implements BeforeAllCallback {
           },
           config);
 
-      // Mock OpenGL (classi grafiche)
+      // Mock OpenGL
       Gdx.gl = Mockito.mock(GL20.class);
       Gdx.gl20 = Gdx.gl;
+
+      // Fix Asset Path: Wrap Gdx.files to look in ../assets/ if not found in core/
+      final com.badlogic.gdx.Files originalFiles = Gdx.files;
+      Gdx.files =
+          new com.badlogic.gdx.Files() {
+            @Override
+            public com.badlogic.gdx.files.FileHandle getFileHandle(String path, FileType type) {
+              return originalFiles.getFileHandle(path, type);
+            }
+
+            @Override
+            public com.badlogic.gdx.files.FileHandle classpath(String path) {
+              return originalFiles.classpath(path);
+            }
+
+            @Override
+            public com.badlogic.gdx.files.FileHandle internal(String path) {
+              com.badlogic.gdx.files.FileHandle handle = originalFiles.internal(path);
+              if (!handle.exists()) {
+                // Try looking in ../assets
+                com.badlogic.gdx.files.FileHandle alt = originalFiles.internal("../assets/" + path);
+                if (alt.exists()) return alt;
+              }
+              return handle;
+            }
+
+            @Override
+            public com.badlogic.gdx.files.FileHandle external(String path) {
+              return originalFiles.external(path);
+            }
+
+            @Override
+            public com.badlogic.gdx.files.FileHandle absolute(String path) {
+              return originalFiles.absolute(path);
+            }
+
+            @Override
+            public com.badlogic.gdx.files.FileHandle local(String path) {
+              return originalFiles.local(path);
+            }
+
+            @Override
+            public String getLocalStoragePath() {
+              return originalFiles.getLocalStoragePath();
+            }
+
+            @Override
+            public boolean isLocalStorageAvailable() {
+              return originalFiles.isLocalStorageAvailable();
+            }
+
+            @Override
+            public boolean isExternalStorageAvailable() {
+              return originalFiles.isExternalStorageAvailable();
+            }
+
+            @Override
+            public String getExternalStoragePath() {
+              return originalFiles.getExternalStoragePath();
+            }
+          };
     }
   }
 }

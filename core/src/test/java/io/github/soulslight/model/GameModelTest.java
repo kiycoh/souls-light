@@ -61,12 +61,18 @@ class GameModelTest {
     Vector2 initialPos = p1.getPosition().cpy();
 
     if (p1.getBody() != null) {
-      p1.getBody().setLinearVelocity(10f, 0f);
+      p1.getBody().setAwake(true);
+      p1.getBody().setLinearVelocity(100f, 0f); // Higher velocity
     }
 
-    model.update(1.0f);
+    // Force multiple updates to ensure physics step
+    for (int i = 0; i < 5; i++) model.update(0.1f);
 
-    assertNotEquals(initialPos.x, p1.getPosition().x, 0.1f);
+    assertNotEquals(
+        initialPos.x,
+        p1.getPosition().x,
+        0.1f,
+        "Player position should change after physics update");
   }
 
   @Test
@@ -74,7 +80,8 @@ class GameModelTest {
     model = new GameModel();
 
     Chaser enemy = new Chaser();
-    // Usa coordinate sicure, lontano da muri o altri player per evitare collisioni impreviste
+    // Usa coordinate sicure, lontano da muri o altri player per evitare collisioni
+    // impreviste
     // durante il test
     enemy.createBody(model.getWorld(), 500, 500);
     model.getLevel().addEnemy(enemy);

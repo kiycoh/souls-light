@@ -6,11 +6,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.JsonWriter.OutputType;
+import io.github.soulslight.model.DoorMemento;
 import io.github.soulslight.model.EnemyMemento;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.GameStateMemento;
 import io.github.soulslight.model.PlayerMemento;
+import io.github.soulslight.model.PortalMemento;
 import io.github.soulslight.model.ProjectileMemento;
+import io.github.soulslight.model.RoomMemento;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.utils.GdxTestExtension;
 import java.util.ArrayList;
@@ -32,6 +35,9 @@ class SaveSystemTest {
     assertFalse(EnemyMemento.class.isRecord(), "EnemyMemento should be a POJO for LibGDX JSON");
     assertFalse(
         ProjectileMemento.class.isRecord(), "ProjectileMemento should be a POJO for LibGDX JSON");
+    assertFalse(RoomMemento.class.isRecord(), "RoomMemento should be a POJO for LibGDX JSON");
+    assertFalse(DoorMemento.class.isRecord(), "DoorMemento should be a POJO for LibGDX JSON");
+    assertFalse(PortalMemento.class.isRecord(), "PortalMemento should be a POJO for LibGDX JSON");
   }
 
   @Test
@@ -46,19 +52,19 @@ class SaveSystemTest {
     List<ProjectileMemento> projectiles = new ArrayList<>();
     projectiles.add(new ProjectileMemento(10f, 10f, 1f, 1f));
 
+    List<RoomMemento> rooms = new ArrayList<>();
+    rooms.add(new RoomMemento("room1", true, false));
+
+    List<DoorMemento> doors = new ArrayList<>();
+    doors.add(new DoorMemento(0, true));
+
+    List<PortalMemento> portals = new ArrayList<>();
+    portals.add(new PortalMemento(true));
+
     long seed = 123456789L;
 
     GameStateMemento original =
-        new GameStateMemento(
-            players,
-            enemies,
-            projectiles,
-            new ArrayList<>(),
-            new ArrayList<>(),
-            new ArrayList<>(),
-            seed,
-            2,
-            50f);
+        new GameStateMemento(players, enemies, projectiles, rooms, doors, portals, seed, 2, 50f);
 
     // Serialize with LibGDX Json (Standard Way)
     Json json = new Json();
@@ -74,9 +80,13 @@ class SaveSystemTest {
     assertNotNull(loaded);
     assertEquals(original.currentLevelIndex, loaded.currentLevelIndex);
     assertEquals(original.seed, loaded.seed);
+    assertEquals(original.currentWill, loaded.currentWill);
     assertEquals(original.players.size(), loaded.players.size());
     assertEquals(original.enemies.size(), loaded.enemies.size());
     assertEquals(original.projectiles.size(), loaded.projectiles.size());
+    assertEquals(original.rooms.size(), loaded.rooms.size());
+    assertEquals(original.doors.size(), loaded.doors.size());
+    assertEquals(original.portals.size(), loaded.portals.size());
 
     EnemyMemento e1 = loaded.enemies.get(0);
     assertEquals("Chaser", e1.type);
@@ -126,10 +136,15 @@ class SaveSystemTest {
     // Creiamo un salvataggio di BACKUP valido
     FileHandle backup = Gdx.files.local("savegame.bak");
 
-    // Creiamo un memento vuoto ma valido
+    // Creiamo un memento con un player per superare la validazione
+    // (!players.isEmpty())
+    List<PlayerMemento> validPlayers = new ArrayList<>();
+    validPlayers.add(
+        new PlayerMemento(Player.PlayerClass.WARRIOR, 100f, 10f, 10f, new ArrayList<>()));
+
     GameStateMemento validMemento =
         new GameStateMemento(
-            new ArrayList<>(),
+            validPlayers,
             new ArrayList<>(),
             new ArrayList<>(),
             new ArrayList<>(),
@@ -152,6 +167,10 @@ class SaveSystemTest {
     // passare al backup
     primary.writeString("INVALID_CONTENT_NOT_BASE64", false);
 
+    // Verify backup exists before loading
+    assertTrue(backup.exists(), "Backup file must exist before loading");
+
+    // Proviamo a caricare
     // Proviamo a caricare
     GameModel mockModel = Mockito.mock(GameModel.class);
     saveManager.loadGame(mockModel);
