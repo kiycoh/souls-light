@@ -219,8 +219,8 @@ public final class MainMenuScreen implements GameState {
           @Override
           public void clicked(InputEvent event, float x, float y) {
             GameManager.getInstance().startCampaign(GameMode.CUSTOM);
-            startGame();
             dialogTable.remove();
+            game.setScreen(new ClassSelectionScreen(game, batch));
           }
         });
 
@@ -247,13 +247,6 @@ public final class MainMenuScreen implements GameState {
     dialogTable.addAction(Actions.fadeIn(0.3f));
 
     stage.addActor(dialogTable);
-  }
-
-  /** Starts the game with the current GameManager configuration. */
-  private void startGame() {
-    GameModel model = new GameModel();
-    GameController controller = new GameController(model);
-    game.setScreen(new GameScreen(batch, model, controller));
   }
 
   @Override

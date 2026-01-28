@@ -11,34 +11,6 @@ public class DungeonGraph implements IndexedGraph<DungeonNode> {
   private int height;
   private final float tileSize;
 
-  /**
-   * Constructs a DungeonGraph from a TiledMapTileLayer by creating a grid of DungeonNode instances
-   * and connecting walkable neighbors.
-   *
-   * <p>Behavior: - Reads layer width, height and tile size (tile width is used; square-tile
-   * assumption). - Allocates a row-major nodes array of size width * height (index increments with
-   * x then y). - For every tile position (x,y) a DungeonNode is created with its x, y, index and a
-   * walkability flag determined by isWall(layer, x, y). - Wall nodes are still created but are not
-   * connected to neighbors.
-   *
-   * <p>Neighbor connectivity: - Orthogonal neighbors (up, down, left, right) are considered and
-   * connected when valid. - Diagonal neighbors are considered as well, but a diagonal connection is
-   * only added if both adjacent orthogonal neighbors are walkable. This prevents corner-cutting
-   * through diagonal gaps between walls. - The actual addition of edges is delegated to
-   * addConnectionIfExists(...) and coordinate validity/occupancy checks are performed via
-   * isValid(...) and isWall(...).
-   *
-   * <p>Assumptions and notes: - The provided layer must be non-null and have meaningful
-   * width/height/tile width values. - Tile size is taken from layer.getTileWidth(); if tiles are
-   * non-square an alternate approach may be required. - The nodes array is filled in row-major
-   * order: index == y * width + x. - Complexity is O(width * height) for node creation and neighbor
-   * evaluation. - Diagonal movement is enabled only when it does not allow moving through corners
-   * of walls.
-   *
-   * @param layer the TiledMapTileLayer used to build the graph; its tiles determine node positions
-   *     and wall occupancy
-   * @throws NullPointerException if layer is null
-   */
   public DungeonGraph(TiledMapTileLayer layer) {
     this.width = layer.getWidth();
     this.height = layer.getHeight();
@@ -55,12 +27,7 @@ public class DungeonGraph implements IndexedGraph<DungeonNode> {
       }
     }
 
-    // Connect Neighbors (All 8 directions for better movement? Or 4? Let's start
-    // with 8 for
-    // smoothness)
-    // Actually, 8 directions might cause clipping corners. Let's stick to 4 first,
-    // or 8 with checks.
-    // The plan suggested 4 (Up, Down, Left, Right). Let's stick to 4.
+    // Connect Neighbors
     int[] dx = {0, 0, 1, -1};
     int[] dy = {1, -1, 0, 0};
 

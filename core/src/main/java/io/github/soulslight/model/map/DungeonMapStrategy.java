@@ -141,8 +141,11 @@ public record DungeonMapStrategy(long seed, int width, int height)
     for (int i = 0; i < rooms.size() - 1; i++) {
       Room r1 = rooms.get(i);
       Room r2 = rooms.get(i + 1);
-      createOrganicTunnel(r1, r2, layer, floorTiles, rng, i, i + 1, roomDoors);
+      createOrganicTunnel(r1, r2, layer, floorTiles, rng);
     }
+
+    // 4b. Detect Doors via perimeter scan
+    detectDoors(rooms, layer, roomDoors);
 
     // 5. Apply Wall Auto-tiling
     applyWallAutotiling(layer, wallMaskTiles, innerNeTile, innerNwTile, innerSeTile, innerSwTile);
@@ -245,15 +248,9 @@ public record DungeonMapStrategy(long seed, int width, int height)
    * Creates an "Organic Tunnel" (Guided Drunkard's Walk) between two rooms. Also detects where the
    * tunnel pierces the room walls to place Doors.
    */
+  /** Creates an "Organic Tunnel" (Guided Drunkard's Walk) between two rooms. */
   private void createOrganicTunnel(
-      Room r1,
-      Room r2,
-      TiledMapTileLayer layer,
-      StaticTiledMapTile[] floorTiles,
-      Random rng,
-      int room1Idx,
-      int room2Idx,
-      Map<Integer, List<DoorPosition>> roomDoors) {
+      Room r1, Room r2, TiledMapTileLayer layer, StaticTiledMapTile[] floorTiles, Random rng) {
 
     // Start center of R1
     int cx = r1.x + r1.w / 2;
@@ -263,20 +260,9 @@ public record DungeonMapStrategy(long seed, int width, int height)
     int tx = r2.x + r2.w / 2;
     int ty = r2.y + r2.h / 2;
 
-    // Flags to ensure we only place one door per room per tunnel connection
-    boolean r1DoorPlaced = false;
-    boolean r2DoorPlaced = false;
-
-    // "Brush" size for digging (makes tunnels slightly wider than 1 tile)
-    // 0 = 1x1, 1 = 3x3 (approx) with chance
-
     // Maximum iterations to prevent infinite loops
     int maxSteps = width * height * 2;
     int steps = 0;
-
-    // We track "Previous" position to determine door direction
-    int prevX = cx;
-    int prevY = cy;
 
     while (steps < maxSteps) {
       if (cx == tx && cy == ty) break;
@@ -319,79 +305,104 @@ public record DungeonMapStrategy(long seed, int width, int height)
 
         // Dig at current position
         carveRough(layer, cx, cy, floorTiles, rng);
-
-        // --- DOOR DETECTION LOGIC ---
-        // If we are exiting Room 1
-        // (Previously inside R1, now outside R1)
-        if (!r1DoorPlaced) {
-          boolean wasInR1 = r1.contains(prevX, prevY);
-          boolean inR1 = r1.contains(cx, cy);
-
-          if (wasInR1 && !inR1) {
-            // Just exited R1. Place door at prevX, prevY
-            // Direction is towards the walk (Outward)
-            // If we want the door "In" the wall, usually it's the tile inside the room
-            DoorPosition dp = determineDoorPos(r1, prevX, prevY, cx, cy);
-            if (dp != null) {
-              roomDoors.get(room1Idx).add(dp);
-              r1DoorPlaced = true;
-            }
-          }
-        }
-
-        // If we are entering Room 2
-        // (Previously outside R2, now inside R2)
-        if (!r2DoorPlaced) {
-          boolean wasInR2 = r2.contains(prevX, prevY);
-          boolean inR2 = r2.contains(cx, cy);
-
-          if (!wasInR2 && inR2) {
-            // Just entered R2. Place door at cx, cy (the tile inside)
-            // or prevX, prevY (the tile outside)? Usually logical door is on the edge.
-            // Let's place it at 'cx, cy' as the "inner" point, facing outward.
-            // Wait, 'determineDoorPos' logic expects us to define "Inside".
-            DoorPosition dp = determineDoorPos(r2, cx, cy, prevX, prevY);
-            if (dp != null) {
-              roomDoors.get(room2Idx).add(dp);
-              r2DoorPlaced = true;
-            }
-          }
-        }
       }
-
-      prevX = cx;
-      prevY = cy;
       steps++;
     }
   }
 
-  private DoorPosition determineDoorPos(
-      Room r, int insideX, int insideY, int outsideX, int outsideY) {
-    float pixelX = insideX * TILE_SIZE + TILE_SIZE / 2f;
-    float pixelY = insideY * TILE_SIZE + TILE_SIZE / 2f;
+  private void detectDoors(
+      List<Room> rooms, TiledMapTileLayer layer, Map<Integer, List<DoorPosition>> roomDoors) {
+    for (int i = 0; i < rooms.size(); i++) {
+      Room r = rooms.get(i);
+      List<DoorPosition> doors = roomDoors.get(i);
 
-    // Determine edge based on relative delta
-    int dx = outsideX - insideX;
-    int dy = outsideY - insideY;
+      // Scan North Wall (y = r.y + r.h)
+      scanEdge(layer, r.x, r.y + r.h, 1, 0, r.w, DoorPosition.Direction.NORTH, doors);
+      // Scan South Wall (y = r.y - 1)
+      scanEdge(layer, r.x, r.y - 1, 1, 0, r.w, DoorPosition.Direction.SOUTH, doors);
+      // Scan East Wall (x = r.x + r.w)
+      scanEdge(layer, r.x + r.w, r.y, 0, 1, r.h, DoorPosition.Direction.EAST, doors);
+      // Scan West Wall (x = r.x - 1)
+      scanEdge(layer, r.x - 1, r.y, 0, 1, r.h, DoorPosition.Direction.WEST, doors);
+    }
+  }
 
-    if (dx > 0)
-      return DoorPosition.of(
-          pixelX + TILE_SIZE / 2f,
-          pixelY,
-          DoorPosition.Direction.EAST); // Moving Right -> East Wall
-    if (dx < 0)
-      return DoorPosition.of(
-          pixelX - TILE_SIZE / 2f, pixelY, DoorPosition.Direction.WEST); // Moving Left -> West Wall
-    if (dy > 0)
-      return DoorPosition.of(
-          pixelX, pixelY + TILE_SIZE / 2f, DoorPosition.Direction.NORTH); // Moving Up -> North Wall
-    if (dy < 0)
-      return DoorPosition.of(
-          pixelX, pixelY - TILE_SIZE / 2f, DoorPosition.Direction.SOUTH); // Moving Down -> South
-    // Wall
+  private void scanEdge(
+      TiledMapTileLayer layer,
+      int startX,
+      int startY,
+      int dx,
+      int dy,
+      int length,
+      DoorPosition.Direction dir,
+      List<DoorPosition> doors) {
 
-    // Fallback
-    return DoorPosition.of(pixelX, pixelY, DoorPosition.Direction.SOUTH);
+    int runStart = -1;
+    int runLen = 0;
+
+    for (int k = 0; k < length; k++) {
+      int tx = startX + k * dx;
+      int ty = startY + k * dy;
+
+      if (isFloor(layer, tx, ty)) {
+        if (runStart == -1) runStart = k;
+        runLen++;
+      } else {
+        if (runStart != -1) {
+          addDoor(doors, startX, startY, dx, dy, runStart, runLen, dir);
+          runStart = -1;
+          runLen = 0;
+        }
+      }
+    }
+    // Final check
+    if (runStart != -1) {
+      addDoor(doors, startX, startY, dx, dy, runStart, runLen, dir);
+    }
+  }
+
+  private void addDoor(
+      List<DoorPosition> doors,
+      int startX,
+      int startY,
+      int dx,
+      int dy,
+      int runStart,
+      int runLen,
+      DoorPosition.Direction dir) {
+
+    // Calculate center of the run in tile coords, then pixels
+    // The run starts at index 'runStart' relative to startX/Y
+    int firstTileX = startX + runStart * dx;
+    int firstTileY = startY + runStart * dy;
+
+    // Center of the run in tiles: firstTile + (runLen - 1) / 2.0
+    // But we want pixel center.
+    // Pixel of tile T is T * SIZE + SIZE/2.
+    // Start Pixel = firstTile * SIZE
+    // End Pixel = (firstTile + runLen) * SIZE
+    // Center Pixel = (Start + End) / 2
+
+    float startPixelX = firstTileX * TILE_SIZE;
+    float startPixelY = firstTileY * TILE_SIZE;
+
+    float endPixelX = (firstTileX + (dx == 1 ? runLen : 1)) * TILE_SIZE;
+    float endPixelY = (firstTileY + (dy == 1 ? runLen : 1)) * TILE_SIZE;
+
+    float centerX = (startPixelX + endPixelX) / 2f;
+    float centerY = (startPixelY + endPixelY) / 2f;
+
+    float doorLength = runLen * TILE_SIZE;
+
+    doors.add(DoorPosition.of(centerX, centerY, dir, doorLength));
+  }
+
+  private boolean isFloor(TiledMapTileLayer layer, int x, int y) {
+    if (x < 0 || x >= width || y < 0 || y >= height) return false;
+    var cell = layer.getCell(x, y);
+    return cell != null
+        && cell.getTile() != null
+        && "floor".equals(cell.getTile().getProperties().get("type"));
   }
 
   private void carveRough(

@@ -1,6 +1,9 @@
 package io.github.soulslight.model.pathfinding;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.ai.pfa.DefaultGraphPath;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
@@ -51,13 +54,6 @@ class DungeonGraphTest {
     assertFalse(left.isWall);
 
     // Check connections
-    // Left node (1,2) should connect to (1,1), (1,3), (0,2). But NOT (2,2) because
-    // it's a wall.
-    // And diagonals effectively.
-    // Since we enabled diagonals only if adjacent orthogonal are walkable, (1,2) to
-    // (2,3) might be blocked if (2,2) is wall.
-
-    // Let's just check PathfindingManager which is higher level
     PathfindingManager pfm = new PathfindingManager(layer);
 
     // Start at 1,2 (Left of wall). End at 3,2 (Right of wall).

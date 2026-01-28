@@ -249,11 +249,14 @@ public final class ClassSelectionScreen implements GameState {
       GameManager.getInstance().setPlayerClass(0, playerClass);
 
       // Check Single Player Mode
-      if (io.github.soulslight.manager.SettingsManager.getInstance().isSinglePlayer()) {
+      // STRICTLY respect the single player setting regardless of GameMode
+      boolean isSinglePlayer =
+          io.github.soulslight.manager.SettingsManager.getInstance().isSinglePlayer();
+      Gdx.app.log("ClassSelectionScreen", "Player 1 selected. Single Player: " + isSinglePlayer);
+
+      if (isSinglePlayer) {
         // Start the game immediately
-        GameModel model = new GameModel();
-        GameController controller = new GameController(model);
-        game.setScreen(new IntroScreen(game, batch, model, controller));
+        startAppropriateGameScreen();
         return;
       }
 
@@ -262,16 +265,23 @@ public final class ClassSelectionScreen implements GameState {
       updateTitle();
 
       // Feedback (optional sound or flash, for now just UI update)
-      // Maybe reset background or keep selected until hover?
-      // Since hover logic overrides, it should be fine.
-
     } else {
       // Player 2 Selected
       GameManager.getInstance().setPlayerClass(1, playerClass);
 
-      // Start the game
-      GameModel model = new GameModel();
-      GameController controller = new GameController(model);
+      startAppropriateGameScreen();
+    }
+  }
+
+  private void startAppropriateGameScreen() {
+    GameModel model = new GameModel();
+    GameController controller = new GameController(model);
+
+    if (GameManager.getInstance().getGameMode() == io.github.soulslight.manager.GameMode.CUSTOM) {
+      // Custom Mode skips story intro
+      game.setScreen(new GameScreen(batch, model, controller));
+    } else {
+      // Story Mode plays intro
       game.setScreen(new IntroScreen(game, batch, model, controller));
     }
   }

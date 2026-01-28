@@ -105,19 +105,14 @@ public final class SettingsScreen implements GameState {
     stage.addActor(root);
 
     Table table = new Table();
-    root.add(table).expand().center();
+    root.add(table).expand().center().padTop(130f);
 
     // --- AUTO AIM ---
     Label autoAimLabel = new Label("Auto Aim", labelStyle);
     final ImageButton autoAimToggle = new ImageButton(toggleStyle);
     autoAimToggle.setChecked(SettingsManager.getInstance().isAutoAimEnabled());
-    autoAimToggle.addListener(
-        new ClickListener() {
-          @Override
-          public void clicked(InputEvent event, float x, float y) {
-            SettingsManager.getInstance().setAutoAimEnabled(autoAimToggle.isChecked());
-          }
-        });
+    autoAimToggle.setDisabled(true);
+    autoAimToggle.setColor(1f, 1f, 1f, 0.5f);
 
     autoAimToggle.setTransform(true);
     autoAimToggle.setScale(0.85f);

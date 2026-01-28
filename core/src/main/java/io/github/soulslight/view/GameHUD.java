@@ -272,7 +272,7 @@ public class GameHUD {
 
     // Border
     shapeRenderer.setColor(Color.GRAY);
-    // shapeRenderer.rect(mapX, mapY, mapSize, mapSize); // Simple border
+    // Simple border
     // Better border with lines
     shapeRenderer.rect(mapX, mapY, mapSize, 2); // Bottom
     shapeRenderer.rect(mapX, mapY + mapSize - 2, mapSize, 2); // Top

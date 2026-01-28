@@ -21,7 +21,7 @@ public class WarriorAttack extends AbstractAttack {
 
   @Override
   public float getRange() {
-    return 60.0f; // Increased range for cleave
+    return 100.0f; // Increased range
   }
 
   @Override

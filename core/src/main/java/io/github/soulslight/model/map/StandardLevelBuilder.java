@@ -420,7 +420,6 @@ public class StandardLevelBuilder implements ILevelBuilder {
       int tileW = prop.get("tilewidth", Integer.class);
 
       float doorThickness = (float) tileW; // Corridor width blocked
-      float doorLength = tileW * 4f; // Blocking 3x3 hall -> need at least 4 blocks wide
 
       for (DoorPosition doorPos : data.doorPositions()) {
         Door.Direction doorDir =
@@ -434,12 +433,12 @@ public class StandardLevelBuilder implements ILevelBuilder {
         // Use appropriate dimensions based on direction
         float w =
             (doorDir == Door.Direction.NORTH || doorDir == Door.Direction.SOUTH)
-                ? doorLength
+                ? doorPos.length()
                 : doorThickness;
         float h =
             (doorDir == Door.Direction.NORTH || doorDir == Door.Direction.SOUTH)
                 ? doorThickness
-                : doorLength;
+                : doorPos.length();
 
         room.addDoor(new Door(doorPos.position().x, doorPos.position().y, doorDir, w, h));
       }

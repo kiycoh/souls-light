@@ -80,8 +80,13 @@ public class GameManager {
         Gdx.app.log("GameManager", "Campaign complete!");
         return false;
       }
+    } else if (gameMode == GameMode.CUSTOM) {
+      // Custom mode: Randomize seed for next level generation
+      this.campaignSeed = System.currentTimeMillis();
+      Gdx.app.log("GameManager", "Custom Mode: Randomized seed to " + campaignSeed);
+      return true; // Custom mode loops indefinitely
     }
-    return true; // Custom mode loops indefinitely
+    return true;
   }
 
   /**
