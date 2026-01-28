@@ -243,7 +243,7 @@ public class StandardLevelBuilder implements ILevelBuilder {
 
     for (Room room : level.getRoomManager().getRooms()) {
       // Skip portal rooms (last room = no enemies, just portal)
-      if (room instanceof PortalRoom) {
+      if (room instanceof PortalRoom || room instanceof io.github.soulslight.model.room.EventRoom) {
         continue;
       }
 
@@ -396,22 +396,32 @@ public class StandardLevelBuilder implements ILevelBuilder {
 
     for (RoomData data : roomDataList) {
       Room room;
-      if (data.isPortalRoom()) {
-        room =
-            new PortalRoom(
-                data.id(),
-                data.bounds().x,
-                data.bounds().y,
-                data.bounds().width,
-                data.bounds().height);
-      } else {
-        room =
-            new Room(
-                data.id(),
-                data.bounds().x,
-                data.bounds().y,
-                data.bounds().width,
-                data.bounds().height);
+      switch (data.type()) {
+        case PORTAL ->
+            room =
+                new PortalRoom(
+                    data.id(),
+                    data.bounds().x,
+                    data.bounds().y,
+                    data.bounds().width,
+                    data.bounds().height);
+        case SERENITY ->
+            room =
+                new io.github.soulslight.model.room.EventRoom(
+                    data.id(),
+                    data.bounds().x,
+                    data.bounds().y,
+                    data.bounds().width,
+                    data.bounds().height,
+                    new io.github.soulslight.model.room.SerenityEvent());
+        default ->
+            room =
+                new Room(
+                    data.id(),
+                    data.bounds().x,
+                    data.bounds().y,
+                    data.bounds().width,
+                    data.bounds().height);
       }
 
       // Create doors at actual corridor connection points (from map generation)

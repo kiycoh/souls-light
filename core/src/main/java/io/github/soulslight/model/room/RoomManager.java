@@ -34,6 +34,10 @@ public class RoomManager {
     createSensors();
   }
 
+  public World getWorld() {
+    return world;
+  }
+
   /**
    * Sets the players reference for teleportation when combat starts.
    *

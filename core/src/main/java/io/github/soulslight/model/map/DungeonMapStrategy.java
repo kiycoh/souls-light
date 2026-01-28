@@ -148,6 +148,14 @@ public record DungeonMapStrategy(long seed, int width, int height)
     applyWallAutotiling(layer, wallMaskTiles, innerNeTile, innerNwTile, innerSeTile, innerSwTile);
 
     // 6. Store room data
+    boolean isPortal = false;
+
+    int serenityRoomIndex = -1;
+    // Ensure we have enough rooms (Start [0] ... [size-1] Portal)
+    if (rooms.size() > 2 && rng.nextBoolean()) { // 50% chance
+      serenityRoomIndex = rng.nextInt(1, rooms.size() - 1);
+    }
+
     List<RoomData> roomDataList = new ArrayList<>();
     for (int i = 0; i < rooms.size(); i++) {
       Room r = rooms.get(i);
@@ -156,12 +164,14 @@ public record DungeonMapStrategy(long seed, int width, int height)
       float worldW = r.w * TILE_SIZE;
       float worldH = r.h * TILE_SIZE;
 
-      boolean isPortal = (i == rooms.size() - 1);
+      isPortal = (i == rooms.size() - 1);
       String roomId = "room-" + i;
       List<DoorPosition> doors = roomDoors.getOrDefault(i, Collections.emptyList());
 
       if (isPortal) {
         roomDataList.add(RoomData.portal(roomId, worldX, worldY, worldW, worldH, doors));
+      } else if (i == serenityRoomIndex) {
+        roomDataList.add(RoomData.serenity(roomId, worldX, worldY, worldW, worldH, doors));
       } else {
         roomDataList.add(RoomData.standard(roomId, worldX, worldY, worldW, worldH, doors));
       }

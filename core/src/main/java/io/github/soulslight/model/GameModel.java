@@ -165,7 +165,7 @@ public class GameModel extends Subject
     // 1. Smart Search: If we have room data, pick the first room (Start Room)
     if (roomData != null && !roomData.isEmpty()) {
       for (RoomData room : roomData) {
-        if (!room.isPortalRoom()) {
+        if (room.type() != RoomData.RoomType.PORTAL) {
           Vector2 spawn = findSpawnInRoom(map, room);
           if (spawn != null) return spawn;
         }
