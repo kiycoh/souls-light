@@ -80,17 +80,18 @@ The project follows the standard LibGDX structure:
 
 ## 🕹️ Controls
 
-*(Controls are customizable in settings - Default mapping)*
-
-| Action | Key / Input |
-|--------|-------------|
-| **Move** | `W`, `A`, `S`, `D` |
-| **Attack** | `Left Click` |
-| **Interact** | `E` |
-| **Inventory** | `I` |
-| **Pause** | `ESC` |
-| **Open Debug Menu** | `F1` |
-| **Activate/Deactivate Debug Mode** | `0` |
+| Action | Key / Input | Controller |
+|--------|-------------|------------|
+| **Move** | `W`, `A`, `S`, `D` | `Left Stick` |
+| **Attack** | `Space` | `A` |
+| **Special Attack** | `O` | `Y` |
+| **Interact** | `E` | To be implemented |
+| **Use Inventory** | `1`, `2`, `3`| To be implemented |
+| **Save** | `F5` | To be implemented |
+| **Load saved game** | `F6` | To be implemented |
+| **Pause** | `ESC` | To be implemented |
+| **Open Debug Menu** | `F1` | To be implemented |
+| **Activate/Deactivate Debug Mode** | `0` | To be implemented |
 
 ---
 
