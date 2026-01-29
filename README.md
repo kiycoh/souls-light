@@ -89,7 +89,8 @@ The project follows the standard LibGDX structure:
 | **Interact** | `E` |
 | **Inventory** | `I` |
 | **Pause** | `ESC` |
-| **Debug Mode**| `F3` |
+| **Open Debug Menu** | `F1` |
+| **Activate/Deactivate Debug Mode** | `0` |
 
 ---
 
