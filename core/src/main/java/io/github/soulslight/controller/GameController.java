@@ -115,9 +115,9 @@ public class GameController extends InputAdapter implements ControllerListener, 
       case Input.Keys.P -> {
         if (!players.isEmpty()) players.get(0).doAnAttack();
       }
-      case Input.Keys.NUM_1 -> command = new ConsumeItemCommand(0, 0);
-      case Input.Keys.NUM_2 -> command = new ConsumeItemCommand(0, 1);
-      case Input.Keys.NUM_3 -> command = new ConsumeItemCommand(0, 2);
+      case Input.Keys.NUM_1 -> setSelectedSlot(0, 0);
+      case Input.Keys.NUM_2 -> setSelectedSlot(0, 1);
+      case Input.Keys.NUM_3 -> setSelectedSlot(0, 2);
       case Input.Keys.F5 -> {
         // RESTORE (Load)
         if (saveManager.hasSaveFile()) {
@@ -139,6 +139,16 @@ public class GameController extends InputAdapter implements ControllerListener, 
 
       case Input.Keys.E -> // Portal activation
           command = new InteractCommand();
+
+      // Inventory Navigation (Keyboard - Player 0)
+      case Input.Keys.LEFT -> changeSelectedSlot(0, -1);
+      case Input.Keys.RIGHT -> changeSelectedSlot(0, 1);
+      case Input.Keys.I -> {
+        if (!model.getPlayers().isEmpty()) {
+          Player p = model.getPlayers().get(0);
+          command = new ConsumeItemCommand(0, p.getSelectedSlotIndex());
+        }
+      }
     }
 
     if (command != null) {
@@ -179,6 +189,10 @@ public class GameController extends InputAdapter implements ControllerListener, 
     // Check mapping
     int attackBtn = controller.getMapping().buttonA;
     int specialBtn = controller.getMapping().buttonY;
+    int useItemBtn = controller.getMapping().buttonX;
+
+    int dpadLeft = controller.getMapping().buttonDpadLeft;
+    int dpadRight = controller.getMapping().buttonDpadRight;
 
     // --- COMMAND MAPPING FOR CONTROLLER ---
     Command command = null;
@@ -189,6 +203,15 @@ public class GameController extends InputAdapter implements ControllerListener, 
         command = new AttackCommand(1);
       } else if (buttonCode == specialBtn) {
         command = new SpecialAttackCommand(1);
+      } else if (buttonCode == useItemBtn) {
+        if (model.getPlayers().size() > 1) {
+          Player p = model.getPlayers().get(1);
+          command = new ConsumeItemCommand(1, p.getSelectedSlotIndex());
+        }
+      } else if (buttonCode == dpadLeft) {
+        changeSelectedSlot(1, -1);
+      } else if (buttonCode == dpadRight) {
+        changeSelectedSlot(1, 1);
       }
     }
 
@@ -246,5 +269,25 @@ public class GameController extends InputAdapter implements ControllerListener, 
   public void dispose() {
     Controllers.removeListener(this);
     Gdx.app.log("GameController", "Controller listener removed.");
+  }
+
+  private void changeSelectedSlot(int playerIndex, int amount) {
+    List<Player> players = model.getPlayers();
+    if (players.size() <= playerIndex) return;
+
+    players.get(playerIndex).changeSelectedSlot(amount);
+    Gdx.app.log(
+        "GameController",
+        "Player "
+            + playerIndex
+            + " selected slot: "
+            + players.get(playerIndex).getSelectedSlotIndex());
+  }
+
+  private void setSelectedSlot(int playerIndex, int slotIndex) {
+    List<Player> players = model.getPlayers();
+    if (players.size() <= playerIndex) return;
+
+    players.get(playerIndex).setSelectedSlot(slotIndex);
   }
 }

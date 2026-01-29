@@ -18,7 +18,7 @@ public class GameManager {
   private Level currentLevel;
   private java.util.List<Player> players;
   public static boolean DEBUG_MODE = true;
-  public static boolean SHOW_HITBOXES = true; // Independent hitbox visibility toggle
+  public static boolean SHOW_HITBOXES = false; // Independent hitbox visibility toggle
 
   // Campaign state
   private GameMode gameMode = GameMode.STORY;

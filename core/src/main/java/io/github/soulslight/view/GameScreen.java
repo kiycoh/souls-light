@@ -440,6 +440,9 @@ public final class GameScreen implements GameState, Observer {
       bossCrossfadeCompleted = false;
       bossCrossfadeTime = 0f;
 
+      // Fix: Dispose of the current screen to clean up controller listeners!
+      dispose();
+
       game.setScreen(new MainMenuScreen(game, batch));
     }
   }

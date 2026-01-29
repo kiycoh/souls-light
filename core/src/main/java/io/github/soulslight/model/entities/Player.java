@@ -40,6 +40,7 @@ public class Player extends Entity {
   private float reviveAttemptTimer = 0f;
 
   private final Inventory inventory;
+  private int selectedSlotIndex = 0;
 
   public enum PlayerClass {
     WARRIOR {
@@ -445,5 +446,21 @@ public class Player extends Entity {
     } else {
       com.badlogic.gdx.Gdx.app.log("Player", "Item cannot be consumed.");
     }
+  }
+
+  public void changeSelectedSlot(int amount) {
+    if (inventory.getCapacity() == 0) return;
+    selectedSlotIndex += amount;
+    if (selectedSlotIndex < 0) selectedSlotIndex = inventory.getCapacity() - 1;
+    if (selectedSlotIndex >= inventory.getCapacity()) selectedSlotIndex = 0;
+  }
+
+  public void setSelectedSlot(int index) {
+    if (index < 0 || index >= inventory.getCapacity()) return;
+    this.selectedSlotIndex = index;
+  }
+
+  public int getSelectedSlotIndex() {
+    return selectedSlotIndex;
   }
 }

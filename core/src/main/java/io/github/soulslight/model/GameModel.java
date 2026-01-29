@@ -92,6 +92,11 @@ public class GameModel extends Subject
 
     this.currentWill = Constants.MAX_WILL / 2;
     this.isPaused = false;
+
+    // Fix: Clear previous players from GameManager to prevent duplicates on new
+    // game
+    GameManager.getInstance().clearPlayers();
+
     this.players = new java.util.ArrayList<>();
 
     // ---- PROCEDURALLY GENERATED MAP (Level-Based Strategy) ----

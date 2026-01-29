@@ -135,6 +135,9 @@ public class GameHUD {
     // --- MINIMAP (Top Left) ---
     drawMinimap(model, screenW, screenH);
 
+    // --- INVENTORY HIGHLIGHTS (ShapeRenderer) ---
+    drawValuesHighlights(players, screenW);
+
     shapeRenderer.end();
 
     // --- TEXT LAYER ---
@@ -180,12 +183,16 @@ public class GameHUD {
     // HP Bar Y=10, H=20. Y_Inv = 10 + 20 + 20 = 50.
     float p1X = 20;
     float p1Y = 50;
-    drawInventory(batch, players.get(0).getInventory(), p1X, p1Y);
+    if (!players.isEmpty()) {
+      drawInventory(batch, players.get(0).getInventory(), p1X, p1Y);
+    }
 
     // P2 Inventory (Bottom Right, above Health Bar)
     if (players.size() > 1) {
-      // HP Bar X = screenW - 160.
-      float p2X = screenW - 160;
+      // HP Bar X = screenW - 160. Width 140. Ends at screenW - 20.
+      // Inventory Width = 3*32 + 2*4 = 104.
+      // Right Align: screenW - 20 - 104 = screenW - 124.
+      float p2X = screenW - 124;
       float p2Y = 50;
       drawInventory(batch, players.get(1).getInventory(), p2X, p2Y);
     }
@@ -352,6 +359,40 @@ public class GameHUD {
       }
       font.getData().setScale(2f);
     }
+  }
+
+  private void drawValuesHighlights(java.util.List<Player> players, float screenW) {
+    if (players.isEmpty()) return;
+
+    // P1 Inventory Highlight
+    float p1X = 20;
+    float p1Y = 50;
+    if (!players.isEmpty()) {
+      drawSelectionBox(players.get(0), p1X, p1Y);
+    }
+
+    // P2 Inventory Highlight
+    if (players.size() > 1) {
+      float p2X = screenW - 124;
+      float p2Y = 50;
+      drawSelectionBox(players.get(1), p2X, p2Y);
+    }
+  }
+
+  private void drawSelectionBox(Player p, float startX, float startY) {
+    if (p.getInventory() == null) return;
+    int selected = p.getSelectedSlotIndex();
+
+    float slotSize = 32f;
+    float gap = 4f;
+
+    float x = startX + selected * (slotSize + gap);
+    float y = startY;
+
+    // Draw Yellow Box BEHIND the slot
+    // Slightly larger than slot
+    shapeRenderer.setColor(Color.YELLOW);
+    shapeRenderer.rect(x - 2, y - 2, slotSize + 4, slotSize + 4);
   }
 
   public void dispose() {
