@@ -3,7 +3,7 @@
 ![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=java)
 ![LibGDX](https://img.shields.io/badge/LibGDX-1.12.1-red?style=for-the-badge)
 ![Gradle](https://img.shields.io/badge/Gradle-8.x-02303A?style=for-the-badge&logo=gradle)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
+![License](https://img.shields.io/badge/Apache-2.0-blue?style=for-the-badge)
 
 > **A top-down 2D Action RPG built with the LibGDX framework.**
 
@@ -109,7 +109,7 @@ Contributions are what make the open source community such an amazing place to l
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+ See `LICENSE` for more information.
 
 ---
 
