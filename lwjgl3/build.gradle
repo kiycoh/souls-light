@@ -12,6 +12,7 @@ buildscript {
 }
 plugins {
   id "application"
+  id "com.gradleup.shadow" version "8.3.0"
 }
 apply plugin: 'io.github.fourlastor.construo'
 
@@ -159,9 +160,24 @@ construo {
     }
 }
 
+shadowJar {
+  archiveBaseName.set(appName)
+  archiveClassifier.set('dist') 
+  archiveVersion.set(projectVersion)
+  configurations = [project.configurations.runtimeClasspath]
+  
+  dependencies {
+      exclude('META-INF/INDEX.LIST', 'META-INF/maven/**')
+  }
+
+  manifest {
+    attributes 'Main-Class': mainClassName
+  }
+}
+
 // Equivalent to the jar task; here for compatibility with gdx-setup.
 tasks.register('dist') {
-  dependsOn 'jar'
+  dependsOn 'shadowJar'
 }
 
 distributions {
