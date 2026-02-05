@@ -195,7 +195,8 @@ public class Oblivion extends AbstractEnemy {
         if (shootTimer <= 0) {
           prepareTripleShot(target.getPosition());
           for (Vector2 t : shotTargets) {
-            notifyProjectileRequest(getPosition(), t, "fireball");
+            notifyProjectileRequest(
+                getPosition(), t, io.github.soulslight.model.Constants.PROJ_ENEMY_FIREBALL);
           }
           shootTimer = SHOOT_COOLDOWN;
         }

@@ -27,6 +27,7 @@ public class Constants {
   public static final String PROJ_FIREBALL = "fireball";
   public static final String PROJ_HOMING_FIREBALL = "homing_fireball";
   public static final String PROJ_ENEMY_ARROW = "enemy_arrow";
+  public static final String PROJ_ENEMY_FIREBALL = "enemy_fireball";
 
   // Projectile Speeds
   public static final float SPEED_ARROW = 400f;

@@ -150,6 +150,9 @@ public class CombatSystem implements ProjectileListener {
     } else if (Constants.PROJ_ENEMY_ARROW.equals(type)) {
       isPlayerSource = false;
       speed = Constants.SPEED_ENEMY_ARROW;
+    } else if (Constants.PROJ_ENEMY_FIREBALL.equals(type)) {
+      isPlayerSource = false;
+      speed = 400f; // Similar speed to player fireball or arrow
     }
 
     projectileManager.addProjectile(
