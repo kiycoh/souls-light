@@ -425,9 +425,9 @@ public final class GameScreen implements GameState, Observer {
   public void returnToMainMenu() {
     if (Gdx.app.getApplicationListener() instanceof io.github.soulslight.SoulsLightGame game) {
 
+      // Stop and dispose music
       if (explorationMusic != null) {
-        lightingRenderer.dispose();
-        particleRenderSystem.dispose();
+        explorationMusic.stop();
         explorationMusic.dispose();
         explorationMusic = null;
       }
@@ -440,7 +440,7 @@ public final class GameScreen implements GameState, Observer {
       bossCrossfadeCompleted = false;
       bossCrossfadeTime = 0f;
 
-      // Fix: Dispose of the current screen to clean up controller listeners!
+      // Dispose of the current screen to clean up controller listeners and resources
       dispose();
 
       game.setScreen(new MainMenuScreen(game, batch));

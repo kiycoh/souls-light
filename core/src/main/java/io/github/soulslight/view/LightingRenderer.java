@@ -12,6 +12,7 @@ public class LightingRenderer {
 
   private final ShapeRenderer shapeRenderer;
   private final float[] viewportSize = new float[2];
+  private boolean disposed = false;
 
   public LightingRenderer() {
     this.shapeRenderer = new ShapeRenderer();
@@ -19,7 +20,7 @@ public class LightingRenderer {
 
   public void render(
       LightingSystem lightingSystem, TiledMap map, com.badlogic.gdx.math.Matrix4 projectionMatrix) {
-    if (lightingSystem == null || map == null) return;
+    if (lightingSystem == null || map == null || disposed) return;
 
     double[][] visible = lightingSystem.getVisible();
     boolean[][] explored = lightingSystem.getExplored();
@@ -72,6 +73,8 @@ public class LightingRenderer {
   }
 
   public void dispose() {
+    if (disposed) return;
+    disposed = true;
     shapeRenderer.dispose();
   }
 }
