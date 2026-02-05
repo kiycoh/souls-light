@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Disposable;
+import io.github.soulslight.model.Constants;
 import io.github.soulslight.model.GameModel;
 
 /**
@@ -20,19 +21,6 @@ public class DebugMenuOverlay implements Disposable {
   private final DebugMenuController controller;
   private final ShapeRenderer shapeRenderer;
   private final BitmapFont font;
-
-  // Menu constants
-  private static final float MENU_WIDTH = 380f;
-  private static final float ITEM_HEIGHT = 28f;
-  private static final float PADDING = 12f;
-  private static final float TITLE_HEIGHT = 35f;
-  private static final float FOOTER_HEIGHT = 25f;
-
-  // Statistics panel constants
-  private static final float STATS_WIDTH = 250f;
-  private static final float STATS_HEIGHT = 160f;
-  private static final float STATS_PADDING = 10f;
-  private static final float STATS_LINE_HEIGHT = 20f;
 
   private final GameModel model;
   private final Matrix4 uiMatrix;
@@ -59,9 +47,13 @@ public class DebugMenuOverlay implements Disposable {
     float screenH = Gdx.graphics.getHeight();
 
     int commandCount = controller.getCommands().size();
-    float menuHeight = (commandCount * ITEM_HEIGHT) + TITLE_HEIGHT + FOOTER_HEIGHT + (2 * PADDING);
+    float menuHeight =
+        (commandCount * Constants.DEBUG_ITEM_HEIGHT)
+            + Constants.DEBUG_TITLE_HEIGHT
+            + Constants.DEBUG_FOOTER_HEIGHT
+            + (2 * Constants.DEBUG_PADDING);
 
-    float menuX = (screenW - MENU_WIDTH) / 2f;
+    float menuX = (screenW - Constants.DEBUG_MENU_WIDTH) / 2f;
     float menuY = (screenH - menuHeight) / 2f;
 
     // Use screen-space projection
@@ -76,36 +68,46 @@ public class DebugMenuOverlay implements Disposable {
 
     // Main background
     shapeRenderer.setColor(0.05f, 0.05f, 0.1f, 0.92f);
-    shapeRenderer.rect(menuX, menuY, MENU_WIDTH, menuHeight);
+    shapeRenderer.rect(menuX, menuY, Constants.DEBUG_MENU_WIDTH, menuHeight);
 
     // Title bar
     shapeRenderer.setColor(0.15f, 0.15f, 0.25f, 1f);
-    shapeRenderer.rect(menuX, menuY + menuHeight - TITLE_HEIGHT, MENU_WIDTH, TITLE_HEIGHT);
+    shapeRenderer.rect(
+        menuX,
+        menuY + menuHeight - Constants.DEBUG_TITLE_HEIGHT,
+        Constants.DEBUG_MENU_WIDTH,
+        Constants.DEBUG_TITLE_HEIGHT);
 
     // Selection highlight
     int selectedIndex = controller.getSelectedIndex();
     if (commandCount > 0) {
       float highlightY =
-          menuY + menuHeight - TITLE_HEIGHT - PADDING - ((selectedIndex + 1) * ITEM_HEIGHT);
+          menuY
+              + menuHeight
+              - Constants.DEBUG_TITLE_HEIGHT
+              - Constants.DEBUG_PADDING
+              - ((selectedIndex + 1) * Constants.DEBUG_ITEM_HEIGHT);
       shapeRenderer.setColor(0.2f, 0.4f, 0.6f, 0.7f);
-      shapeRenderer.rect(menuX + 4, highlightY, MENU_WIDTH - 8, ITEM_HEIGHT);
+      shapeRenderer.rect(
+          menuX + 4, highlightY, Constants.DEBUG_MENU_WIDTH - 8, Constants.DEBUG_ITEM_HEIGHT);
     }
 
     // --- Statistics Panel Background ---
-    float statsX = menuX + MENU_WIDTH + 20f; // To the right of the menu
-    float statsY = menuY + menuHeight - STATS_HEIGHT;
+    float statsX = menuX + Constants.DEBUG_MENU_WIDTH + 20f; // To the right of the menu
+    float statsY = menuY + menuHeight - Constants.DEBUG_STATS_HEIGHT;
 
     // Ensure stats panel stays on screen (move to left if too far right)
-    if (statsX + STATS_WIDTH > screenW) {
-      statsX = menuX - STATS_WIDTH - 20f;
+    if (statsX + Constants.DEBUG_STATS_WIDTH > screenW) {
+      statsX = menuX - Constants.DEBUG_STATS_WIDTH - 20f;
     }
 
     shapeRenderer.setColor(0.05f, 0.05f, 0.1f, 0.85f);
-    shapeRenderer.rect(statsX, statsY, STATS_WIDTH, STATS_HEIGHT);
+    shapeRenderer.rect(statsX, statsY, Constants.DEBUG_STATS_WIDTH, Constants.DEBUG_STATS_HEIGHT);
 
     // Stats Title Bar
     shapeRenderer.setColor(0.15f, 0.25f, 0.15f, 1f);
-    shapeRenderer.rect(statsX, statsY + STATS_HEIGHT - 25f, STATS_WIDTH, 25f);
+    shapeRenderer.rect(
+        statsX, statsY + Constants.DEBUG_STATS_HEIGHT - 25f, Constants.DEBUG_STATS_WIDTH, 25f);
 
     shapeRenderer.end();
 
@@ -115,10 +117,14 @@ public class DebugMenuOverlay implements Disposable {
 
     // Title
     font.setColor(Color.GOLD);
-    font.draw(batch, "[DEBUG MENU]", menuX + PADDING, menuY + menuHeight - PADDING);
+    font.draw(
+        batch,
+        "[DEBUG MENU]",
+        menuX + Constants.DEBUG_PADDING,
+        menuY + menuHeight - Constants.DEBUG_PADDING);
 
     // Command list
-    float itemY = menuY + menuHeight - TITLE_HEIGHT - PADDING - 6f;
+    float itemY = menuY + menuHeight - Constants.DEBUG_TITLE_HEIGHT - Constants.DEBUG_PADDING - 6f;
 
     for (int i = 0; i < commandCount; i++) {
       DebugCommand cmd = controller.getCommands().get(i);
@@ -126,8 +132,8 @@ public class DebugMenuOverlay implements Disposable {
 
       font.setColor(isSelected ? Color.CYAN : Color.WHITE);
       String prefix = isSelected ? "> " : "  ";
-      font.draw(batch, prefix + cmd.getName(), menuX + PADDING, itemY);
-      itemY -= ITEM_HEIGHT;
+      font.draw(batch, prefix + cmd.getName(), menuX + Constants.DEBUG_PADDING, itemY);
+      itemY -= Constants.DEBUG_ITEM_HEIGHT;
     }
 
     // Footer instructions
@@ -135,12 +141,12 @@ public class DebugMenuOverlay implements Disposable {
     font.draw(
         batch,
         "[UP/DOWN] Navigate  [ENTER] Execute  [F1] Close",
-        menuX + PADDING,
-        menuY + FOOTER_HEIGHT);
+        menuX + Constants.DEBUG_PADDING,
+        menuY + Constants.DEBUG_FOOTER_HEIGHT);
 
     // --- Statistics Text ---
-    float currentStatsY = statsY + STATS_HEIGHT - 8f;
-    float statsXText = statsX + STATS_PADDING;
+    float currentStatsY = statsY + Constants.DEBUG_STATS_HEIGHT - 8f;
+    float statsXText = statsX + Constants.DEBUG_STATS_PADDING;
 
     font.setColor(Color.GREEN);
     font.draw(batch, "GAME STATISTICS", statsXText, currentStatsY);
@@ -151,31 +157,31 @@ public class DebugMenuOverlay implements Disposable {
     sb.setLength(0);
     sb.append("FPS: ").append(Gdx.graphics.getFramesPerSecond());
     font.draw(batch, sb, statsXText, currentStatsY);
-    currentStatsY -= STATS_LINE_HEIGHT;
+    currentStatsY -= Constants.DEBUG_STATS_LINE_HEIGHT;
 
     sb.setLength(0);
     sb.append("Level: ")
         .append(io.github.soulslight.manager.GameManager.getInstance().getCurrentLevelIndex());
     font.draw(batch, sb, statsXText, currentStatsY);
-    currentStatsY -= STATS_LINE_HEIGHT;
+    currentStatsY -= Constants.DEBUG_STATS_LINE_HEIGHT;
 
     sb.setLength(0);
     sb.append("Active Enemies: ")
         .append(model.getActiveEnemies() != null ? model.getActiveEnemies().size() : 0);
     font.draw(batch, sb, statsXText, currentStatsY);
-    currentStatsY -= STATS_LINE_HEIGHT;
+    currentStatsY -= Constants.DEBUG_STATS_LINE_HEIGHT;
 
     sb.setLength(0);
     sb.append("Enemies Killed: ").append(model.getTotalEnemiesKilled());
     font.draw(batch, sb, statsXText, currentStatsY);
-    currentStatsY -= STATS_LINE_HEIGHT;
+    currentStatsY -= Constants.DEBUG_STATS_LINE_HEIGHT;
 
     if (!model.getPlayers().isEmpty()) {
       Vector2 pPos = model.getPlayers().get(0).getPosition();
       sb.setLength(0);
       sb.append("Player: (").append((int) pPos.x).append(", ").append((int) pPos.y).append(")");
       font.draw(batch, sb, statsXText, currentStatsY);
-      currentStatsY -= STATS_LINE_HEIGHT;
+      currentStatsY -= Constants.DEBUG_STATS_LINE_HEIGHT;
     }
 
     long javaHeap = Gdx.app.getJavaHeap();

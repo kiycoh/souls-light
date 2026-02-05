@@ -1,10 +1,8 @@
 package io.github.soulslight.view;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -30,21 +28,15 @@ import io.github.soulslight.debug.commands.ToggleHitboxesCommand;
 import io.github.soulslight.debug.commands.ToggleInvincibilityCommand;
 import io.github.soulslight.manager.AudioManager;
 import io.github.soulslight.manager.GameManager;
-import io.github.soulslight.manager.SettingsManager;
 import io.github.soulslight.manager.TextureManager;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.enemies.AbstractEnemy;
-import io.github.soulslight.model.enemies.Chaser;
-import io.github.soulslight.model.enemies.Oblivion;
-import io.github.soulslight.model.enemies.Ranger;
-import io.github.soulslight.model.enemies.Shielder;
-import io.github.soulslight.model.enemies.SpikedBall;
 import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.map.LevelFactory;
 import io.github.soulslight.model.observer.Observer;
-import java.util.IdentityHashMap;
-import java.util.Map;
+import io.github.soulslight.view.audio.MusicController;
+import io.github.soulslight.view.render.EntityRenderer;
 
 public final class GameScreen implements GameState, Observer {
 
@@ -58,35 +50,11 @@ public final class GameScreen implements GameState, Observer {
   private final OrthogonalTiledMapRenderer mapRenderer;
   private final Box2DDebugRenderer debugRenderer;
 
-  private Music explorationMusic;
-  private Music bossMusic;
-
-  private boolean bossCrossfadeStarted = false;
-  private boolean bossCrossfadeCompleted = false;
-  private float bossCrossfadeTime = 0f;
-  private static final float BOSS_FADE_DURATION = 5f; // seconds
+  private final MusicController musicController;
 
   // Map size in pixel (used for camera clamp)
   private float mapPixelWidth = 0f;
   private float mapPixelHeight = 0f;
-
-  private float enemyAnimTime = 0f;
-  private final Map<AbstractEnemy, Float> enemyAnimOffset = new IdentityHashMap<>();
-
-  private float playerAnimTime = 0f;
-  private final Map<Player, Boolean> playerFacingRight = new IdentityHashMap<>();
-
-  // Used to stop animation
-  private static final float IDLE_VELOCITY_EPS = 0.05f;
-
-  // Used to limit excessive animation flipping
-  private static final float ENEMY_FLIP_EPS = 0.35f;
-  private final Map<AbstractEnemy, Boolean> enemyFacingRight = new IdentityHashMap<>();
-
-  private static final float OBLIVION_HEIGHT = 96f * 5f;
-  private static final float OBLIVION_WIDTH = 173f * 5f; // may have to be tweaked later
-
-  private static final float OBLIVION_Y_OFFSET = 80f;
 
   // Debug menu components
   private DebugMenuController debugMenuController;
@@ -97,6 +65,7 @@ public final class GameScreen implements GameState, Observer {
 
   private final LightingRenderer lightingRenderer;
   private final ParticleRenderSystem particleRenderSystem;
+  private final EntityRenderer entityRenderer;
 
   // Outro Overlay
   private OutroOverlay outroOverlay;
@@ -126,6 +95,7 @@ public final class GameScreen implements GameState, Observer {
     this.debugRenderer = new Box2DDebugRenderer();
     this.lightingRenderer = new LightingRenderer();
     this.particleRenderSystem = new ParticleRenderSystem();
+    this.entityRenderer = new EntityRenderer(batch);
     this.promptFont = new BitmapFont();
 
     // Pause Menu
@@ -145,15 +115,8 @@ public final class GameScreen implements GameState, Observer {
     // Assets
     TextureManager.getInstance().load();
 
-    // Background music (shared across GameScreens)
-    if (explorationMusic == null) {
-      explorationMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/exploration.mp3"));
-      explorationMusic.setLooping(true);
-    }
-    if (bossMusic == null) {
-      bossMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/bossfight.mp3"));
-      bossMusic.setLooping(true);
-    }
+    // Music Controller
+    this.musicController = new MusicController();
   }
 
   /** Initializes the debug menu with all available commands. */
@@ -186,34 +149,13 @@ public final class GameScreen implements GameState, Observer {
     boolean isBossLevel =
         GameManager.getInstance().getCurrentLevelIndex() == LevelFactory.getStoryModeLevelCount();
 
-    if (isBossLevel && !bossCrossfadeStarted && !bossCrossfadeCompleted) {
-      bossCrossfadeStarted = true;
-      bossCrossfadeTime = 0f;
+    if (isBossLevel && !musicController.isBossCrossfadeStarted()) {
+      musicController.startBossCrossfade();
     }
 
-    float baseVolume = SettingsManager.getInstance().getMusicVolume();
-
-    if (explorationMusic != null) {
-      if (!explorationMusic.isPlaying()) {
-        explorationMusic.play();
-      }
-    }
-    if (bossMusic != null) {
-      if (!bossMusic.isPlaying()) {
-        bossMusic.play();
-      }
-    }
-
-    // Ensure correct volume is applied on resume
-    if (!bossCrossfadeStarted && !bossCrossfadeCompleted) {
-      if (explorationMusic != null) explorationMusic.setVolume(baseVolume);
-      if (bossMusic != null) bossMusic.setVolume(0f);
-    } else if (bossCrossfadeCompleted) {
-      if (explorationMusic != null) explorationMusic.setVolume(0f);
-      if (bossMusic != null) bossMusic.setVolume(baseVolume);
-    } else {
-      // In middle of crossfade, volumes are set in updateBossCrossfade
-    }
+    musicController.playExplorationMusic();
+    musicController.playBossMusic();
+    musicController.updateVolume();
   }
 
   @Override
@@ -223,16 +165,13 @@ public final class GameScreen implements GameState, Observer {
       model.update(delta);
     }
 
-    enemyAnimTime += delta;
-    playerAnimTime += delta;
-
-    updateBossCrossfade(delta);
+    musicController.updateBossCrossfade(delta);
 
     // Ensure volume stays synced if settings changed (e.g. returning from settings)
-    updateAudioVolume();
+    musicController.updateVolume();
 
     if (showingOutro) {
-      updateMusicFadeOut(delta);
+      musicController.updateFadeOut(delta);
     }
 
     // --- CAMERA CENTERED ON PLAYERS (WITH OOB CLASP) ---
@@ -252,38 +191,26 @@ public final class GameScreen implements GameState, Observer {
     // Update global particles
     io.github.soulslight.manager.ParticleManager.getInstance().update(delta);
 
+    // Update animation timers in EntityRenderer
+    entityRenderer.updateAnimationTimers(delta);
+
+    // Render Players
     int playerIndex = 0;
     for (Player player : model.getPlayers()) {
       batch.setColor(player.isDead() ? Color.RED : Color.WHITE);
-
-      TextureRegion frame = computePlayerFrame(player, playerIndex);
-      boolean flipX = shouldFlipPlayerXStable(player);
-
-      float drawWidth = 32f;
-      float drawHeight = 46f;
-
-      if (frame != null) {
-        drawEntity(frame, player.getPosition(), drawWidth, drawHeight, flipX);
-      } else {
-        String texName = "player";
-        drawEntity(
-            TextureManager.getInstance().get(texName), player.getPosition(), drawWidth, drawHeight);
-      }
-
+      entityRenderer.renderPlayer(player, playerIndex);
       batch.setColor(Color.WHITE);
       playerIndex++;
     }
 
+    // Render Enemies
+    java.util.List<Player> players = model.getPlayers();
     for (AbstractEnemy enemy : model.getActiveEnemies()) {
       if (enemy.isDead() || !enemy.isSpawned()) {
-        enemyAnimOffset.remove(enemy);
-        enemyFacingRight.remove(enemy);
+        entityRenderer.removeEnemyState(enemy);
         continue;
       }
-
-      boolean flipX = shouldFlipXStable(enemy);
-
-      drawEnemy(enemy, flipX);
+      entityRenderer.renderEnemy(enemy, players);
     }
 
     // ITEM RENDERING
@@ -294,7 +221,7 @@ public final class GameScreen implements GameState, Observer {
           TextureRegion reg =
               ((io.github.soulslight.model.items.IRenderableItem) item.getItem()).getTexture();
           if (reg != null) {
-            drawEntity(reg, item.getPosition(), 24f, 24f, false);
+            entityRenderer.drawEntity(reg, item.getPosition(), 24f, 24f, false);
           }
         }
       }
@@ -410,14 +337,8 @@ public final class GameScreen implements GameState, Observer {
             model.setPaused(true); // Stop game logic
             outroOverlay.start();
             showingOutro = true;
-
-            // Feature: Stop boss music immediately on victory
-            if (bossMusic != null) {
-              bossMusic.stop();
-            }
-            if (explorationMusic != null) {
-              explorationMusic.stop();
-            }
+            // Feature: Stop music immediately on victory
+            musicController.pause();
           }
         });
   }
@@ -426,277 +347,13 @@ public final class GameScreen implements GameState, Observer {
     if (Gdx.app.getApplicationListener() instanceof io.github.soulslight.SoulsLightGame game) {
 
       // Stop and dispose music
-      if (explorationMusic != null) {
-        explorationMusic.stop();
-        explorationMusic.dispose();
-        explorationMusic = null;
-      }
-      if (bossMusic != null) {
-        bossMusic.stop();
-        bossMusic.dispose();
-        bossMusic = null;
-      }
-      bossCrossfadeStarted = false;
-      bossCrossfadeCompleted = false;
-      bossCrossfadeTime = 0f;
+      musicController.dispose();
 
       // Dispose of the current screen to clean up controller listeners and resources
       dispose();
 
       game.setScreen(new MainMenuScreen(game, batch));
     }
-  }
-
-  private enum EnemyAnimType {
-    CHASER,
-    RANGER,
-    SHIELDER,
-    SPIKEDBALL
-  }
-
-  private TextureRegion computeAnimatedFrame(AbstractEnemy enemy, EnemyAnimType type) {
-    boolean isIdle = true;
-
-    if (enemy.getBody() != null) {
-      Vector2 vel = enemy.getBody().getLinearVelocity();
-      isIdle = vel.len2() < IDLE_VELOCITY_EPS * IDLE_VELOCITY_EPS;
-    }
-
-    if (isIdle) {
-      return getAnimFrame(type, 0f);
-    }
-
-    float offset = enemyAnimOffset.computeIfAbsent(enemy, e -> MathUtils.random(0f, 10f));
-    return getAnimFrame(type, enemyAnimTime + offset);
-  }
-
-  private TextureRegion getAnimFrame(EnemyAnimType type, float time) {
-    switch (type) {
-      case CHASER:
-        return TextureManager.getInstance().getChaserWalkFrame(time);
-      case RANGER:
-        return TextureManager.getInstance().getRangerWalkFrame(time);
-      case SHIELDER:
-        return TextureManager.getInstance().getShielderWalkFrame(time);
-      case SPIKEDBALL:
-        return TextureManager.getInstance().getSpikedBallWalkFrame(time);
-      default:
-        return null;
-    }
-  }
-
-  private TextureRegion computePlayerFrame(Player player, int index) {
-    boolean isIdle = true;
-
-    if (player.getBody() != null) {
-      Vector2 vel = player.getBody().getLinearVelocity();
-      isIdle = vel.len2() < IDLE_VELOCITY_EPS * IDLE_VELOCITY_EPS;
-    }
-
-    if (isIdle) {
-      return getPlayerAnimFrame(index, 0f);
-    }
-
-    return getPlayerAnimFrame(index, playerAnimTime);
-  }
-
-  private TextureRegion getPlayerAnimFrame(int index, float time) {
-    switch (index) {
-      case 0:
-        return TextureManager.getInstance().getP1WalkFrame(time);
-      case 1:
-        return TextureManager.getInstance().getP2WalkFrame(time);
-      default:
-        return TextureManager.getInstance().getP1WalkFrame(time);
-    }
-  }
-
-  private void drawEnemy(AbstractEnemy enemy, boolean flipX) {
-    if (enemy instanceof Oblivion) {
-      TextureRegion frame = computeOblivionFrame((Oblivion) enemy);
-      if (frame != null) {
-        // Oblivion spritesheet needs to be flipped
-        boolean flipOblivion = !flipX;
-        drawOblivion(frame, enemy.getPosition(), flipOblivion);
-        return;
-      }
-    }
-
-    if (enemy instanceof Chaser) {
-      TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.CHASER);
-      if (frame != null) {
-        drawEntity(frame, enemy.getPosition(), 32, 46, flipX);
-        return;
-      }
-    }
-
-    if (enemy instanceof Ranger) {
-      TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.RANGER);
-      if (frame != null) {
-        drawEntity(frame, enemy.getPosition(), 32, 46, flipX);
-        return;
-      }
-    }
-
-    if (enemy instanceof Shielder) {
-      TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.SHIELDER);
-      if (frame != null) {
-        drawEntity(frame, enemy.getPosition(), 32, 54, flipX);
-        return;
-      }
-    }
-
-    if (enemy instanceof SpikedBall) {
-      SpikedBall sb = (SpikedBall) enemy;
-      TextureRegion frame;
-
-      if (sb.isCharging()) {
-        float offset = enemyAnimOffset.computeIfAbsent(enemy, e -> MathUtils.random(0f, 10f));
-        frame = TextureManager.getInstance().getSpikedBallChargeFrame(enemyAnimTime + offset);
-      } else {
-        frame = computeAnimatedFrame(enemy, EnemyAnimType.SPIKEDBALL);
-      }
-
-      if (frame != null) {
-        drawEntity(frame, enemy.getPosition(), 64, 64, flipX);
-        return;
-      }
-    }
-
-    Texture tex = TextureManager.getInstance().getEnemyTexture(enemy);
-    float size =
-        (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
-    drawEntity(tex, enemy.getPosition(), size, size);
-  }
-
-  private TextureRegion computeOblivionFrame(Oblivion boss) {
-    if (boss.isDying()) {
-      float t = boss.getDeathAnimTime();
-      float duration = Oblivion.getDeathAnimDuration();
-      if (t > duration) t = duration;
-      return TextureManager.getInstance().getOblivionDeathFrame(t);
-    }
-
-    if (boss.isTeleportingOut() || boss.isTeleportingIn()) {
-      float t = boss.getTeleportAnimTime();
-      float duration = Oblivion.getTeleportAnimDuration();
-      if (t > duration) t = duration;
-
-      float animTime;
-      if (boss.isTeleportingOut()) {
-        animTime = Math.max(0f, duration - t);
-      } else {
-        animTime = t;
-      }
-
-      return TextureManager.getInstance().getOblivionTeleportFrame(animTime);
-    }
-
-    float offset = enemyAnimOffset.computeIfAbsent(boss, e -> MathUtils.random(0f, 10f));
-    float time = enemyAnimTime + offset;
-
-    if (boss.isMeleeWindup()) {
-      return TextureManager.getInstance().getOblivionMeleeWindupFrame(time);
-    }
-
-    if (boss.isMeleeAttacking()) {
-      return TextureManager.getInstance().getOblivionMeleeAttackFrame(time);
-    }
-
-    boolean isIdle = true;
-    if (boss.getBody() != null) {
-      Vector2 vel = boss.getBody().getLinearVelocity();
-      isIdle = vel.len2() < IDLE_VELOCITY_EPS * IDLE_VELOCITY_EPS;
-    }
-
-    if (isIdle) {
-      if (boss.isPhaseTwo()) {
-        return TextureManager.getInstance().getOblivionSpellFrame(time);
-      } else {
-        return TextureManager.getInstance().getOblivionIdleFrame(time);
-      }
-    } else {
-      return TextureManager.getInstance().getOblivionWalkFrame(time);
-    }
-  }
-
-  private boolean shouldFlipPlayerXStable(Player player) {
-    boolean facingRight = playerFacingRight.computeIfAbsent(player, p -> true);
-
-    if (player.getBody() == null) {
-      return !facingRight;
-    }
-
-    float vx = player.getBody().getLinearVelocity().x;
-
-    if (vx > ENEMY_FLIP_EPS) {
-      facingRight = true;
-      playerFacingRight.put(player, true);
-    } else if (vx < -ENEMY_FLIP_EPS) {
-      facingRight = false;
-      playerFacingRight.put(player, false);
-    }
-
-    return !facingRight;
-  }
-
-  private boolean shouldFlipXStable(AbstractEnemy enemy) {
-    boolean facingRight = enemyFacingRight.computeIfAbsent(enemy, e -> true);
-
-    if (enemy instanceof Oblivion) {
-      Oblivion ob = (Oblivion) enemy;
-
-      // Locks animation direction in set states
-      if (ob.isMeleeWindup()
-          || ob.isMeleeAttacking()
-          || ob.isTeleportingOut()
-          || ob.isTeleportingIn()
-          || ob.isDying()) {
-        return !facingRight;
-      }
-
-      // else, flips towards nearest player
-      java.util.List<Player> players = model.getPlayers();
-      if (!players.isEmpty()) {
-        Player nearest = players.get(0);
-        float bestDist2 = nearest.getPosition().dst2(ob.getPosition());
-        for (int i = 1; i < players.size(); i++) {
-          Player p = players.get(i);
-          float d2 = p.getPosition().dst2(ob.getPosition());
-          if (d2 < bestDist2) {
-            bestDist2 = d2;
-            nearest = p;
-          }
-        }
-
-        float dx = nearest.getPosition().x - ob.getPosition().x;
-        float EPS_X = 4f;
-        if (dx > EPS_X) {
-          facingRight = true;
-        } else if (dx < -EPS_X) {
-          facingRight = false;
-        }
-        enemyFacingRight.put(enemy, facingRight);
-      }
-
-      return !facingRight;
-    }
-
-    if (enemy.getBody() == null) {
-      return !facingRight;
-    }
-
-    float vx = enemy.getBody().getLinearVelocity().x;
-
-    if (vx > ENEMY_FLIP_EPS) {
-      facingRight = true;
-      enemyFacingRight.put(enemy, true);
-    } else if (vx < -ENEMY_FLIP_EPS) {
-      facingRight = false;
-      enemyFacingRight.put(enemy, false);
-    }
-
-    return !facingRight;
   }
 
   private void followPlayersCamera() {
@@ -776,69 +433,6 @@ public final class GameScreen implements GameState, Observer {
     }
   }
 
-  // Center draw
-  private void drawEntity(Texture tex, Vector2 pos, float width, float height) {
-    if (tex != null) {
-      batch.draw(tex, pos.x - width / 2, pos.y - height / 2, width, height);
-    }
-  }
-
-  private void updateMusicFadeOut(float delta) {
-    float fadeSpeed = 0.5f; // Volume per second (2 seconds to fade out)
-    boolean active = false;
-
-    if (bossMusic != null && bossMusic.isPlaying()) {
-      float v = bossMusic.getVolume();
-      if (v > 0) {
-        bossMusic.setVolume(Math.max(0f, v - fadeSpeed * delta));
-        active = true;
-      } else {
-        bossMusic.stop();
-      }
-    }
-
-    if (explorationMusic != null && explorationMusic.isPlaying()) {
-      float v = explorationMusic.getVolume();
-      if (v > 0) {
-        explorationMusic.setVolume(Math.max(0f, v - fadeSpeed * delta));
-        active = true;
-      } else {
-        explorationMusic.stop();
-      }
-    }
-  }
-
-  private void drawEntity(
-      TextureRegion region, Vector2 pos, float width, float height, boolean flipX) {
-    if (region == null) return;
-
-    float x = pos.x - width / 2f;
-    float y = pos.y - height / 2f;
-
-    if (!flipX) {
-      batch.draw(region, x, y, width, height);
-    } else {
-      batch.draw(region, x + width, y, -width, height);
-    }
-  }
-
-  private void drawOblivion(TextureRegion region, Vector2 pos, boolean flipX) {
-    if (region == null) return;
-
-    float width = OBLIVION_WIDTH;
-    float height = OBLIVION_HEIGHT;
-
-    float x = pos.x - width / 2f;
-    // Matching sprite to hitbox
-    float y = pos.y - height / 2f + OBLIVION_Y_OFFSET;
-
-    if (!flipX) {
-      batch.draw(region, x, y, width, height);
-    } else {
-      batch.draw(region, x + width, y, -width, height);
-    }
-  }
-
   @Override
   public void resize(int width, int height) {
     viewport.update(width, height, true);
@@ -856,12 +450,7 @@ public final class GameScreen implements GameState, Observer {
     // CRITICAL FIX: Do NOT call dispose() here.
     // hide() is called when switching to Settings/Pause, but we want to keep the
     // game state alive.
-    if (explorationMusic != null && explorationMusic.isPlaying()) {
-      explorationMusic.pause();
-    }
-    if (bossMusic != null && bossMusic.isPlaying()) {
-      bossMusic.pause();
-    }
+    musicController.pause();
   }
 
   @Override
@@ -871,8 +460,6 @@ public final class GameScreen implements GameState, Observer {
 
     if (model != null) model.dispose();
 
-    if (controller != null) controller.dispose();
-
     if (mapRenderer != null) mapRenderer.dispose();
     if (debugRenderer != null) debugRenderer.dispose();
     if (hud != null) hud.dispose();
@@ -881,18 +468,7 @@ public final class GameScreen implements GameState, Observer {
     if (pauseMenuOverlay != null) pauseMenuOverlay.dispose();
     if (promptFont != null) promptFont.dispose();
 
-    if (explorationMusic != null) {
-      explorationMusic.dispose();
-      explorationMusic = null;
-    }
-    if (bossMusic != null) {
-      bossMusic.dispose();
-      bossMusic = null;
-    }
-
-    enemyAnimOffset.clear();
-    enemyFacingRight.clear();
-    playerFacingRight.clear();
+    if (musicController != null) musicController.dispose();
 
     io.github.soulslight.manager.ParticleManager.getInstance().clear();
   }
@@ -922,43 +498,6 @@ public final class GameScreen implements GameState, Observer {
           (io.github.soulslight.model.entities.Player) data;
       io.github.soulslight.manager.ParticleManager.getInstance()
           .spawn(io.github.soulslight.model.particles.ParticleType.BLOOD, p.getPosition());
-    }
-  }
-
-  // Crossfade logic between exploration and boss music
-  private void updateBossCrossfade(float delta) {
-    if (!bossCrossfadeStarted || bossCrossfadeCompleted) return;
-    if (explorationMusic == null && bossMusic == null) return;
-
-    bossCrossfadeTime += delta;
-    float t = MathUtils.clamp(bossCrossfadeTime / BOSS_FADE_DURATION, 0f, 1f);
-    float baseVolume = SettingsManager.getInstance().getMusicVolume();
-
-    if (explorationMusic != null) {
-      explorationMusic.setVolume(baseVolume * (1f - t));
-    }
-    if (bossMusic != null) {
-      bossMusic.setVolume(baseVolume * t);
-    }
-
-    if (bossCrossfadeTime >= BOSS_FADE_DURATION) {
-      bossCrossfadeCompleted = true;
-    }
-  }
-
-  private void updateAudioVolume() {
-    // If NOT crossfading and NOT outro, keep effective volume synced with Settings
-    if ((!bossCrossfadeStarted && !bossCrossfadeCompleted) || bossCrossfadeCompleted) {
-      float vol = SettingsManager.getInstance().getMusicVolume();
-
-      if (bossCrossfadeCompleted) {
-        if (bossMusic != null && bossMusic.isPlaying()) bossMusic.setVolume(vol);
-        if (explorationMusic != null) explorationMusic.setVolume(0f);
-      } else {
-        if (explorationMusic != null && explorationMusic.isPlaying())
-          explorationMusic.setVolume(vol);
-        if (bossMusic != null) bossMusic.setVolume(0f);
-      }
     }
   }
 }

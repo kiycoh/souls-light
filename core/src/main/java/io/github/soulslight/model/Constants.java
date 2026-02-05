@@ -32,4 +32,24 @@ public class Constants {
   public static final float SPEED_ARROW = 400f;
   public static final float SPEED_FAST_ARROW = 700f;
   public static final float SPEED_ENEMY_ARROW = 300f;
+
+  // Debug Menu UI
+  public static final float DEBUG_MENU_WIDTH = 380f;
+  public static final float DEBUG_ITEM_HEIGHT = 28f;
+  public static final float DEBUG_PADDING = 12f;
+  public static final float DEBUG_TITLE_HEIGHT = 35f;
+  public static final float DEBUG_FOOTER_HEIGHT = 25f;
+
+  // Debug Stats UI
+  public static final float DEBUG_STATS_WIDTH = 250f;
+  public static final float DEBUG_STATS_HEIGHT = 160f;
+  public static final float DEBUG_STATS_PADDING = 10f;
+  public static final float DEBUG_STATS_LINE_HEIGHT = 20f;
+
+  // Entity Rendering & Physics
+  public static final float IDLE_VELOCITY_EPS = 0.05f;
+  public static final float ENEMY_FLIP_EPS = 0.35f;
+  public static final float OBLIVION_HEIGHT = 96f * 5f;
+  public static final float OBLIVION_WIDTH = 173f * 5f;
+  public static final float OBLIVION_Y_OFFSET = 80f;
 }
