@@ -252,15 +252,6 @@ public class GameController extends InputAdapter implements ControllerListener, 
     this.debugMenuController = controller;
   }
 
-  /**
-   * Gets the debug menu controller.
-   *
-   * @return The debug menu controller, or null if not set
-   */
-  public DebugMenuController getDebugMenuController() {
-    return debugMenuController;
-  }
-
   public void setGameScreen(io.github.soulslight.view.GameScreen gameScreen) {
     this.gameScreen = gameScreen;
   }

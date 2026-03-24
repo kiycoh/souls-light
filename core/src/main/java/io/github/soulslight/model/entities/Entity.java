@@ -62,10 +62,6 @@ public abstract class Entity {
     this.maxHealth = health;
   }
 
-  public void setAttackStrategy(AttackStrategy strategy) {
-    this.attackStrategy = strategy;
-  }
-
   public void setTextureRegion(TextureRegion tr) {
     this.textureRegion = tr;
   }

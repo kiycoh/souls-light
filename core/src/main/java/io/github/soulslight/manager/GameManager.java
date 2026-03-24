@@ -1,7 +1,6 @@
 package io.github.soulslight.manager;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.maps.tiled.TiledMap;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.map.Level;
 import io.github.soulslight.model.map.LevelFactory;
@@ -200,37 +199,6 @@ public class GameManager {
   public void cleanUp() {
     this.currentLevel = null;
     clearPlayers();
-  }
-
-  /** Loads the current level using the appropriate strategy. */
-  public void loadLevel() {
-    try {
-      // Get strategy for current level
-      MapGenerationStrategy strategy = getCurrentLevelStrategy();
-      TiledMap map = strategy.generate();
-
-      // Dispose old level if exists to prevent leaks
-      if (currentLevel != null) {
-        currentLevel.dispose();
-      }
-
-      // Assign map to a new Level object
-      currentLevel = new Level();
-      currentLevel.setMap(map);
-
-      // Initialize player at starting position
-      if (players != null) {
-        for (Player p : players) {
-          p.setPosition(5, 5); // start position
-        }
-      }
-
-      Gdx.app.log(
-          "GameManager", "Level " + currentLevelIndex + " loaded: " + getCurrentLevelName());
-
-    } catch (Exception e) {
-      Gdx.app.error("GameManager", "Failed to load level", e);
-    }
   }
 
   public PathfindingManager getPathfindingManager() {

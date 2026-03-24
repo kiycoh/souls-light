@@ -16,9 +16,6 @@ public class Player extends Entity {
 
   private static final float BODY_RADIUS = 14.0f;
   private static final float NORMAL_DAMPING = 10.0f; // Attrito per non scivolare
-  // private float speed = 300f; al momento la speed è data da gamecontroller, da
-  // cambiare
-  // evetualmente
   private boolean wasInKnockback = false;
 
   private final PlayerClass type;
@@ -168,8 +165,6 @@ public class Player extends Entity {
     this.health = 500;
     this.maxHealth = 500;
     this.type = type;
-    // this.speed= 100; al momento la speed è data da gamecontroller, da cambiare
-    // evetualmente
     this.attackStrategy = type.getStrategy();
     this.specialAbility = type.getSpecial();
 

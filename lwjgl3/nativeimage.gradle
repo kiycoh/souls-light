@@ -1,6 +1,8 @@
 
 project(":lwjgl3") {
+  apply plugin: "application"
   apply plugin: "org.graalvm.buildtools.native"
+  apply plugin: 'com.github.johnrengelman.shadow'
 
   graalvmNative {
     binaries {
@@ -15,6 +17,12 @@ project(":lwjgl3") {
       }
     }
   }
+
+  dependencies {
+        implementation project(":core")
+    }
+
+
 
   run {
     doNotTrackState("Running the app should not be affected by Graal.")

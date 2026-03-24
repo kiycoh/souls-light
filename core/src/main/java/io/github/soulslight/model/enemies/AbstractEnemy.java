@@ -26,12 +26,9 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
   protected float patrolAngle = 0; // Direzione attuale in gradi
   protected float wanderTimer = 0; // Timer per cambio direzione
   protected final float MAX_WANDER_DIST = 300f; // Raggio massimo dallo spawn
-  // protected final float SENSOR_DIST = 50f;
   private EnemyState aiState;
   protected float speed;
   private List<EnemyDeathListener> deathListeners = new ArrayList<>();
-
-  // ... (in notify section)
 
   protected void notifyDeathListeners() {
     for (EnemyDeathListener listener : deathListeners) {
@@ -258,11 +255,6 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
         }
       }
     } else {
-      // If pathfinding fails (e.g. valid target but unreachable?), try direct or just
-      // wait
-      // Fallback to direct move (might get stuck against wall, but better than
-      // freezing)
-      // moveTowards(targetPos, deltaTime);
       if (body != null) body.setLinearVelocity(0, 0);
     }
   }
@@ -455,10 +447,6 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     }
   }
 
-  public void removeDeathListener(EnemyDeathListener listener) {
-    deathListeners.remove(listener);
-  }
-
   public void applyKnockback(Vector2 direction, float speedForce, float duration) {
     if (body == null) return;
     this.currentKnockbackVelocity.set(direction).nor().scl(speedForce);
@@ -516,10 +504,6 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     if (!projectileListeners.contains(listener)) {
       projectileListeners.add(listener);
     }
-  }
-
-  public void removeProjectileListener(ProjectileListener listener) {
-    projectileListeners.remove(listener);
   }
 
   protected void notifyProjectileRequest(Vector2 origin, Vector2 target, String type) {

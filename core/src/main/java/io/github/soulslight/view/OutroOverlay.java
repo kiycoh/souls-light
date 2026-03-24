@@ -46,12 +46,14 @@ public class OutroOverlay implements Disposable {
 
     this.font = new BitmapFont();
     this.font.setColor(Color.WHITE);
-    this.font.getData().setScale(2.1f);
+    this.font.getData().setScale(1.0f);
 
     this.layout = new GlyphLayout();
 
     this.camera = new OrthographicCamera();
-    this.camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+    this.camera.setToOrtho(false,
+        io.github.soulslight.model.Constants.V_WIDTH,
+        io.github.soulslight.model.Constants.V_HEIGHT);
 
     this.lines =
         new String[] {
@@ -128,7 +130,9 @@ public class OutroOverlay implements Disposable {
     if (transitioning) alpha = Math.max(0f, 0.85f * (1 - transitionTime / TRANSITION_DURATION));
 
     shapeRenderer.setColor(0, 0, 0, alpha);
-    shapeRenderer.rect(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+    shapeRenderer.rect(0, 0,
+        io.github.soulslight.model.Constants.V_WIDTH,
+        io.github.soulslight.model.Constants.V_HEIGHT);
     shapeRenderer.end();
     Gdx.gl.glDisable(Gdx.gl.GL_BLEND);
 
@@ -136,8 +140,8 @@ public class OutroOverlay implements Disposable {
     batch.setProjectionMatrix(camera.combined);
     batch.begin();
 
-    float screenWidth = Gdx.graphics.getWidth();
-    float screenHeight = Gdx.graphics.getHeight();
+    float screenWidth = io.github.soulslight.model.Constants.V_WIDTH;
+    float screenHeight = io.github.soulslight.model.Constants.V_HEIGHT;
     float totalHeight = lineSpacing * lines.length;
     float startY = (screenHeight + totalHeight) / 2f;
 
@@ -182,7 +186,9 @@ public class OutroOverlay implements Disposable {
   }
 
   public void resize(int width, int height) {
-    camera.setToOrtho(false, width, height);
+    camera.setToOrtho(false,
+        io.github.soulslight.model.Constants.V_WIDTH,
+        io.github.soulslight.model.Constants.V_HEIGHT);
   }
 
   @Override

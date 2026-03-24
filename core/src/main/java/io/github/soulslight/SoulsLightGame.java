@@ -1,7 +1,6 @@
 package io.github.soulslight;
 
 import com.badlogic.gdx.Game;
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.soulslight.manager.ResourceManager;
 import io.github.soulslight.manager.TextureManager;
@@ -14,11 +13,6 @@ public class SoulsLightGame extends Game {
 
   public SpriteBatch getBatch() {
     return batch;
-  }
-
-  @Override
-  public void setScreen(Screen screen) {
-    super.setScreen(screen);
   }
 
   @Override

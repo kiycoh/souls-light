@@ -45,12 +45,10 @@ public class GameModel extends Subject
   private float currentWill;
   private boolean isPaused;
   private Level level;
-  private long currentSeed;
 
   // Accumulator for fixed timestep
   private float physicsAccumulator = 0;
 
-  // Level completion flag for portal transition
   private boolean levelCompleted = false;
 
   private io.github.soulslight.utils.CollisionMonitor collisionMonitor;
@@ -62,7 +60,6 @@ public class GameModel extends Subject
     }
   }
 
-  private int totalEnemiesKilled = 0;
 
   private final ProjectileManager projectileManager;
   private final io.github.soulslight.model.lighting.LightingSystem lightingSystem;
@@ -89,7 +86,6 @@ public class GameModel extends Subject
     this.levelLoader = new LevelLoader(physicsWorld);
 
     // ---- PROCEDURALLY GENERATED MAP (Level-Based Strategy) ----
-    this.currentSeed = System.currentTimeMillis();
     MapGenerationStrategy strategy = GameManager.getInstance().getCurrentLevelStrategy();
     TiledMap myMap = strategy.generate();
     this.lightingSystem.prepareLightingOverlay(myMap);
@@ -265,7 +261,6 @@ public class GameModel extends Subject
 
     // Restore Seed to GameManager so map generation is consistent!
     GameManager.getInstance().setCampaignSeed(memento.seed);
-    this.currentSeed = memento.seed;
 
     // Fix: Restore Level Index BEFORE generating map
     GameManager.getInstance().setCurrentLevelIndex(memento.currentLevelIndex);
@@ -435,15 +430,8 @@ public class GameModel extends Subject
   @Override
   public void onEnemyDied(AbstractEnemy enemy) {
     if (enemy instanceof Oblivion && ((Oblivion) enemy).isPhaseTwo()) {
-      // Boss Killed!
       setLevelCompleted(true);
     }
-    // Could track total kills here too if needed
-    // totalEnemiesKilled++; // Already handled in update loop? Use this instead?
-    // Current update loop removes dead enemies and increments counter.
-    // Listener is cleaner, but let's stick to Boss logic for now to avoid double
-    // counting
-    // if we don't refactor the update loop.
   }
 
   public float getCurrentWill() {
@@ -467,7 +455,7 @@ public class GameModel extends Subject
   }
 
   public int getTotalEnemiesKilled() {
-    return totalEnemiesKilled;
+    return combatSystem.getTotalEnemiesKilled();
   }
 
   public io.github.soulslight.model.lighting.LightingSystem getLightingSystem() {

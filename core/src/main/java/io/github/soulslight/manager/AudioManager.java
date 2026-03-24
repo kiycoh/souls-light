@@ -15,8 +15,6 @@ public class AudioManager {
   private Music currentMusic;
   private String currentMusicPath;
 
-  // Cache for sound effects?
-
   private AudioManager() {}
 
   public static synchronized AudioManager getInstance() {
@@ -193,17 +191,6 @@ public class AudioManager {
 
   public void updateMusicVolume() {
     // Handled in update() mostly, but can force check here if needed
-  }
-
-  public void setCurrentMusicVolume(float volume) {
-    if (currentMusic != null) {
-      currentMusic.setVolume(volume);
-      currentVolume = volume;
-    }
-  }
-
-  public boolean isPlaying(String path) {
-    return currentMusicPath != null && currentMusicPath.equals(path) && currentMusic.isPlaying();
   }
 
   /**

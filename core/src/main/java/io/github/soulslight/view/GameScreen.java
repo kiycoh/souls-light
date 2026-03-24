@@ -270,7 +270,6 @@ public final class GameScreen implements GameState, Observer {
       }
     } else {
       // Only check for level completion if NOT already showing outro
-      // checkLevelTransition(); // Now handled via Observer
     }
   }
 

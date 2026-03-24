@@ -27,7 +27,6 @@ public class CombatSystem implements ProjectileListener {
   private final EntityCreator projectileCreator;
 
   private int totalEnemiesKilled = 0;
-  private boolean bossDefeated = false;
 
   /** Listener for combat events. */
   public interface CombatEventListener {
@@ -117,7 +116,6 @@ public class CombatSystem implements ProjectileListener {
       if (e.isDead()) {
         // Boss Death triggers level completion
         if (e instanceof Oblivion && ((Oblivion) e).isPhaseTwo()) {
-          bossDefeated = true;
           if (eventListener != null) {
             eventListener.onBossDefeated();
           }
@@ -190,13 +188,6 @@ public class CombatSystem implements ProjectileListener {
     return totalEnemiesKilled;
   }
 
-  public boolean isBossDefeated() {
-    return bossDefeated;
-  }
-
-  public void resetBossDefeated() {
-    bossDefeated = false;
-  }
 
   /**
    * Restores a projectile from memento data during game load.
