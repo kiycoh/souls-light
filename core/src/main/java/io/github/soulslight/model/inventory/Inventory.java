@@ -124,10 +124,10 @@ public class Inventory {
    * @return 'true' only if there is no space for any new item to be inserted.
    */
   public boolean isFull() {
-    for (int i = 0; i < capacity; i++) {
-      if (getSlot(i) != null) return false;
-    }
-    return true;
+    // Gli slot non sono mai null (clear() li pre-alloca), quindi il vecchio controllo
+    // usciva sempre alla prima iterazione. La condizione giusta è "non esiste un indice
+    // libero", che getFreeIndex() calcola già.
+    return getFreeIndex() < 0;
   }
 
   /** Clears the whole inventory. */

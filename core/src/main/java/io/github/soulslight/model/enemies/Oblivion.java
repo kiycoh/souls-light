@@ -94,7 +94,7 @@ public class Oblivion extends AbstractEnemy {
     if (!isPhaseTwo) {
       return false;
     }
-    return this.health <= 0 && deathAnimationFinished;
+    return super.isDead() && deathAnimationFinished;
   }
 
   // setta i confini della mappa
@@ -274,11 +274,10 @@ public class Oblivion extends AbstractEnemy {
 
   private void startPhaseTwo() {
     isPhaseTwo = true;
-    this.health = PHASE_2_HP;
-    this.maxHealth = PHASE_2_HP;
+    // setMaxHealth riporta la vita al massimo e azzera healthDepleted in un colpo solo.
+    setMaxHealth(PHASE_2_HP);
     this.attackStrategy = new MageAttack(45);
     this.currentState = State.CHASING;
-    this.isDead = false;
   }
 
   // Logica del teletrasporto a destra e a sinistra del player

@@ -868,8 +868,6 @@ public final class GameScreen implements GameState, Observer {
 
     if (model != null) model.dispose();
 
-    if (controller != null) controller.dispose();
-
     if (mapRenderer != null) mapRenderer.dispose();
     if (debugRenderer != null) debugRenderer.dispose();
     if (hud != null) hud.dispose();

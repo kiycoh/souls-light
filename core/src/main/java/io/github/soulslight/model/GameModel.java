@@ -589,7 +589,9 @@ public class GameModel extends Subject
             p.getInventory().getItemSlots()) {
           if (slot.notEmpty()) {
             for (int i = 0; i < slot.getAmount(); i++) {
-              inventoryItems.add(slot.peek().getClass().getName());
+              io.github.soulslight.model.items.ItemType type =
+                  io.github.soulslight.model.items.ItemType.of(slot.peek());
+              if (type != null) inventoryItems.add(type.key());
             }
           }
         }
@@ -729,16 +731,15 @@ public class GameModel extends Subject
 
       // Restore Inventory
       if (pm.inventoryItems != null) {
-        for (String className : pm.inventoryItems) {
-          try {
-            Class<?> clazz = Class.forName(className);
-            io.github.soulslight.model.inventory.IPickable item =
-                (io.github.soulslight.model.inventory.IPickable)
-                    clazz.getDeclaredConstructor().newInstance();
-            newPlayer.getInventory().addItem(item);
-          } catch (Exception e) {
-            com.badlogic.gdx.Gdx.app.error("GameModel", "Failed to restore item: " + className, e);
+        for (String itemKey : pm.inventoryItems) {
+          io.github.soulslight.model.items.ItemType type =
+              io.github.soulslight.model.items.ItemType.fromKey(itemKey);
+          if (type == null) {
+            com.badlogic.gdx.Gdx.app.error(
+                "GameModel", "Item non riconosciuto nel salvataggio, ignorato: " + itemKey);
+            continue;
           }
+          newPlayer.getInventory().addItem(type.create());
         }
       }
 

@@ -36,7 +36,9 @@ public class Shielder extends AbstractEnemy {
 
     // se non ci sono ranger da proteggere si sacrifica
     if (getRangerToProtect() <= 0) {
-      this.health = 0; // Kills itself
+      // Passa da takeDamage: assegnare health = 0 direttamente saltava
+      // notifyDeathListeners(), e la Room non rimuoveva mai il nemico dalla propria lista.
+      takeDamage(this.health);
       return;
     }
 

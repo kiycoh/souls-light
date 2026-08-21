@@ -14,7 +14,12 @@ public abstract class Entity {
 
   protected float health;
   protected float maxHealth; // per la barra vita
-  protected boolean isDead = false; // flag per determinare quando un nemico è morto
+  /**
+   * Unica fonte di verità sullo stato di morte: vera quando la vita ha toccato lo zero.
+   * isDead() la legge, e le sottoclassi con regole aggiuntive (Oblivion) la compongono
+   * invece di duplicarla.
+   */
+  protected boolean healthDepleted = false;
 
   protected AttackStrategy attackStrategy;
 
@@ -39,17 +44,17 @@ public abstract class Entity {
 
   // Metodo per infliggere il danno
   public void takeDamage(float amount) {
-    if (isDead) return;
+    if (healthDepleted) return;
 
     this.health -= amount;
     if (this.health <= 0) {
       this.health = 0;
-      this.isDead = true;
+      this.healthDepleted = true;
     }
   }
 
   public boolean isDead() {
-    return this.health <= 0;
+    return this.healthDepleted;
   }
 
   public void setPosition(float x, float y) {
@@ -57,9 +62,16 @@ public abstract class Entity {
     if (body != null) body.setTransform(x, y, body.getAngle());
   }
 
+  /** Imposta la vita corrente. Non tocca il massimo: per quello serve setMaxHealth. */
   public void setHealth(float health) {
-    this.health = health;
-    this.maxHealth = health;
+    this.health = Math.max(0f, health);
+    this.healthDepleted = this.health <= 0;
+  }
+
+  /** Imposta il massimo e riporta la vita corrente al nuovo massimo. */
+  public void setMaxHealth(float maxHealth) {
+    this.maxHealth = maxHealth;
+    setHealth(maxHealth);
   }
 
   public void setAttackStrategy(AttackStrategy strategy) {

@@ -11,16 +11,16 @@ public class EnemyRegistry {
 
     // Creiamo i nemici
     Chaser chaser = new Chaser();
-    chaser.setHealth(100);
+    chaser.setMaxHealth(100);
 
     Ranger ranger = new Ranger();
-    ranger.setHealth(70);
+    ranger.setMaxHealth(70);
 
     SpikedBall spikedBall = new SpikedBall();
-    spikedBall.setHealth(500);
+    spikedBall.setMaxHealth(500);
 
     Shielder shielder = new Shielder();
-    shielder.setHealth(250);
+    shielder.setMaxHealth(250);
 
     Oblivion oblivion = new Oblivion();
 

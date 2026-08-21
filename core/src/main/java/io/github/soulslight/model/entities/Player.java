@@ -164,9 +164,11 @@ public class Player extends Entity {
     if (type == null) {
       throw new IllegalArgumentException("Player Type cannot be null");
     }
-    this.health = 500;
-    this.maxHealth = 500;
     this.type = type;
+    // Le statistiche vengono dalla classe scelta. Erano cablate a 500 per tutti mentre
+    // ClassSelectionScreen mostrava già i valori dell'enum: la UI diceva il vero, il codice no.
+    this.maxHealth = type.getBaseHP();
+    this.health = this.maxHealth;
     // this.speed= 100; al momento la speed è data da gamecontroller, da cambiare
     // evetualmente
     this.attackStrategy = type.getStrategy();
@@ -286,7 +288,10 @@ public class Player extends Entity {
   public void attack(List<AbstractEnemy> enemies) {
     if (attackCooldown > 0) return;
     // Higher attackSpeed = lower cooldown (attacks per second)
-    attackCooldown = 1.0f / attackStrategy.getAttackSpeed();
+    // Una strategia con velocità 0 (ContactDamageAttack) darebbe cooldown infinito
+    // e bloccherebbe l'attacco per sempre: in quel caso non si applica cooldown.
+    float attacksPerSecond = attackStrategy.getAttackSpeed();
+    attackCooldown = attacksPerSecond > 0f ? 1.0f / attacksPerSecond : 0f;
 
     // Cast strict typed list to raw Entity list for Strategy interface
     // compatibility
@@ -374,8 +379,7 @@ public class Player extends Entity {
 
   /** Restores health to maximum and removes dead state. */
   public void restoreMaxHealth() {
-    this.health = this.maxHealth;
-    this.isDead = false;
+    setHealth(this.maxHealth);
   }
 
   /** Revives the player with full health and 3 seconds of invincibility. */
