@@ -11,7 +11,14 @@ import io.github.soulslight.model.room.EnemyDeathListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstractEnemy extends Entity implements Cloneable {
+/**
+ * GoF Pattern: Prototype (Prototype).
+ *
+ * <p>La copia passa da {@link #clone()}, implementato dalle sottoclassi con un copy-constructor.
+ * Non implementa Cloneable: {@code Object.clone()} non viene mai invocato, e dichiararlo
+ * indirizzerebbe chi legge verso il contratto sbagliato.
+ */
+public abstract class AbstractEnemy extends Entity {
 
   protected List<ProjectileListener> projectileListeners = new ArrayList<>();
 
@@ -500,6 +507,26 @@ public abstract class AbstractEnemy extends Entity implements Cloneable {
     }
 
     super.update(delta);
+  }
+
+  /** Come questo nemico va disegnato. */
+  public abstract EnemySprite sprite();
+
+  /**
+   * La chiave dell'animazione da usare adesso. Di default è quella di {@link #sprite()}; chi cambia
+   * aspetto in base al proprio stato la sovrascrive, così la decisione resta nel nemico invece di
+   * finire in un ramo della view.
+   */
+  public String currentAnimKey() {
+    return sprite().animKey();
+  }
+
+  /**
+   * Vero se l'animazione corrente deve continuare a scorrere anche a nemico fermo. Serve alle pose
+   * che non sono camminate, come la carica dello SpikedBall.
+   */
+  public boolean animatesWhileStill() {
+    return false;
   }
 
   public abstract void updateBehavior(List<Player> players, float deltaTime);

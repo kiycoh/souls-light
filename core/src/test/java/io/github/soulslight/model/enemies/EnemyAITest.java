@@ -43,5 +43,10 @@ class EnemyAITest {
     public AbstractEnemy clone() {
       return new TestEnemy();
     }
+
+    @Override
+    public io.github.soulslight.model.enemies.EnemySprite sprite() {
+      return new io.github.soulslight.model.enemies.EnemySprite("test", "skeleton", 32f, 32f);
+    }
   }
 }

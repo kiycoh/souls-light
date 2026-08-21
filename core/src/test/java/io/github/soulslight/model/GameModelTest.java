@@ -33,6 +33,12 @@ class GameModelTest {
 
     GameManager.getInstance().setSelectedPlayerClass(Player.PlayerClass.WARRIOR);
     GameManager.getInstance().startCampaign(io.github.soulslight.manager.GameMode.STORY);
+
+    // Seed fisso. startCampaign() lo deriva da System.currentTimeMillis(), quindi la mappa
+    // cambiava a ogni esecuzione: testMementoSaveAndLoad falliva in modo intermittente
+    // quando la posizione salvata cadeva dentro un muro e getSafeSpawnPosition spostava il
+    // player di una casella, cioe' 40px contro una tolleranza di 2.
+    GameManager.getInstance().setCampaignSeed(20260821L);
   }
 
   @AfterEach

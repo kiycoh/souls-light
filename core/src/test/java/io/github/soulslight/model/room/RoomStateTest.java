@@ -30,7 +30,7 @@ class RoomStateTest {
     Box2D.init();
     world = new World(new Vector2(0, 0), true);
     room = new Room("test-room-1", 0, 0, 100, 100);
-    EnemyRegistry.loadCache(null);
+    EnemyRegistry.loadCache();
   }
 
   @Nested

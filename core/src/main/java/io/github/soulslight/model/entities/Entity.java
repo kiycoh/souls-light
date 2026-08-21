@@ -5,7 +5,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body; // necessario per la fisica
 import io.github.soulslight.model.combat.AttackStrategy;
 
-public abstract class Entity {
+public abstract class Entity implements io.github.soulslight.model.physics.Collidable {
 
   protected Vector2 position;
 
@@ -14,10 +14,10 @@ public abstract class Entity {
 
   protected float health;
   protected float maxHealth; // per la barra vita
+
   /**
-   * Unica fonte di verità sullo stato di morte: vera quando la vita ha toccato lo zero.
-   * isDead() la legge, e le sottoclassi con regole aggiuntive (Oblivion) la compongono
-   * invece di duplicarla.
+   * Unica fonte di verità sullo stato di morte: vera quando la vita ha toccato lo zero. isDead() la
+   * legge, e le sottoclassi con regole aggiuntive (Oblivion) la compongono invece di duplicarla.
    */
   protected boolean healthDepleted = false;
 

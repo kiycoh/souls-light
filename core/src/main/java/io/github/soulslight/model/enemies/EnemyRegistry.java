@@ -1,50 +1,42 @@
 package io.github.soulslight.model.enemies;
 
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import java.util.HashMap;
+import java.util.EnumMap;
+import java.util.Map;
 
-public class EnemyRegistry {
-  private static final HashMap<String, AbstractEnemy> cache = new HashMap<>();
+/**
+ * GoF Pattern: Prototype (Registry).
+ *
+ * <p>Tiene un'istanza pre-configurata per ogni {@link EnemyKind} e ne restituisce cloni. La grafica
+ * non passa di qui: i nemici vengono disegnati leggendo TextureManager al momento del rendering,
+ * quindi il prototipo porta solo lo stato di dominio.
+ */
+public final class EnemyRegistry {
 
-  // Metodo per caricare un'istanza sola per ciascun nemico e poi poter clonare
-  public static void loadCache(TextureAtlas atlas) {
+  private static final Map<EnemyKind, AbstractEnemy> cache = new EnumMap<>(EnemyKind.class);
 
-    // Creiamo i nemici
-    Chaser chaser = new Chaser();
-    chaser.setMaxHealth(100);
+  private EnemyRegistry() {}
 
-    Ranger ranger = new Ranger();
-    ranger.setMaxHealth(70);
-
-    SpikedBall spikedBall = new SpikedBall();
-    spikedBall.setMaxHealth(500);
-
-    Shielder shielder = new Shielder();
-    shielder.setMaxHealth(250);
-
-    Oblivion oblivion = new Oblivion();
-
-    // Assegnamo la grafica
-    if (atlas != null) {
-      // findRegion cerca il nome del file nell'atlas
-      chaser.setTextureRegion(atlas.findRegion("skeleton"));
-      ranger.setTextureRegion(atlas.findRegion("archer"));
-      spikedBall.setTextureRegion(atlas.findRegion("slime"));
-      shielder.setTextureRegion(atlas.findRegion("shielder"));
-      oblivion.setTextureRegion(atlas.findRegion("boss_oblivion"));
+  /** Costruisce un prototipo per ogni tipo di nemico. */
+  public static void loadCache() {
+    for (EnemyKind kind : EnemyKind.values()) {
+      cache.put(kind, kind.newPrototype());
     }
-
-    // Aggiungiamo alla cache
-    cache.put("Chaser", chaser);
-    cache.put("Ranger", ranger);
-    cache.put("SpikedBall", spikedBall);
-    cache.put("Shielder", shielder);
-    cache.put("Oblivion", oblivion);
   }
 
-  // Prende il tipo del nemico dalla cache
-  public static AbstractEnemy getEnemy(String type) {
-    AbstractEnemy prototype = cache.get(type);
+  /**
+   * @return un nuovo nemico del tipo richiesto, o {@code null} se la cache non è stata caricata
+   */
+  public static AbstractEnemy getEnemy(EnemyKind kind) {
+    AbstractEnemy prototype = (kind != null) ? cache.get(kind) : null;
     return (prototype != null) ? prototype.clone() : null;
+  }
+
+  /**
+   * Variante per le chiavi che arrivano dai salvataggi.
+   *
+   * @return un nuovo nemico, o {@code null} se la chiave non è riconosciuta
+   */
+  public static AbstractEnemy getEnemy(String key) {
+    return getEnemy(EnemyKind.fromKey(key));
   }
 }

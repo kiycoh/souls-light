@@ -149,24 +149,24 @@ public class GameController extends InputAdapter implements ControllerListener, 
     return false;
   }
 
-  public void update(float delta) {
+  /**
+   * GoF Pattern: Strategy (Context). Una strategia di input per indice di player.
+   *
+   * <p>Sono senza stato e riusabili: prima venivano ricostruite a ogni frame, cioè circa 120
+   * allocazioni al secondo dentro il game loop.
+   */
+  private final List<InputStrategy> inputStrategies =
+      List.of(new KeyboardMovementStrategy(), new ControllerMovementStrategy(0));
 
+  public void update(float delta) {
     List<Player> players = model.getPlayers();
 
-    if (players.isEmpty()) return;
-
-    // --- STRATEGY PATTERN FOR MOVEMENT ---
-
-    // Player 1: Keyboard
-    if (!players.isEmpty() && players.get(0) != null) {
-      InputStrategy p1Strategy = new KeyboardMovementStrategy();
-      p1Strategy.processInput(players.get(0), delta);
-    }
-
-    // Player 2: Controller
-    if (players.size() > 1 && players.get(1) != null) {
-      InputStrategy p2Strategy = new ControllerMovementStrategy(0);
-      p2Strategy.processInput(players.get(1), delta);
+    int assegnabili = Math.min(players.size(), inputStrategies.size());
+    for (int i = 0; i < assegnabili; i++) {
+      Player player = players.get(i);
+      if (player != null) {
+        inputStrategies.get(i).processInput(player, delta);
+      }
     }
   }
 

@@ -89,6 +89,14 @@ public class Oblivion extends AbstractEnemy {
     return new Oblivion(this);
   }
 
+  private static final EnemySprite SPRITE =
+      new EnemySprite("oblivionIdle", "boss", 173f * 5f, 96f * 5f);
+
+  @Override
+  public EnemySprite sprite() {
+    return SPRITE;
+  }
+
   @Override
   public boolean isDead() {
     if (!isPhaseTwo) {

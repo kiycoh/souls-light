@@ -25,6 +25,13 @@ public class Shielder extends AbstractEnemy {
     return new Shielder(this);
   }
 
+  private static final EnemySprite SPRITE = new EnemySprite("shielderWalk", "shielder", 32f, 54f);
+
+  @Override
+  public EnemySprite sprite() {
+    return SPRITE;
+  }
+
   public void setAllies(List<AbstractEnemy> allies) {
     this.knownAllies = allies;
   }

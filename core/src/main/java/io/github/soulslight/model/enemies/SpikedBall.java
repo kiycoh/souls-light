@@ -49,6 +49,24 @@ public class SpikedBall extends AbstractEnemy {
     return new SpikedBall(this);
   }
 
+  private static final EnemySprite SPRITE = new EnemySprite("spikedBallWalk", "slime", 64f, 64f);
+
+  @Override
+  public EnemySprite sprite() {
+    return SPRITE;
+  }
+
+  @Override
+  public String currentAnimKey() {
+    return isCharging() ? "spikedBallCharge" : super.currentAnimKey();
+  }
+
+  @Override
+  public boolean animatesWhileStill() {
+    // Durante la carica sta fermo, ma l'animazione deve continuare a girare.
+    return isCharging();
+  }
+
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players.isEmpty() || this.health <= 0) return;

@@ -8,7 +8,7 @@ import io.github.soulslight.model.Constants;
  * A Box2D sensor fixture that covers a room's interior. Detects when Player enters the room to
  * trigger state transitions. The sensor is non-solid (isSensor = true) so entities pass through.
  */
-public class RoomSensor {
+public class RoomSensor implements io.github.soulslight.model.physics.Collidable {
 
   private final Room room;
   private Body sensorBody;

@@ -12,12 +12,10 @@ import io.github.soulslight.manager.PathfindingManager;
 import io.github.soulslight.manager.ProjectileManager;
 import io.github.soulslight.model.combat.ProjectileListener;
 import io.github.soulslight.model.enemies.AbstractEnemy;
-import io.github.soulslight.model.enemies.Chaser;
 import io.github.soulslight.model.enemies.EnemyRegistry;
 import io.github.soulslight.model.enemies.Oblivion;
 import io.github.soulslight.model.enemies.Ranger;
 import io.github.soulslight.model.enemies.Shielder;
-import io.github.soulslight.model.enemies.SpikedBall;
 import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.entities.Projectile;
@@ -69,7 +67,7 @@ public class GameModel extends Subject
   public void setLevelCompleted(boolean completed) {
     this.levelCompleted = completed;
     if (completed) {
-      notifyObservers("LEVEL_COMPLETE", this.level);
+      notifyObservers(new io.github.soulslight.model.observer.GameEvent.LevelCompleted(level));
     }
   }
 
@@ -79,7 +77,7 @@ public class GameModel extends Subject
   private final io.github.soulslight.model.lighting.LightingSystem lightingSystem;
 
   public GameModel() {
-    EnemyRegistry.loadCache(null);
+    EnemyRegistry.loadCache();
     this.lightingSystem = new io.github.soulslight.model.lighting.LightingSystem();
     this.physicsWorld = new World(new Vector2(0, 0), true);
     io.github.soulslight.model.physics.Box2DPhysicsAdapter physicsAdapter =
@@ -488,7 +486,7 @@ public class GameModel extends Subject
 
   @Override
   public void onDamageTaken(Player player, float amount) {
-    notifyObservers("PLAYER_HIT", player);
+    notifyObservers(new io.github.soulslight.model.observer.GameEvent.PlayerHit(player, amount));
   }
 
   @Override
@@ -554,11 +552,9 @@ public class GameModel extends Subject
     while (it.hasNext()) {
       AbstractEnemy e = it.next();
       if (e.isDead()) {
-        // Feature: Boss Death triggers level completion
-        if (e instanceof Oblivion && ((Oblivion) e).isPhaseTwo()) {
-          this.levelCompleted = true;
-        }
-
+        // Il completamento del livello passa solo da onEnemyDied -> setLevelCompleted().
+        // Rialzare qui il flag creerebbe una seconda transizione, e quindi un secondo
+        // GameScreen, perche' l'evento e' gia' stato notificato.
         e.destroyBody(physicsWorld);
         totalEnemiesKilled++;
         it.remove();
@@ -663,12 +659,9 @@ public class GameModel extends Subject
   }
 
   private String getEnemyType(AbstractEnemy e) {
-    if (e instanceof Chaser) return "Chaser";
-    if (e instanceof Ranger) return "Ranger";
-    if (e instanceof Shielder) return "Shielder";
-    if (e instanceof SpikedBall) return "SpikedBall";
-    if (e instanceof Oblivion) return "Oblivion";
-    return "Chaser"; // Fallback
+    io.github.soulslight.model.enemies.EnemyKind kind =
+        io.github.soulslight.model.enemies.EnemyKind.of(e);
+    return (kind != null ? kind : io.github.soulslight.model.enemies.EnemyKind.CHASER).key();
   }
 
   public void restoreMemento(GameStateMemento memento) {
@@ -873,7 +866,7 @@ public class GameModel extends Subject
       }
     }
 
-    notifyObservers("LEVEL_RESTORED", this.level);
+    notifyObservers(new io.github.soulslight.model.observer.GameEvent.LevelRestored(level));
   }
 
   public List<Projectile> getProjectiles() {

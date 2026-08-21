@@ -52,6 +52,13 @@ public class Chaser extends AbstractEnemy {
     return new Chaser(this);
   }
 
+  private static final EnemySprite SPRITE = new EnemySprite("chaserWalk", "skeleton", 32f, 46f);
+
+  @Override
+  public EnemySprite sprite() {
+    return SPRITE;
+  }
+
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players == null || players.isEmpty() || this.health <= 0) return;

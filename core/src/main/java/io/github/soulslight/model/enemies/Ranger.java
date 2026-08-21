@@ -48,6 +48,13 @@ public class Ranger extends AbstractEnemy {
     return new Ranger(this);
   }
 
+  private static final EnemySprite SPRITE = new EnemySprite("rangerWalk", "archer", 32f, 46f);
+
+  @Override
+  public EnemySprite sprite() {
+    return SPRITE;
+  }
+
   @Override
   public void updateBehavior(List<Player> players, float deltaTime) {
     if (players == null || players.isEmpty() || this.health <= 0) return;

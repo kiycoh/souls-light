@@ -5,10 +5,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import io.github.soulslight.model.enemies.AbstractEnemy;
-import io.github.soulslight.model.enemies.Oblivion;
-import io.github.soulslight.model.enemies.Ranger;
-import io.github.soulslight.model.enemies.Shielder;
-import io.github.soulslight.model.enemies.SpikedBall;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -144,12 +140,18 @@ public class TextureManager {
     return textures.get(name);
   }
 
+  /**
+   * @return il fotogramma dell'animazione richiesta, o {@code null} se quell'animazione non è stata
+   *     caricata
+   */
+  public TextureRegion getAnimFrame(String animKey, float stateTime) {
+    Animation<TextureRegion> anim = (animKey != null) ? builtAnims.get(animKey) : null;
+    return (anim != null) ? anim.getKeyFrame(stateTime, true) : null;
+  }
+
+  /** La texture di ripiego la dichiara il nemico stesso, non una catena di instanceof qui. */
   public Texture getEnemyTexture(AbstractEnemy enemy) {
-    if (enemy instanceof Ranger) return get("archer");
-    if (enemy instanceof SpikedBall) return get("slime");
-    if (enemy instanceof Shielder) return get("shielder");
-    if (enemy instanceof Oblivion) return get("boss");
-    return get("skeleton");
+    return get(enemy.sprite().fallbackTexture());
   }
 
   public TextureRegion getChaserWalkFrame(float stateTime) {

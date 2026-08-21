@@ -1,11 +1,18 @@
 package io.github.soulslight.model.physics;
 
 /**
- * GoF Pattern: Adapter (Adaptee Interface) Defines the domain-specific collision handling methods
- * that operate on game entities rather than Box2D fixtures.
+ * GoF Pattern: Adapter (Target).
+ *
+ * <p>L'interfaccia che il dominio vuole: parla di {@link Collidable}, non di {@code Fixture},
+ * {@code Contact} o {@code Object}. È {@link Box2DPhysicsAdapter} a colmare la distanza fra questa
+ * forma e quella che Box2D impone.
+ *
+ * <p>Un parametro {@code null} significa "corpo senza controparte di dominio", tipicamente un muro
+ * statico.
  */
 public interface CollisionHandler {
-  void handleBeginContact(Object userA, Object userB);
 
-  void handleEndContact(Object userA, Object userB);
+  void handleBeginContact(Collidable a, Collidable b);
+
+  void handleEndContact(Collidable a, Collidable b);
 }

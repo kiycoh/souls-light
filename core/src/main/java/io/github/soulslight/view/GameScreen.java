@@ -34,11 +34,7 @@ import io.github.soulslight.manager.SettingsManager;
 import io.github.soulslight.manager.TextureManager;
 import io.github.soulslight.model.GameModel;
 import io.github.soulslight.model.enemies.AbstractEnemy;
-import io.github.soulslight.model.enemies.Chaser;
 import io.github.soulslight.model.enemies.Oblivion;
-import io.github.soulslight.model.enemies.Ranger;
-import io.github.soulslight.model.enemies.Shielder;
-import io.github.soulslight.model.enemies.SpikedBall;
 import io.github.soulslight.model.entities.ItemEntity;
 import io.github.soulslight.model.entities.Player;
 import io.github.soulslight.model.map.LevelFactory;
@@ -281,9 +277,7 @@ public final class GameScreen implements GameState, Observer {
         continue;
       }
 
-      boolean flipX = shouldFlipXStable(enemy);
-
-      drawEnemy(enemy, flipX);
+      drawEnemy(enemy);
     }
 
     // ITEM RENDERING
@@ -444,42 +438,20 @@ public final class GameScreen implements GameState, Observer {
     }
   }
 
-  private enum EnemyAnimType {
-    CHASER,
-    RANGER,
-    SHIELDER,
-    SPIKEDBALL
-  }
-
-  private TextureRegion computeAnimatedFrame(AbstractEnemy enemy, EnemyAnimType type) {
-    boolean isIdle = true;
-
+  private TextureRegion computeAnimatedFrame(AbstractEnemy enemy) {
+    boolean fermo = true;
     if (enemy.getBody() != null) {
       Vector2 vel = enemy.getBody().getLinearVelocity();
-      isIdle = vel.len2() < IDLE_VELOCITY_EPS * IDLE_VELOCITY_EPS;
+      fermo = vel.len2() < IDLE_VELOCITY_EPS * IDLE_VELOCITY_EPS;
     }
 
-    if (isIdle) {
-      return getAnimFrame(type, 0f);
+    String animKey = enemy.currentAnimKey();
+    if (fermo && !enemy.animatesWhileStill()) {
+      return TextureManager.getInstance().getAnimFrame(animKey, 0f);
     }
 
     float offset = enemyAnimOffset.computeIfAbsent(enemy, e -> MathUtils.random(0f, 10f));
-    return getAnimFrame(type, enemyAnimTime + offset);
-  }
-
-  private TextureRegion getAnimFrame(EnemyAnimType type, float time) {
-    switch (type) {
-      case CHASER:
-        return TextureManager.getInstance().getChaserWalkFrame(time);
-      case RANGER:
-        return TextureManager.getInstance().getRangerWalkFrame(time);
-      case SHIELDER:
-        return TextureManager.getInstance().getShielderWalkFrame(time);
-      case SPIKEDBALL:
-        return TextureManager.getInstance().getSpikedBallWalkFrame(time);
-      default:
-        return null;
-    }
+    return TextureManager.getInstance().getAnimFrame(animKey, enemyAnimTime + offset);
   }
 
   private TextureRegion computePlayerFrame(Player player, int index) {
@@ -508,62 +480,48 @@ public final class GameScreen implements GameState, Observer {
     }
   }
 
-  private void drawEnemy(AbstractEnemy enemy, boolean flipX) {
-    if (enemy instanceof Oblivion) {
-      TextureRegion frame = computeOblivionFrame((Oblivion) enemy);
-      if (frame != null) {
-        // Oblivion spritesheet needs to be flipped
-        boolean flipOblivion = !flipX;
-        drawOblivion(frame, enemy.getPosition(), flipOblivion);
-        return;
-      }
+  /**
+   * L'unico ramo per tipo rimasto nel rendering. Oblivion sceglie fra sette animazioni in base al
+   * proprio stato, ha un offset verticale dedicato e si gira verso il player: non si riduce a una
+   * descrizione dichiarativa, e dirlo esplicitamente qui è più onesto che fingere il contrario. Gli
+   * altri quattro nemici si descrivono da soli tramite sprite().
+   */
+  private void drawEnemy(AbstractEnemy enemy) {
+    if (enemy instanceof Oblivion boss) {
+      drawOblivion(boss);
+      return;
     }
 
-    if (enemy instanceof Chaser) {
-      TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.CHASER);
-      if (frame != null) {
-        drawEntity(frame, enemy.getPosition(), 32, 46, flipX);
-        return;
-      }
+    io.github.soulslight.model.enemies.EnemySprite sprite = enemy.sprite();
+    TextureRegion frame = computeAnimatedFrame(enemy);
+
+    if (frame != null) {
+      drawEntity(
+          frame, enemy.getPosition(), sprite.width(), sprite.height(), shouldFlipXStable(enemy));
+    } else {
+      drawEntity(
+          TextureManager.getInstance().getEnemyTexture(enemy),
+          enemy.getPosition(),
+          sprite.width(),
+          sprite.height());
+    }
+  }
+
+  private void drawOblivion(Oblivion boss) {
+    TextureRegion frame = computeOblivionFrame(boss);
+
+    if (frame == null) {
+      io.github.soulslight.model.enemies.EnemySprite sprite = boss.sprite();
+      drawEntity(
+          TextureManager.getInstance().getEnemyTexture(boss),
+          boss.getPosition(),
+          sprite.width(),
+          sprite.height());
+      return;
     }
 
-    if (enemy instanceof Ranger) {
-      TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.RANGER);
-      if (frame != null) {
-        drawEntity(frame, enemy.getPosition(), 32, 46, flipX);
-        return;
-      }
-    }
-
-    if (enemy instanceof Shielder) {
-      TextureRegion frame = computeAnimatedFrame(enemy, EnemyAnimType.SHIELDER);
-      if (frame != null) {
-        drawEntity(frame, enemy.getPosition(), 32, 54, flipX);
-        return;
-      }
-    }
-
-    if (enemy instanceof SpikedBall) {
-      SpikedBall sb = (SpikedBall) enemy;
-      TextureRegion frame;
-
-      if (sb.isCharging()) {
-        float offset = enemyAnimOffset.computeIfAbsent(enemy, e -> MathUtils.random(0f, 10f));
-        frame = TextureManager.getInstance().getSpikedBallChargeFrame(enemyAnimTime + offset);
-      } else {
-        frame = computeAnimatedFrame(enemy, EnemyAnimType.SPIKEDBALL);
-      }
-
-      if (frame != null) {
-        drawEntity(frame, enemy.getPosition(), 64, 64, flipX);
-        return;
-      }
-    }
-
-    Texture tex = TextureManager.getInstance().getEnemyTexture(enemy);
-    float size =
-        (enemy instanceof Oblivion) ? OBLIVION_HEIGHT : 32f; // fallback in case of missing anim
-    drawEntity(tex, enemy.getPosition(), size, size);
+    // Lo spritesheet del boss è orientato al contrario rispetto a quelli degli altri nemici.
+    drawOblivionFrame(frame, boss.getPosition(), !oblivionFacingRight(boss));
   }
 
   private TextureRegion computeOblivionFrame(Oblivion boss) {
@@ -637,47 +595,47 @@ public final class GameScreen implements GameState, Observer {
     return !facingRight;
   }
 
+  /** Il boss non guarda dove si muove: guarda il player più vicino. */
+  private boolean oblivionFacingRight(Oblivion ob) {
+    boolean facingRight = enemyFacingRight.computeIfAbsent(ob, e -> true);
+
+    // In queste pose la direzione resta bloccata su quella corrente.
+    if (ob.isMeleeWindup()
+        || ob.isMeleeAttacking()
+        || ob.isTeleportingOut()
+        || ob.isTeleportingIn()
+        || ob.isDying()) {
+      return facingRight;
+    }
+
+    java.util.List<Player> players = model.getPlayers();
+    if (!players.isEmpty()) {
+      Player nearest = players.get(0);
+      float bestDist2 = nearest.getPosition().dst2(ob.getPosition());
+      for (int i = 1; i < players.size(); i++) {
+        Player p = players.get(i);
+        float d2 = p.getPosition().dst2(ob.getPosition());
+        if (d2 < bestDist2) {
+          bestDist2 = d2;
+          nearest = p;
+        }
+      }
+
+      float dx = nearest.getPosition().x - ob.getPosition().x;
+      float EPS_X = 4f;
+      if (dx > EPS_X) {
+        facingRight = true;
+      } else if (dx < -EPS_X) {
+        facingRight = false;
+      }
+      enemyFacingRight.put(ob, facingRight);
+    }
+
+    return facingRight;
+  }
+
   private boolean shouldFlipXStable(AbstractEnemy enemy) {
     boolean facingRight = enemyFacingRight.computeIfAbsent(enemy, e -> true);
-
-    if (enemy instanceof Oblivion) {
-      Oblivion ob = (Oblivion) enemy;
-
-      // Locks animation direction in set states
-      if (ob.isMeleeWindup()
-          || ob.isMeleeAttacking()
-          || ob.isTeleportingOut()
-          || ob.isTeleportingIn()
-          || ob.isDying()) {
-        return !facingRight;
-      }
-
-      // else, flips towards nearest player
-      java.util.List<Player> players = model.getPlayers();
-      if (!players.isEmpty()) {
-        Player nearest = players.get(0);
-        float bestDist2 = nearest.getPosition().dst2(ob.getPosition());
-        for (int i = 1; i < players.size(); i++) {
-          Player p = players.get(i);
-          float d2 = p.getPosition().dst2(ob.getPosition());
-          if (d2 < bestDist2) {
-            bestDist2 = d2;
-            nearest = p;
-          }
-        }
-
-        float dx = nearest.getPosition().x - ob.getPosition().x;
-        float EPS_X = 4f;
-        if (dx > EPS_X) {
-          facingRight = true;
-        } else if (dx < -EPS_X) {
-          facingRight = false;
-        }
-        enemyFacingRight.put(enemy, facingRight);
-      }
-
-      return !facingRight;
-    }
 
     if (enemy.getBody() == null) {
       return !facingRight;
@@ -819,7 +777,7 @@ public final class GameScreen implements GameState, Observer {
     }
   }
 
-  private void drawOblivion(TextureRegion region, Vector2 pos, boolean flipX) {
+  private void drawOblivionFrame(TextureRegion region, Vector2 pos, boolean flipX) {
     if (region == null) return;
 
     float width = OBLIVION_WIDTH;
@@ -892,31 +850,35 @@ public final class GameScreen implements GameState, Observer {
     io.github.soulslight.manager.ParticleManager.getInstance().clear();
   }
 
+  /**
+   * Lo switch è esaustivo perché GameEvent è sealed: se domani si aggiunge un evento e questo
+   * metodo non lo gestisce, il progetto non compila. Prima un caso mancante era invisibile.
+   */
   @Override
-  public void update(String eventType, Object data) {
-    if ("LEVEL_COMPLETE".equals(eventType)) {
-      checkLevelTransition();
-    } else if ("LEVEL_RESTORED".equals(eventType)) {
-      // Clear legacy visual effects from previous state
-      if (particleRenderSystem != null) {
-        particleRenderSystem.dispose();
+  public void onEvent(io.github.soulslight.model.observer.GameEvent event) {
+    switch (event) {
+      case io.github.soulslight.model.observer.GameEvent.LevelCompleted ignored ->
+          checkLevelTransition();
+      case io.github.soulslight.model.observer.GameEvent.LevelRestored restored ->
+          onLevelRestored(restored.level());
+      case io.github.soulslight.model.observer.GameEvent.PlayerHit hit ->
+          io.github.soulslight.manager.ParticleManager.getInstance()
+              .spawn(
+                  io.github.soulslight.model.particles.ParticleType.BLOOD,
+                  hit.player().getPosition());
+      case io.github.soulslight.model.observer.GameEvent.CollisionStarted ignored -> {
+        // Il rendering non reagisce alle collisioni: se ne occupa CollisionMonitor.
       }
+    }
+  }
 
-      // Update Map Renderer with new TiledMap
-      if (data instanceof io.github.soulslight.model.map.Level) {
-        io.github.soulslight.model.map.Level restoredLevel =
-            (io.github.soulslight.model.map.Level) data;
-        if (mapRenderer != null && restoredLevel.getMap() != null) {
-          mapRenderer.setMap(restoredLevel.getMap());
-        }
-      }
-
-    } else if ("PLAYER_HIT".equals(eventType)
-        && data instanceof io.github.soulslight.model.entities.Player) {
-      io.github.soulslight.model.entities.Player p =
-          (io.github.soulslight.model.entities.Player) data;
-      io.github.soulslight.manager.ParticleManager.getInstance()
-          .spawn(io.github.soulslight.model.particles.ParticleType.BLOOD, p.getPosition());
+  private void onLevelRestored(io.github.soulslight.model.map.Level restoredLevel) {
+    // Ripulisce gli effetti visivi rimasti dallo stato precedente
+    if (particleRenderSystem != null) {
+      particleRenderSystem.dispose();
+    }
+    if (mapRenderer != null && restoredLevel != null && restoredLevel.getMap() != null) {
+      mapRenderer.setMap(restoredLevel.getMap());
     }
   }
 

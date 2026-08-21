@@ -20,9 +20,9 @@ public abstract class Subject {
     observers.remove(observer);
   }
 
-  protected void notifyObservers(String eventType, Object data) {
+  protected void notifyObservers(GameEvent event) {
     for (Observer observer : observers) {
-      observer.update(eventType, data);
+      observer.onEvent(event);
     }
   }
 }

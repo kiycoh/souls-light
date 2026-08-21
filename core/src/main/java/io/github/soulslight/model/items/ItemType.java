@@ -6,11 +6,11 @@ import java.util.function.Supplier;
 /**
  * Elenco chiuso degli item che un salvataggio può contenere.
  *
- * <p>Il ripristino legge nomi di item da un file locale, quindi modificabile. Passare quel
- * nome a {@code Class.forName(...).newInstance()} costruirebbe qualunque classe del classpath
- * dotata di costruttore senza argomenti, eseguendone il costruttore <em>prima</em> di
- * qualsiasi verifica di tipo. Questo enum è la whitelist: ciò che non compare qui non è
- * costruibile a partire da un salvataggio.
+ * <p>Il ripristino legge nomi di item da un file locale, quindi modificabile. Passare quel nome a
+ * {@code Class.forName(...).newInstance()} costruirebbe qualunque classe del classpath dotata di
+ * costruttore senza argomenti, eseguendone il costruttore <em>prima</em> di qualsiasi verifica di
+ * tipo. Questo enum è la whitelist: ciò che non compare qui non è costruibile a partire da un
+ * salvataggio.
  */
 public enum ItemType {
   HEALTH_POTION(HealthPotion.class, HealthPotion::new),
@@ -48,8 +48,8 @@ public enum ItemType {
 
   /**
    * Risolve una chiave letta da un salvataggio. Accetta anche il nome di classe usato dai
-   * salvataggi precedenti, così i vecchi file restano leggibili; resta comunque una
-   * corrispondenza contro un insieme chiuso, mai una lookup nel classpath.
+   * salvataggi precedenti, così i vecchi file restano leggibili; resta comunque una corrispondenza
+   * contro un insieme chiuso, mai una lookup nel classpath.
    *
    * @param key la chiave letta dal file
    * @return il tipo corrispondente, o {@code null} se la chiave non è riconosciuta

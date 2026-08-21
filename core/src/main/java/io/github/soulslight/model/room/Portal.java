@@ -14,7 +14,7 @@ import io.github.soulslight.model.Constants;
  *
  * <p>GoF Pattern: State (Context)
  */
-public class Portal {
+public class Portal implements io.github.soulslight.model.physics.Collidable {
 
   private static final int FRAME_WIDTH = 64;
   private static final int FRAME_HEIGHT = 64;

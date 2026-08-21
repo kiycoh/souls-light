@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Regressioni per i difetti emersi dall'audit. Ogni test qui dentro fallisce sul codice
- * precedente al fix: servono a impedire che tornino, non a documentare il comportamento.
+ * Regressioni per i difetti emersi dall'audit. Ogni test qui dentro fallisce sul codice precedente
+ * al fix: servono a impedire che tornino, non a documentare il comportamento.
  */
 @ExtendWith(GdxTestExtension.class)
 class BugFixRegressionTest {
@@ -28,7 +28,7 @@ class BugFixRegressionTest {
   @BeforeAll
   static void initBox2D() {
     Box2D.init();
-    EnemyRegistry.loadCache(null);
+    EnemyRegistry.loadCache();
   }
 
   private World world() {

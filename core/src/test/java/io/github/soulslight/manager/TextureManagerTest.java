@@ -9,7 +9,6 @@ import io.github.soulslight.utils.GdxTestExtension;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 
 @ExtendWith(GdxTestExtension.class)
 class TextureManagerTest {
@@ -77,11 +76,12 @@ class TextureManagerTest {
 
   @Test
   void testEnemyTextureMapping() {
-    // Mockiamo le classi per evitare di dover istanziare Box2D World
-    Ranger mockRanger = Mockito.mock(Ranger.class);
-    SpikedBall mockBall = Mockito.mock(SpikedBall.class);
-    Shielder mockShielder = Mockito.mock(Shielder.class);
-    Oblivion mockBoss = Mockito.mock(Oblivion.class);
+    // Istanze reali: i costruttori dei nemici non richiedono un World, e la texture di
+    // ripiego ora la dichiara il nemico stesso, quindi ha senso verificare quella vera.
+    Ranger mockRanger = new Ranger();
+    SpikedBall mockBall = new SpikedBall();
+    Shielder mockShielder = new Shielder();
+    Oblivion mockBoss = new Oblivion();
 
     assertEquals(
         TextureManager.getInstance().get("archer"),

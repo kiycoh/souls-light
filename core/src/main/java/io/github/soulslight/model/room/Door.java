@@ -8,7 +8,7 @@ import io.github.soulslight.model.Constants;
  * Represents a door that can be locked/unlocked. When locked, creates a static physics body to
  * block passage. When unlocked, removes the blocking body.
  */
-public class Door {
+public class Door implements io.github.soulslight.model.physics.Collidable {
 
   /** Cardinal direction for door placement. */
   public enum Direction {

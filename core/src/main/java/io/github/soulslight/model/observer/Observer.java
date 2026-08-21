@@ -1,9 +1,6 @@
 package io.github.soulslight.model.observer;
 
-/**
- * GoF Pattern: Observer (Observer) Defines an updating interface for objects that should be
- * notified of changes in a subject.
- */
+/** GoF Pattern: Observer (Observer). Riceve gli eventi emessi da un {@link Subject}. */
 public interface Observer {
-  void update(String eventType, Object data);
+  void onEvent(GameEvent event);
 }

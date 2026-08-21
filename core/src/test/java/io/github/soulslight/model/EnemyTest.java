@@ -28,7 +28,7 @@ public class EnemyTest {
   public void setup() {
     Box2D.init();
     world = new World(new Vector2(0, 0), true);
-    EnemyRegistry.loadCache(null);
+    EnemyRegistry.loadCache();
   }
 
   @ParameterizedTest
