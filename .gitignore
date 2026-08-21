@@ -162,4 +162,16 @@ Thumbs.db
 ## You should delete or comment out the next line if you have configuration in a different resource-config.json .
 **/resource-config.json
 assets/assets.txt
-assets/assets.txt
+docs/inspo_content/
+.silicaignore
+
+## Mockup e materiale di riferimento: non devono finire nel JAR
+## (assets/ è la resource root del JAR, vedi lwjgl3/build.gradle)
+assets/**/*.mp4
+assets/WhatsApp Image*.jpeg
+
+## Silica: staging e stato locale di indicizzazione, non condivisi
+docs/silica/Inbox/
+provenance.json
+log.md
+vault.yaml

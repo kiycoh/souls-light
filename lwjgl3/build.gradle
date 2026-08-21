@@ -20,6 +20,13 @@ apply plugin: 'io.github.fourlastor.construo'
 import io.github.fourlastor.construo.Target
 
 sourceSets.main.resources.srcDirs += [ rootProject.file('assets').path ]
+
+// assets/ ospita anche sorgenti d'arte e mockup che non servono a runtime.
+// Senza questo exclude finirebbero dentro il JAR distribuito (.gitignore non basta:
+// Gradle legge il disco, non l'indice di git).
+processResources {
+  exclude '**/*.aseprite', '**/*.mp4', 'WhatsApp Image*'
+}
 mainClassName = 'io.github.soulslight.lwjgl3.Lwjgl3Launcher'
 application.setMainClass(mainClassName)
 eclipse.project.name = appName + '-lwjgl3'
