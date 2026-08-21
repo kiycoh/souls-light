@@ -45,7 +45,10 @@ public class GameCollisionHandler extends Subject implements CollisionHandler {
           itemEntity.kill();
         }
       }
-      default -> {
+      // 'case null' e' obbligatorio: uno switch con pattern lancia NullPointerException sul
+      // selettore nullo, e 'default' da solo NON lo copre. Qui il null arriva di continuo,
+      // perche' e' cosi' che il dominio vede i muri (vedi Collidable).
+      case null, default -> {
         // Muri, porte, proiettili e nemici: nessuna reazione al contatto con il player.
       }
     }

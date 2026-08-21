@@ -140,6 +140,23 @@ class BugFixRegressionTest {
     assertEquals(60f, p.getHealth(), 0.01f, "takeDamage non deve restare un no-op permanente");
   }
 
+  // ---------- collisioni: il muro arriva come null ----------
+
+  @Test
+  @DisplayName("Il contatto con un muro (Collidable null) non deve far crashare il gioco")
+  void contattoConMuroNonEsplode() {
+    io.github.soulslight.model.physics.GameCollisionHandler handler =
+        new io.github.soulslight.model.physics.GameCollisionHandler();
+    Player p = new Player(Player.PlayerClass.WARRIOR, world(), 0, 0);
+
+    // I muri sono corpi statici senza userData: il dominio li vede come null. Uno switch con
+    // pattern lancia NPE sul selettore nullo, e 'default' non basta a coprirlo.
+    assertDoesNotThrow(() -> handler.handleBeginContact(p, null), "player contro muro");
+    assertDoesNotThrow(() -> handler.handleBeginContact(null, p), "muro contro player");
+    assertDoesNotThrow(() -> handler.handleBeginContact(null, null), "muro contro muro");
+    assertDoesNotThrow(() -> handler.handleEndContact(p, null), "player che lascia un muro");
+  }
+
   // ---------- B1 ----------
 
   @Test
